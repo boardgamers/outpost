@@ -2,7 +2,7 @@ import { startDevBackend } from "./dev-backend";
 import { launch } from "./viewer";
 
 const params = new URLSearchParams(window.location.search);
-const players = Math.min(10, Math.max(2, Number(params.get("players") ?? 4)));
+const players = Math.min(9, Math.max(2, Number(params.get("players") ?? 4)));
 const seed = params.get("seed") ?? undefined;
 const auto = params.get("auto") === "1" || params.get("auto") === "true";
 const delayMs = params.get("delay") ? Number(params.get("delay")) : undefined;

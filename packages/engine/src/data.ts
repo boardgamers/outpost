@@ -133,4 +133,4 @@ export const ROBOT_COST = 10;
 export const MID_THRESHOLD = 10;
 
 export const MIN_PLAYERS = 2;
-export const MAX_PLAYERS = 10;
+export const MAX_PLAYERS = 9;
