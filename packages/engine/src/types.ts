@@ -141,4 +141,6 @@ export interface GameState {
 	moveCount: number;
 	ended: boolean;
 	messages: string[];
+	/** Action of the most recently applied move (drives toSave checkpointing). */
+	lastAction?: Move["action"];
 }

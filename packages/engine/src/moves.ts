@@ -220,6 +220,7 @@ export function applyMove(state: GameState, rawMove: Move | unknown, seat: numbe
 	}
 
 	state.moveCount += 1;
+	state.lastAction = move.action;
 	state.log.push(info ? { type: "move", player: seat, move, info } : { type: "move", player: seat, move });
 	postMove(state, move);
 	return state;

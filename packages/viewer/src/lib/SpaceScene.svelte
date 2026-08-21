@@ -32,9 +32,11 @@
 			// Force a reflow so the animation restarts with the new values.
 			void el.offsetWidth;
 			el.classList.add("fly");
-			timer = setTimeout(launch, 25000 + Math.random() * 45000);
+			// Space subsequent comets out: roughly one every 3 minutes.
+			timer = setTimeout(launch, 150000 + Math.random() * 90000);
 		};
-		timer = setTimeout(launch, 6000 + Math.random() * 8000);
+		// First comet after ~40s so the scene doesn't feel static on arrival.
+		timer = setTimeout(launch, 38000 + Math.random() * 6000);
 		return () => clearTimeout(timer);
 	});
 </script>
