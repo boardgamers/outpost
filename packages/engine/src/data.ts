@@ -31,7 +31,7 @@ export const MAX_CARD_VALUE: Record<Resource, number> = Object.fromEntries(
 	Object.entries(PRODUCTION_DECKS).map(([resource, spec]) => [
 		resource,
 		Math.max(...Object.keys(spec.distribution).map(Number)),
-	]),
+	])
 ) as Record<Resource, number>;
 
 /** Resources that do not count against hand capacity. */

@@ -74,6 +74,7 @@ function createPlayer(index: number): PlayerState {
 		done: false,
 		mustDiscard: false,
 		dropped: false,
+		settings: {},
 	};
 }
 
@@ -242,31 +243,13 @@ export function maxBid(state: GameState, seat: number, upgrade: Upgrade): number
 }
 
 /**
- * Upper bound on a player's max bid using only PUBLIC information: each hidden
- * card is worth at most the highest value in its deck (its type is public), and
- * known cards count at face value. A stripped state replaces hidden values with
- * -1, which this treats as unknown (deck max), so it replays identically.
+ * Upper bound on a player's max bid using only PUBLIC information: each card is
+ * worth at most the highest value in its deck. A card's TYPE is always public
+ * (stripSecret hides only the value), so an opponent can compute this bound for
+ * any hand they can see. Computed the same way from a stripped log (v = -1) as
+ * from the live state, so replay is identical and it never leaks hand values.
  */
 export function publicMaxBid(state: GameState, seat: number, upgrade: Upgrade): number {
-	const player = state.players[seat];
-	if (!player) {
-		return 0;
-	}
-	let value = 0;
-	for (const card of player.hand) {
-		value += card.v >= 0 ? card.v : MAX_CARD_VALUE[card.t];
-	}
-	return value + upgradeDiscount(player, upgrade);
-}
-
-/**
- * publicMaxBid as seen by an observer for whom every card in this hand is
- * hidden (any non-negative value is an opponent's real value). During replay of
- * a stripped log only the viewer's own cards have real values, so treating them
- * as known would over-estimate what the live game (where they were hidden)
- * could prove. Matches the live publicMaxBid.
- */
-export function publicMaxBidStripped(state: GameState, seat: number, upgrade: Upgrade): number {
 	const player = state.players[seat];
 	if (!player) {
 		return 0;
@@ -283,13 +266,26 @@ export function handIsStripped(player: PlayerState): boolean {
 	return player.hand.length > 0 && player.hand.every((c) => c.v < 0);
 }
 
-/** True when the player provably cannot beat the high bid on public info, so bidding auto-passes. */
+/**
+ * True when the player provably cannot beat the high bid, so bidding auto-passes.
+ * Public-info bound is always applied (hidden card = its type's deck max, which
+ * is computable from a stripped log too, so it replays identically and leaks
+ * nothing). The true hand value is only used when the player opted in via the
+ * autoPassBids setting, since it reveals that their hand is weak.
+ */
 export function mustAutoPassBid(state: GameState, seat: number): boolean {
 	const auction = state.auction;
 	if (!auction) {
 		return false;
 	}
-	return publicMaxBid(state, seat, auction.upgrade) <= auction.highBid;
+	const player = state.players[seat];
+	if (!player) {
+		return false;
+	}
+	if (publicMaxBid(state, seat, auction.upgrade) <= auction.highBid) {
+		return true;
+	}
+	return player.settings.autoPassBids === true && maxBid(state, seat, auction.upgrade) <= auction.highBid;
 }
 
 /** Coarse list of the moves available to a player, for the BGS sidebar. */

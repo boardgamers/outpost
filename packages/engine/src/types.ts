@@ -60,6 +60,13 @@ export interface PlayerState {
 	/** Must still discard down to hand capacity this round. */
 	mustDiscard: boolean;
 	dropped: boolean;
+	/** Per-player gameplay settings (set via setPlayerSettings). */
+	settings: PlayerSettings;
+}
+
+export interface PlayerSettings {
+	/** Auto-pass an auction when the player's true hand value can't beat the high bid. */
+	autoPassBids?: boolean;
 }
 
 export type Phase = "discard" | "actions" | "auction" | "auctionPayment" | "ended";

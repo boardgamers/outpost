@@ -13,6 +13,9 @@ function fixedGame(): GameState {
 			{ t: "water", v: 10 },
 			{ t: "water", v: 10 },
 			{ t: "water", v: 10 },
+			{ t: "water", v: 10 },
+			{ t: "water", v: 10 },
+			{ t: "water", v: 10 },
 		];
 	}
 	return state;
@@ -28,7 +31,11 @@ test("auction: open, outbid, pass, pay", () => {
 	const opener = state.activeSeat;
 	const upgrade = state.market[0]!;
 	const rival = seatAfter(state, opener);
-	(state.players[rival] as PlayerState).hand = [{ t: "water", v: 50 } as ProductionCard];
+	(state.players[rival] as PlayerState).hand = [
+		{ t: "water", v: 50 },
+		{ t: "water", v: 10 },
+		{ t: "water", v: 10 },
+	] as ProductionCard[];
 
 	applyMove(state, { action: "auction", marketIndex: 0, bid: 25 }, opener);
 	assert.equal(state.phase, "auction");
@@ -44,11 +51,11 @@ test("auction: open, outbid, pass, pay", () => {
 	assert.equal(state.phase, "auctionPayment");
 	assert.equal(state.auction?.highBidder, rival);
 
-	applyMove(state, { action: "pay", cards: [0] }, rival);
+	applyMove(state, { action: "pay", cards: [0, 1, 2] }, rival);
 	const winner = state.players[rival] as PlayerState;
 	assert.equal(winner.upgrades[upgrade], 1);
 	assert.equal(winner.hand.length, 0); // no change given
-	assert.equal(winner.spent, 50);
+	assert.equal(winner.spent, 70);
 	// Action resumes with the auctioneer.
 	assert.equal(state.phase, "actions");
 	assert.equal(state.activeSeat, opener);
@@ -78,6 +85,44 @@ test("auction: a bidder who cannot beat the high bid is auto-passed", () => {
 	// The empty-handed player is skipped without being asked.
 	assert.notEqual(state.auction?.activeBidder, poor);
 	assert.ok(state.auction?.passed.includes(poor));
+});
+
+test("auction: public bound auto-passes a weak hand (type known, value hidden)", () => {
+	const state = fixedGame();
+	const opener = state.activeSeat;
+	const weak = seatAfter(state, opener);
+	// Two water cards: even at the deck max (10 each) that's 20, below the 25 bid.
+	(state.players[weak] as PlayerState).hand = [
+		{ t: "water", v: 4 },
+		{ t: "water", v: 4 },
+	] as ProductionCard[];
+	applyMove(state, { action: "auction", marketIndex: 0, bid: 25 }, opener);
+	assert.notEqual(state.auction?.activeBidder, weak);
+	assert.ok(state.auction?.passed.includes(weak));
+});
+
+test("auction: no auto-pass when the public bound can still beat the bid", () => {
+	const state = fixedGame();
+	const opener = state.activeSeat;
+	const rich = seatAfter(state, opener);
+	// Six water cards: public bound 6*10 = 60 >= 25, so they are asked even though
+	// their real value (6*4 = 24) cannot beat the bid. The setting is off.
+	(state.players[rich] as PlayerState).hand = Array.from({ length: 6 }, () => ({ t: "water", v: 4 }) as ProductionCard);
+	applyMove(state, { action: "auction", marketIndex: 0, bid: 25 }, opener);
+	assert.equal(state.auction?.activeBidder, rich);
+});
+
+test("auction: autoPassBids setting auto-passes on true hand value", () => {
+	const state = fixedGame();
+	const opener = state.activeSeat;
+	const weak = seatAfter(state, opener);
+	// Real value 24 < 25, but public bound 6*10 = 60 >= 25: only the setting
+	// (true value) can auto-pass here.
+	(state.players[weak] as PlayerState).hand = Array.from({ length: 6 }, () => ({ t: "water", v: 4 }) as ProductionCard);
+	(state.players[weak] as PlayerState).settings.autoPassBids = true;
+	applyMove(state, { action: "auction", marketIndex: 0, bid: 25 }, opener);
+	assert.notEqual(state.auction?.activeBidder, weak);
+	assert.ok(state.auction?.passed.includes(weak));
 });
 
 test("auction: everyone auto-passing ends the auction immediately", () => {

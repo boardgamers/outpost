@@ -7,6 +7,7 @@ import {
 	countingHandSize,
 	handCapacity,
 	handValue,
+	mustAutoPassBid,
 	populationCost,
 	populationMax,
 	publicMaxBid,
@@ -335,16 +336,15 @@ function advanceBidder(state: GameState): void {
 		}
 		const p = state.players[seat];
 		if (p && !p.dropped && !auction.passed.includes(seat)) {
-			// Auto-pass a bidder who provably cannot beat the high bid on public
-			// info alone (each hidden card is worth at most its deck's max). This
-			// never reveals anything about hidden hand values, and a stripped log
-			// (hidden values = -1) yields the same bound, so replay is identical.
-			// In replay of a stripped log every card reads as hidden, so use the
-			// all-hidden bound to match what the live game could prove.
-			const bound = replayMode
-				? publicMaxBidStripped(state, seat, auction.upgrade)
-				: publicMaxBid(state, seat, auction.upgrade);
-			if (bound <= auction.highBid) {
+			// Auto-pass a bidder who can't beat the high bid. During replay the
+			// public bound is recomputed identically from the stripped log, but a
+			// true-value auto-pass (the autoPassBids setting) can't be — so in
+			// replay only the public bound is used, and the logged bidPass entries
+			// that true-value passes produced are skipped as already-applied.
+			const autoPass = replayMode
+				? publicMaxBid(state, seat, auction.upgrade) <= auction.highBid
+				: mustAutoPassBid(state, seat);
+			if (autoPass) {
 				auction.passed.push(seat);
 				continue;
 			}

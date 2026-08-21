@@ -134,6 +134,20 @@ export function setPlayerMetaData(data: GameState, player: number, metaData: { n
 	return data;
 }
 
+export function setPlayerSettings(data: GameState, player: number, settings: Record<string, unknown>): GameState {
+	const target = data.players[player];
+	if (target) {
+		// The game-server already whitelisted and typed these against the declared
+		// settings; keep only the ones this engine understands.
+		target.settings = { autoPassBids: settings.autoPassBids === true };
+	}
+	return data;
+}
+
+export function playerSettings(data: GameState, player: number): Record<string, unknown> {
+	return { autoPassBids: data.players[player]?.settings.autoPassBids === true };
+}
+
 export function toSave(data: GameState): GameState {
 	return data;
 }
