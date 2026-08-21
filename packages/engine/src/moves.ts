@@ -9,6 +9,7 @@ import {
 	handValue,
 	populationCost,
 	populationMax,
+	publicMaxBid,
 	robotMax,
 	scores,
 	setup,
@@ -326,16 +327,33 @@ function advanceBidder(state: GameState): void {
 	for (let step = 1; step <= order.length; step++) {
 		const seat = order[(from + step) % order.length] as number;
 		if (seat === auction.highBidder) {
+			// Auction over: everyone else passed. Auto-pass can produce this even
+			// on the opening advance (nobody can beat the opening bid).
 			state.phase = "auctionPayment";
 			auction.activeBidder = seat;
 			return;
 		}
 		const p = state.players[seat];
 		if (p && !p.dropped && !auction.passed.includes(seat)) {
+			// Auto-pass a bidder who provably cannot beat the high bid on public
+			// info alone (each hidden card is worth at most its deck's max). This
+			// never reveals anything about hidden hand values, and a stripped log
+			// (hidden values = -1) yields the same bound, so replay is identical.
+			// In replay of a stripped log every card reads as hidden, so use the
+			// all-hidden bound to match what the live game could prove.
+			const bound = replayMode
+				? publicMaxBidStripped(state, seat, auction.upgrade)
+				: publicMaxBid(state, seat, auction.upgrade);
+			if (bound <= auction.highBid) {
+				auction.passed.push(seat);
+				continue;
+			}
 			auction.activeBidder = seat;
 			return;
 		}
 	}
+	// Looping without hitting the high bidder means everyone else was skipped
+	// (dropped or auto-passed on an earlier advance); the high bidder wins.
 	state.phase = "auctionPayment";
 	auction.activeBidder = auction.highBidder;
 }

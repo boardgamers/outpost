@@ -26,7 +26,16 @@ export function replay(state: GameState, options?: { to?: number }): GameState {
 			if (entry.type === "round") {
 				applyRoundEntry(replayed, entry);
 			} else if (entry.type === "move") {
-				applyMove(replayed, entry.move, entry.player);
+				// The live game auto-passes bidders who provably can't beat the
+				// high bid without logging a move; replay reproduces those passes
+				// via advanceBidder, so it must NOT also apply the next real move
+				// out of turn. Skip a logged bidPass whose seat was already
+				// auto-passed (it's the same pass, just recorded differently).
+				const alreadyPassed =
+					entry.move.action === "bidPass" && replayed.auction?.passed.includes(entry.player) === true;
+				if (!alreadyPassed) {
+					applyMove(replayed, entry.move, entry.player);
+				}
 			}
 		}
 	} finally {

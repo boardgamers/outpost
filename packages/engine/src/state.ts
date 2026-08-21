@@ -5,6 +5,7 @@ import {
 	FACTORIES,
 	FIRST_TEN,
 	LAST_THREE,
+	MAX_CARD_VALUE,
 	MAX_PLAYERS,
 	MIN_PLAYERS,
 	POPULATION_COST,
@@ -231,6 +232,66 @@ export function drawCard(state: GameState, resource: Resource): number | undefin
 	return state.decks[resource].pop();
 }
 
+/** Max a player could pay for an upgrade right now: hand value plus their discount on it. */
+export function maxBid(state: GameState, seat: number, upgrade: Upgrade): number {
+	const player = state.players[seat];
+	if (!player) {
+		return 0;
+	}
+	return handValue(player) + upgradeDiscount(player, upgrade);
+}
+
+/**
+ * Upper bound on a player's max bid using only PUBLIC information: each hidden
+ * card is worth at most the highest value in its deck (its type is public), and
+ * known cards count at face value. A stripped state replaces hidden values with
+ * -1, which this treats as unknown (deck max), so it replays identically.
+ */
+export function publicMaxBid(state: GameState, seat: number, upgrade: Upgrade): number {
+	const player = state.players[seat];
+	if (!player) {
+		return 0;
+	}
+	let value = 0;
+	for (const card of player.hand) {
+		value += card.v >= 0 ? card.v : MAX_CARD_VALUE[card.t];
+	}
+	return value + upgradeDiscount(player, upgrade);
+}
+
+/**
+ * publicMaxBid as seen by an observer for whom every card in this hand is
+ * hidden (any non-negative value is an opponent's real value). During replay of
+ * a stripped log only the viewer's own cards have real values, so treating them
+ * as known would over-estimate what the live game (where they were hidden)
+ * could prove. Matches the live publicMaxBid.
+ */
+export function publicMaxBidStripped(state: GameState, seat: number, upgrade: Upgrade): number {
+	const player = state.players[seat];
+	if (!player) {
+		return 0;
+	}
+	let value = 0;
+	for (const card of player.hand) {
+		value += MAX_CARD_VALUE[card.t];
+	}
+	return value + upgradeDiscount(player, upgrade);
+}
+
+/** True when every card in the player's hand is hidden (v = -1), i.e. a stripped state. */
+export function handIsStripped(player: PlayerState): boolean {
+	return player.hand.length > 0 && player.hand.every((c) => c.v < 0);
+}
+
+/** True when the player provably cannot beat the high bid on public info, so bidding auto-passes. */
+export function mustAutoPassBid(state: GameState, seat: number): boolean {
+	const auction = state.auction;
+	if (!auction) {
+		return false;
+	}
+	return publicMaxBid(state, seat, auction.upgrade) <= auction.highBid;
+}
+
 /** Coarse list of the moves available to a player, for the BGS sidebar. */
 export function availableMoves(state: GameState, player?: number): string[] {
 	if (state.ended || player === undefined) {
@@ -244,7 +305,7 @@ export function availableMoves(state: GameState, player?: number): string[] {
 		case "discard":
 			return p.mustDiscard ? ["discard"] : [];
 		case "auction":
-			return state.auction?.activeBidder === player ? ["bid", "bidPass"] : [];
+			return state.auction?.activeBidder === player && !mustAutoPassBid(state, player) ? ["bid", "bidPass"] : [];
 		case "auctionPayment":
 			return state.auction?.highBidder === player ? ["pay"] : [];
 		case "actions": {

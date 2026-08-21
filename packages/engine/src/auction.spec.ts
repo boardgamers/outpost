@@ -6,13 +6,15 @@ import type { GameState, PlayerState, ProductionCard } from "./types.js";
 
 function fixedGame(): GameState {
 	const state = initGame(3, {}, "auction-spec");
-	// Deterministic hands for the test: give the active player plenty of cash.
-	const active = state.players[state.activeSeat] as PlayerState;
-	active.hand = [
-		{ t: "water", v: 10 },
-		{ t: "water", v: 10 },
-		{ t: "water", v: 10 },
-	];
+	// Deterministic hands for the test: give the active player plenty of cash,
+	// and every other player enough to keep bidding (no auto-pass).
+	for (const p of state.players) {
+		p.hand = [
+			{ t: "water", v: 10 },
+			{ t: "water", v: 10 },
+			{ t: "water", v: 10 },
+		];
+	}
 	return state;
 }
 
@@ -65,6 +67,31 @@ test("auction: cannot bid beyond your hand value", () => {
 	const bidder = state.auction?.activeBidder as number;
 	const player = state.players[bidder] as PlayerState;
 	assert.throws(() => applyMove(state, { action: "bid", amount: handValue(player) + 100 }, bidder));
+});
+
+test("auction: a bidder who cannot beat the high bid is auto-passed", () => {
+	const state = fixedGame();
+	const opener = state.activeSeat;
+	const poor = seatAfter(state, opener);
+	(state.players[poor] as PlayerState).hand = []; // empty hand: cannot beat any bid
+	applyMove(state, { action: "auction", marketIndex: 0, bid: 25 }, opener);
+	// The empty-handed player is skipped without being asked.
+	assert.notEqual(state.auction?.activeBidder, poor);
+	assert.ok(state.auction?.passed.includes(poor));
+});
+
+test("auction: everyone auto-passing ends the auction immediately", () => {
+	const state = fixedGame();
+	const opener = state.activeSeat;
+	for (const p of state.players) {
+		if (p !== state.players[opener]) {
+			p.hand = [];
+		}
+	}
+	applyMove(state, { action: "auction", marketIndex: 0, bid: 25 }, opener);
+	// Nobody else can bid, so it goes straight to payment for the opener.
+	assert.equal(state.phase, "auctionPayment");
+	assert.equal(state.auction?.highBidder, opener);
 });
 
 test("data library discounts scientists at payment time", () => {
