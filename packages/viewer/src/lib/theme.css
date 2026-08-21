@@ -1,0 +1,177 @@
+:root {
+	/* Light theme is the default (the BGS wrapper only adds a `dark` class on
+   <html> for dark mode; no class means light). */
+	--bg: #e9ebe4;
+	--bg-panel: #f5f6f0;
+	--bg-elevated: #ffffff;
+	--line: #c9cec0;
+	--text: #23271f;
+	--text-dim: #68705f;
+	--gold: #2f7fa8;
+	--gold-soft: rgba(47, 127, 168, 0.4);
+	--danger: #c24a3f;
+	/* End-game banner: a mission-accomplished panel, sky-toned on light. */
+	--banner-bg: linear-gradient(160deg, #dceef6, #c3dfeb 65%, #a9d0e0);
+	/* Decorative "star chart" background: cool space glows over a light base. */
+	--bg-decor:
+		radial-gradient(55vmax 55vmax at -8% -8%, rgba(47, 127, 168, 0.24), transparent 62%),
+		radial-gradient(50vmax 50vmax at 108% -4%, rgba(90, 141, 197, 0.22), transparent 62%),
+		radial-gradient(48vmax 48vmax at -4% 108%, rgba(200, 149, 42, 0.18), transparent 62%),
+		radial-gradient(52vmax 52vmax at 108% 108%, rgba(127, 111, 209, 0.2), transparent 62%), var(--bg);
+	/* Resource colors (sci-fi tinted, one per production type). */
+	--ore: #94a0ac;
+	--water: #3f8fd2;
+	--titanium: #c8952a;
+	--research: #7a63d2;
+	--microbiotics: #4aa84f;
+	--newChemicals: #d26db0;
+	--orbitalMedicine: #3fb8b2;
+	--ringOre: #e07b39;
+	--moonOre: #d9b13b;
+	--radius: 10px;
+	--card-w: 44px;
+	--card-h: 60px;
+}
+
+/* Dark theme: applied when the BGS wrapper sets <html class="dark">. */
+html.dark {
+	--bg: #0e1016;
+	--bg-panel: #181b23;
+	--bg-elevated: #21252f;
+	--line: #303642;
+	--text: #e6e9e2;
+	--text-dim: #8f9789;
+	--gold: #58b6dc;
+	--gold-soft: rgba(88, 182, 220, 0.35);
+	--danger: #e0705f;
+	--banner-bg: linear-gradient(160deg, #14222e, #0f1a24);
+	--bg-decor:
+		radial-gradient(120vmax 90vmax at 50% 40%, transparent 55%, rgba(0, 0, 0, 0.5) 100%),
+		radial-gradient(60vmax 60vmax at -10% -10%, rgba(47, 127, 168, 0.2), transparent 60%),
+		radial-gradient(55vmax 55vmax at 110% -5%, rgba(90, 141, 197, 0.16), transparent 60%),
+		radial-gradient(50vmax 50vmax at -5% 110%, rgba(200, 149, 42, 0.14), transparent 60%),
+		radial-gradient(55vmax 55vmax at 110% 110%, rgba(127, 111, 209, 0.16), transparent 60%), var(--bg);
+	--ore: #a8b4c0;
+	--water: #5aa5e0;
+	--titanium: #d9a53a;
+	--research: #9a86e8;
+	--microbiotics: #5cbd62;
+	--newChemicals: #e082c2;
+	--orbitalMedicine: #55ccc6;
+	--ringOre: #f08c48;
+	--moonOre: #e8c550;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+/* `:root:root` and not plain `html` on purpose: the BGS iframe shell injects
+   `<style>html.dark { background: #030712 }</style>` (anti-flash) after the
+   viewer stylesheet, so at equal specificity it would win in dark mode and wipe
+   out the decor. The doubled `:root` outranks `html.dark`. */
+:root:root {
+	background: var(--bg-decor);
+	background-attachment: fixed;
+}
+
+body {
+	margin: 0;
+	padding: 0;
+	color: var(--text);
+	font-family: "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
+	font-size: 14px;
+	line-height: 1.45;
+}
+
+#app {
+	min-height: 100vh;
+}
+
+button {
+	font: inherit;
+	cursor: pointer;
+	border: 1px solid var(--line);
+	background: var(--bg-elevated);
+	color: var(--text);
+	border-radius: 8px;
+	padding: 6px 12px;
+	transition:
+		background 0.15s ease,
+		border-color 0.15s ease;
+}
+
+button:hover:not(:disabled) {
+	border-color: var(--gold);
+}
+
+button:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+input[type="number"] {
+	font: inherit;
+	color: var(--text);
+	background: var(--bg-elevated);
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	padding: 5px 8px;
+	width: 90px;
+}
+
+input[type="number"]:focus {
+	outline: none;
+	border-color: var(--gold);
+}
+
+.res-ore {
+	--res: var(--ore);
+	--res-text: #1a1c22;
+}
+.res-water {
+	--res: var(--water);
+	--res-text: #fff;
+}
+.res-titanium {
+	--res: var(--titanium);
+	--res-text: #1a1c22;
+}
+.res-research {
+	--res: var(--research);
+	--res-text: #fff;
+}
+.res-microbiotics {
+	--res: var(--microbiotics);
+	--res-text: #fff;
+}
+.res-newChemicals {
+	--res: var(--newChemicals);
+	--res-text: #fff;
+}
+.res-orbitalMedicine {
+	--res: var(--orbitalMedicine);
+	--res-text: #1a1c22;
+}
+.res-ringOre {
+	--res: var(--ringOre);
+	--res-text: #1a1c22;
+}
+.res-moonOre {
+	--res: var(--moonOre);
+	--res-text: #1a1c22;
+}
+
+@keyframes glowPulse {
+	0%,
+	100% {
+		box-shadow:
+			0 0 0 2px var(--gold-soft),
+			0 4px 10px rgba(0, 0, 0, 0.4);
+	}
+	50% {
+		box-shadow:
+			0 0 0 4px var(--gold),
+			0 4px 14px var(--gold-soft);
+	}
+}

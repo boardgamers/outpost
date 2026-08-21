@@ -1,0 +1,32 @@
+{
+	"name": "outpost-viewer",
+	"version": "0.1.0",
+	"description": "Browser viewer for the Outpost game on boardgamers.space",
+	"license": "AGPL-3.0",
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"main": "dist/outpost-viewer.iife.js",
+	"scripts": {
+		"dev": "vite",
+		"build": "vite build",
+		"prepublishOnly": "pnpm build",
+		"tsc": "svelte-check --tsconfig ./tsconfig.json",
+		"preview": "vite preview"
+	},
+	"dependencies": {
+		"outpost-engine": "workspace:*"
+	},
+	"devDependencies": {
+		"@sveltejs/vite-plugin-svelte": "7.2.0",
+		"@types/node": "24.10.1",
+		"svelte": "5.56.8",
+		"svelte-check": "4.7.4",
+		"typescript": "5.9.3",
+		"vite": "8.2.0"
+	},
+	"engines": {
+		"node": ">=24"
+	}
+}

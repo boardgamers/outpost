@@ -1,0 +1,27 @@
+{
+	"name": "outpost",
+	"version": "0.0.0",
+	"private": true,
+	"description": "Unofficial open-source implementation of the board game Outpost for boardgamers.space (engine + viewer)",
+	"license": "AGPL-3.0",
+	"type": "module",
+	"scripts": {
+		"dev": "pnpm --filter outpost-viewer dev",
+		"build": "pnpm --filter outpost-engine build && pnpm --filter outpost-viewer build",
+		"test": "pnpm --filter outpost-engine test",
+		"tsc": "pnpm --filter outpost-engine tsc && pnpm --filter outpost-viewer tsc",
+		"fmt": "oxfmt",
+		"fmt:check": "oxfmt --check",
+		"lint": "oxlint",
+		"check": "pnpm fmt:check && pnpm lint && pnpm tsc && pnpm test && pnpm build"
+	},
+	"devDependencies": {
+		"oxfmt": "0.61.0",
+		"oxlint": "1.76.0",
+		"svelte": "5.56.8"
+	},
+	"engines": {
+		"node": ">=24"
+	},
+	"packageManager": "pnpm@11.11.0"
+}

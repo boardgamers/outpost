@@ -1,0 +1,559 @@
+import {
+	FACTORIES,
+	UPGRADE_SPECS,
+	applyMove,
+	canBuyFactory,
+	countingHandSize,
+	describeLog,
+	describeLogEntry,
+	handCapacity,
+	handValue,
+	populationCost,
+	populationMax,
+	rankings,
+	replay as replayEngine,
+	robotMax,
+	scores,
+	upgradeDiscount,
+	victoryPoints,
+	type FactoryType,
+	type GameState,
+	type Move,
+	type PlayerState,
+	type Upgrade,
+} from "outpost-engine";
+import type { ViewerBridge } from "./bgs.svelte";
+
+export interface ReplayState {
+	active: boolean;
+	current: number;
+	end: number;
+	state: GameState | null;
+}
+
+export type PendingKind =
+	| { kind: "factory"; factory: FactoryType; cost: number }
+	| { kind: "population"; count: number; cost: number }
+	| { kind: "robots"; count: number; cost: number }
+	| { kind: "payAuction"; cost: number };
+
+export const PLAYER_COLORS = [
+	"#4f8ef7",
+	"#f0716a",
+	"#57c17b",
+	"#f2b84b",
+	"#b07fe8",
+	"#4fd1c5",
+	"#f28ec0",
+	"#a3d65c",
+	"#f79a4f",
+	"#8b94f7",
+] as const;
+
+export function playerColor(index: number): string {
+	return PLAYER_COLORS[index % PLAYER_COLORS.length] as string;
+}
+
+export const RESOURCE_LABELS: Record<string, string> = {
+	ore: "Ore",
+	water: "Water",
+	titanium: "Titanium",
+	research: "Research",
+	microbiotics: "Microbiotics",
+	newChemicals: "New Chemicals",
+	orbitalMedicine: "Orbital Medicine",
+	ringOre: "Ring Ore",
+	moonOre: "Moon Ore",
+};
+
+export const UPGRADE_EFFECTS: Record<Upgrade, string> = {
+	dataLibrary: "−10 on Scientists and Laboratory bids (per copy).",
+	warehouse: "+3 hand capacity (per copy).",
+	heavyEquipment: "Allows titanium factories. −5 on Warehouse/Nodule, −15 on Outpost (per copy).",
+	nodule: "+3 population limit (per copy).",
+	scientists: "Produces a Research card each round (per copy).",
+	orbitalLab: "Produces a Microbiotics card each round (per copy).",
+	robots: "Allows buying robots — operators that ignore the population limit (per copy: up to population).",
+	laboratory: "Allows research factories; comes with a free research factory.",
+	ecoplants: "Colonists cost 5 instead of 10. −10 on Outpost bids (per copy).",
+	outpost: "Free titanium factory, +5 hand capacity, +5 population limit.",
+	spaceStation: "Produces an Orbital Medicine card each round.",
+	planetaryCruiser: "Produces a Ring Ore card each round.",
+	moonBase: "Produces a Moon Ore card each round.",
+};
+
+export class ViewerStore {
+	liveState = $state<GameState | null>(null);
+	replay = $state<ReplayState>({ active: false, current: 0, end: 0, state: null });
+	playerIndex = $state<number | undefined>(undefined);
+	avatars = $state<string[]>([]);
+	preferences = $state<Record<string, unknown>>({});
+	logLines = $state<string[]>([]);
+	seenLog = $state(0);
+	lastMoveAt = $state<number>(0);
+
+	cardPick = $state<number[]>([]);
+	pending = $state<PendingKind | null>(null);
+	auctionPick = $state<{ marketIndex: number; bid: number } | null>(null);
+	bidAmount = $state(0);
+	manning = $state(false);
+	manningPick = $state<number[]>([]);
+
+	constructor(private bridge: ViewerBridge) {
+		bridge.on("state", (state) => this.setState(state));
+		bridge.on("player", ({ index }) => {
+			this.playerIndex = typeof index === "number" && index >= 0 ? index : undefined;
+		});
+		bridge.on("avatars", (list) => (this.avatars = list ?? []));
+		bridge.on("preferences", (prefs) => (this.preferences = prefs ?? {}));
+		bridge.on("state:updated", () => bridge.fetchState());
+		bridge.on("gamelog", (payload) => this.onGamelog(payload));
+		bridge.on("replay:start", () => this.startReplay());
+		bridge.on("replay:to", (to) => this.replayTo(to));
+		bridge.on("replay:end", () => this.endReplay());
+	}
+
+	get state(): GameState | null {
+		return this.replay.active ? this.replay.state : this.liveState;
+	}
+
+	private setState(state: GameState): void {
+		this.liveState = state;
+		this.seenLog = state.log.length;
+		this.logLines = describeLog(state);
+		if (!this.replay.active) {
+			this.cancel();
+			this.lastMoveAt = Date.now();
+		}
+		this.bridge.replaceLog(this.logLines);
+	}
+
+	private onGamelog(payload: { start: number; end?: number; data: unknown }): void {
+		const data = payload?.data as { log?: unknown[] } | undefined;
+		const entries = Array.isArray(data?.log) ? (data.log as GameState["log"]) : [];
+		const base = this.liveState;
+		if (!base || entries.length === 0) {
+			this.bridge.fetchState();
+			return;
+		}
+		if (payload.start >= this.logLines.length) {
+			const appended = entries.map((entry) => describeLogEntry(base, entry));
+			this.logLines = [...this.logLines, ...appended];
+			this.seenLog = base.log.length;
+			this.bridge.replaceLog(this.logLines);
+		} else {
+			this.bridge.fetchState();
+		}
+	}
+
+	private startReplay(): void {
+		const live = this.liveState;
+		if (!live) {
+			return;
+		}
+		this.replay = { active: true, current: 1, end: live.log.length, state: replayEngine(live, { to: 1 }) };
+		this.bridge.replayInfo({ start: 1, current: 1, end: live.log.length });
+	}
+
+	private replayTo(to: number): void {
+		const live = this.liveState;
+		if (!live || !this.replay.active) {
+			return;
+		}
+		const clamped = Math.max(1, Math.min(to, live.log.length));
+		this.replay = { ...this.replay, current: clamped, state: replayEngine(live, { to: clamped }) };
+		this.bridge.replayInfo({ start: 1, current: clamped, end: this.replay.end });
+	}
+
+	replayToEntry(to: number): void {
+		this.replayTo(to);
+	}
+
+	private endReplay(): void {
+		this.replay = { active: false, current: 0, end: 0, state: null };
+	}
+
+	get me(): PlayerState | null {
+		const s = this.liveState;
+		return s && this.playerIndex !== undefined ? (s.players[this.playerIndex] ?? null) : null;
+	}
+
+	get spectator(): boolean {
+		return this.playerIndex === undefined;
+	}
+
+	get iMustDiscard(): boolean {
+		const s = this.liveState;
+		return !!s && !s.ended && s.phase === "discard" && !this.replay.active && (this.me?.mustDiscard ?? false);
+	}
+
+	get myActionTurn(): boolean {
+		const s = this.liveState;
+		return (
+			!!s &&
+			!s.ended &&
+			s.phase === "actions" &&
+			!this.replay.active &&
+			this.playerIndex !== undefined &&
+			s.activeSeat === this.playerIndex &&
+			!(this.me?.done ?? true)
+		);
+	}
+
+	get myBidTurn(): boolean {
+		const s = this.liveState;
+		return (
+			!!s && !s.ended && s.phase === "auction" && !this.replay.active && s.auction?.activeBidder === this.playerIndex
+		);
+	}
+
+	get myPayment(): boolean {
+		const s = this.liveState;
+		return (
+			!!s &&
+			!s.ended &&
+			s.phase === "auctionPayment" &&
+			!this.replay.active &&
+			s.auction?.highBidder === this.playerIndex
+		);
+	}
+
+	get interactive(): boolean {
+		return this.iMustDiscard || this.myActionTurn || this.myBidTurn || this.myPayment;
+	}
+
+	get discardExcess(): number {
+		const me = this.me;
+		return me ? Math.max(0, countingHandSize(me) - handCapacity(me)) : 0;
+	}
+
+	get popCost(): number {
+		const me = this.me;
+		return me ? populationCost(me) : 0;
+	}
+
+	get maxBid(): number {
+		const me = this.me;
+		const auction = this.liveState?.auction;
+		if (!me || !auction) {
+			return 0;
+		}
+		return handValue(me) + upgradeDiscount(me, auction.upgrade);
+	}
+
+	get finalRankings(): number[] {
+		const s = this.liveState;
+		return s && s.ended ? rankings(s) : [];
+	}
+
+	get finalScores(): number[] {
+		const s = this.liveState;
+		return s ? scores(s) : [];
+	}
+
+	get myHandValue(): number {
+		const me = this.me;
+		return me ? handValue(me) : 0;
+	}
+
+	vpOf(index: number): number {
+		const p = this.state?.players[index];
+		return p ? victoryPoints(p) : 0;
+	}
+
+	handCapOf(index: number): number {
+		const p = this.state?.players[index];
+		return p ? handCapacity(p) : 0;
+	}
+
+	countingOf(index: number): number {
+		const p = this.state?.players[index];
+		return p ? countingHandSize(p) : 0;
+	}
+
+	popMaxOf(index: number): number {
+		const p = this.state?.players[index];
+		return p ? populationMax(p) : 0;
+	}
+
+	robotMaxOf(index: number): number {
+		const p = this.state?.players[index];
+		return p ? robotMax(p) : 0;
+	}
+
+	discountOf(index: number, upgrade: Upgrade): number {
+		const p = this.state?.players[index];
+		return p ? upgradeDiscount(p, upgrade) : 0;
+	}
+
+	auctionDue(): number {
+		const me = this.me;
+		const auction = this.liveState?.auction;
+		if (!me || !auction) {
+			return 0;
+		}
+		return Math.max(0, auction.highBid - upgradeDiscount(me, auction.upgrade));
+	}
+
+	pickTotal(): number {
+		const me = this.me;
+		if (!me) {
+			return 0;
+		}
+		return this.cardPick.reduce((sum, i) => sum + (me.hand[i]?.v ?? 0), 0);
+	}
+
+	canBuy(type: FactoryType): boolean {
+		const me = this.me;
+		return !!me && canBuyFactory(me, type);
+	}
+
+	canAffordFactory(type: FactoryType): boolean {
+		const me = this.me;
+		return !!me && this.canBuy(type) && this.myHandValue >= FACTORIES[type].cost;
+	}
+
+	toggleCard(index: number): void {
+		if (!this.interactive) {
+			return;
+		}
+		this.cardPick = this.cardPick.includes(index)
+			? this.cardPick.filter((i) => i !== index)
+			: [...this.cardPick, index];
+	}
+
+	openAuction(marketIndex: number): void {
+		const s = this.liveState;
+		const upgrade = s?.market[marketIndex];
+		if (!this.myActionTurn || upgrade === undefined) {
+			return;
+		}
+		this.cancel();
+		this.auctionPick = { marketIndex, bid: UPGRADE_SPECS[upgrade].price };
+	}
+
+	bumpAuctionBid(delta: number): void {
+		const pick = this.auctionPick;
+		const s = this.liveState;
+		if (!pick || !s) {
+			return;
+		}
+		const min = UPGRADE_SPECS[s.market[pick.marketIndex] as Upgrade].price;
+		this.auctionPick = { ...pick, bid: Math.max(min, pick.bid + delta) };
+	}
+
+	setAuctionBid(value: number): void {
+		const pick = this.auctionPick;
+		const s = this.liveState;
+		if (!pick || !s || !Number.isFinite(value)) {
+			return;
+		}
+		const min = UPGRADE_SPECS[s.market[pick.marketIndex] as Upgrade].price;
+		this.auctionPick = { ...pick, bid: Math.max(min, Math.floor(value)) };
+	}
+
+	confirmAuction(): void {
+		const pick = this.auctionPick;
+		if (!pick) {
+			return;
+		}
+		this.send({ action: "auction", marketIndex: pick.marketIndex, bid: pick.bid });
+	}
+
+	prepareBid(): void {
+		const s = this.liveState;
+		if (s?.auction) {
+			this.bidAmount = s.auction.highBid + 1;
+		}
+	}
+
+	confirmBid(): void {
+		const s = this.liveState;
+		if (!s?.auction || !this.myBidTurn) {
+			return;
+		}
+		const amount = Math.floor(this.bidAmount);
+		if (!Number.isInteger(amount) || amount <= s.auction.highBid || amount > this.maxBid) {
+			return;
+		}
+		this.send({ action: "bid", amount });
+	}
+
+	passBid(): void {
+		if (this.myBidTurn) {
+			this.send({ action: "bidPass" });
+		}
+	}
+
+	startFactoryPayment(factory: FactoryType): void {
+		const me = this.me;
+		if (!this.myActionTurn || !me || !this.canBuy(factory)) {
+			return;
+		}
+		this.cancel();
+		this.pending = { kind: "factory", factory, cost: FACTORIES[factory].cost };
+	}
+
+	startPopulationPayment(): void {
+		const me = this.me;
+		if (!this.myActionTurn || !me) {
+			return;
+		}
+		const cost = populationCost(me);
+		if (me.population >= populationMax(me) || this.myHandValue < cost) {
+			return;
+		}
+		this.cancel();
+		this.pending = { kind: "population", count: 1, cost };
+	}
+
+	startRobotsPayment(): void {
+		const me = this.me;
+		if (!this.myActionTurn || !me) {
+			return;
+		}
+		if (me.upgrades.robots === 0 || me.robots >= robotMax(me) || this.myHandValue < 10) {
+			return;
+		}
+		this.cancel();
+		this.pending = { kind: "robots", count: 1, cost: 10 };
+	}
+
+	bumpPendingCount(delta: number): void {
+		const me = this.me;
+		const pending = this.pending;
+		if (!me || !pending || pending.kind === "factory" || pending.kind === "payAuction") {
+			return;
+		}
+		const unit = pending.kind === "population" ? populationCost(me) : 10;
+		const cap = pending.kind === "population" ? populationMax(me) - me.population : robotMax(me) - me.robots;
+		const affordable = Math.max(1, Math.floor(this.myHandValue / unit));
+		const max = Math.max(1, Math.min(cap, affordable));
+		const count = Math.min(max, Math.max(1, pending.count + delta));
+		this.pending = { ...pending, count, cost: count * unit };
+	}
+
+	startAuctionPayment(): void {
+		if (!this.myPayment) {
+			return;
+		}
+		this.cancel();
+		this.pending = { kind: "payAuction", cost: this.auctionDue() };
+	}
+
+	pendingValid(): boolean {
+		const me = this.me;
+		const pending = this.pending;
+		if (!me || !pending) {
+			return false;
+		}
+		if (this.pickTotal() < pending.cost) {
+			return false;
+		}
+		if (pending.kind === "factory" && FACTORIES[pending.factory].needsResearchCard) {
+			return this.cardPick.some((i) => me.hand[i]?.t === "research");
+		}
+		return true;
+	}
+
+	confirmPending(): void {
+		const pending = this.pending;
+		if (!pending || !this.pendingValid()) {
+			return;
+		}
+		const cards = this.cardPick;
+		switch (pending.kind) {
+			case "factory":
+				this.send({ action: "buyFactory", factory: pending.factory, cards });
+				break;
+			case "population":
+				this.send({ action: "buyPopulation", count: pending.count, cards });
+				break;
+			case "robots":
+				this.send({ action: "buyRobots", count: pending.count, cards });
+				break;
+			case "payAuction":
+				this.send({ action: "pay", cards });
+				break;
+		}
+	}
+
+	confirmDiscard(): void {
+		const me = this.me;
+		if (!this.iMustDiscard || !me || this.cardPick.length === 0) {
+			return;
+		}
+		const remaining = me.hand.filter((_, i) => !this.cardPick.includes(i));
+		const counting = remaining.filter((c) => c.t !== "research" && c.t !== "microbiotics").length;
+		if (counting > handCapacity(me)) {
+			return;
+		}
+		this.send({ action: "discard", cards: this.cardPick });
+	}
+
+	startManning(): void {
+		const me = this.me;
+		if (!this.myActionTurn || !me) {
+			return;
+		}
+		this.cancel();
+		this.manning = true;
+		this.manningPick = me.factories.flatMap((f, i) => (f.manned ? [i] : [])).slice(0, me.population + me.robots);
+	}
+
+	toggleManning(index: number): void {
+		const me = this.me;
+		if (!this.manning || !me) {
+			return;
+		}
+		const limit = me.population + me.robots;
+		if (this.manningPick.includes(index)) {
+			this.manningPick = this.manningPick.filter((i) => i !== index);
+		} else if (this.manningPick.length < limit) {
+			this.manningPick = [...this.manningPick, index];
+		}
+	}
+
+	confirmEndTurn(): void {
+		if (!this.manning) {
+			return;
+		}
+		this.send({ action: "endTurn", manned: this.manningPick });
+	}
+
+	cancel(): void {
+		this.cardPick = [];
+		this.pending = null;
+		this.auctionPick = null;
+		this.manning = false;
+		this.manningPick = [];
+	}
+
+	private send(move: Move): void {
+		this.bridge.sendMove(move);
+		this.cancel();
+		this.applyOptimistic(move);
+	}
+
+	// Apply my own move to the local (stripped) state right away so the UI feels
+	// instant; the authoritative state from the server reconciles on arrival.
+	// Only attempted with a move that's legal against my view — any failure just
+	// skips the optimistic step (the server state will correct it).
+	private applyOptimistic(move: Move): void {
+		const s = this.liveState;
+		if (!s || this.playerIndex === undefined || this.replay.active) {
+			return;
+		}
+		try {
+			const clone = JSON.parse(JSON.stringify(s)) as GameState;
+			applyMove(clone, move, this.playerIndex);
+			this.setState(clone);
+		} catch {
+			// not applicable against the stripped view — wait for the server state
+		}
+	}
+}
+
+export function createStore(bridge: ViewerBridge): ViewerStore {
+	return new ViewerStore(bridge);
+}

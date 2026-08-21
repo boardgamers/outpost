@@ -1,0 +1,151 @@
+<script lang="ts">
+	import { UPGRADE_SPECS, type GameState } from "outpost-engine";
+	import { UPGRADE_EFFECTS, type ViewerStore } from "./store.svelte";
+
+	interface Props {
+		state: GameState;
+		store: ViewerStore;
+	}
+
+	let { state, store }: Props = $props();
+
+	const auction = $derived(state.auction);
+	const spec = $derived(auction ? UPGRADE_SPECS[auction.upgrade] : null);
+	const nameOf = (seat: number) => state.players[seat]?.name ?? `Player ${seat + 1}`;
+	const meIndex = $derived(store.playerIndex);
+	const discount = $derived(auction && meIndex !== undefined ? store.discountOf(meIndex, auction.upgrade) : 0);
+	const due = $derived(store.auctionDue());
+	const minBid = $derived((auction?.highBid ?? 0) + 1);
+	const maxBid = $derived(store.maxBid);
+
+	$effect(() => {
+		if (store.myBidTurn) {
+			store.prepareBid();
+		}
+	});
+</script>
+
+{#if auction && spec}
+	<div class="banner">
+		<div class="block">
+			<span class="label">On the block</span>
+			<span class="uname">{spec.name}</span>
+			<span class="uvp">{spec.vp} VP · list {spec.price}</span>
+			<span class="ueffect">{UPGRADE_EFFECTS[auction.upgrade]}</span>
+		</div>
+		<div class="status">
+			<div class="bid">
+				High bid <strong>{auction.highBid}</strong> by <strong>{nameOf(auction.highBidder)}</strong>
+			</div>
+			{#if state.phase === "auction"}
+				<div class="turn">
+					{#if store.myBidTurn}
+						Your bid — raise to at least {minBid} or pass.
+					{:else}
+						Waiting for {nameOf(auction.activeBidder)} to bid…
+					{/if}
+				</div>
+				{#if store.myBidTurn}
+					<div class="controls">
+						<input type="number" min={minBid} max={maxBid} bind:value={store.bidAmount} />
+						<button
+							class="confirm"
+							disabled={store.bidAmount < minBid || store.bidAmount > maxBid}
+							onclick={() => store.confirmBid()}>Bid</button
+						>
+						<button class="pass" onclick={() => store.passBid()}>Pass</button>
+					</div>
+					<div class="hint">
+						You hold {store.myHandValue} credits{#if discount > 0}
+							and get a −{discount} discount on this upgrade{/if} — max bid {maxBid}.
+					</div>
+				{/if}
+			{:else}
+				<div class="turn">
+					{#if store.myPayment}
+						You won — pay {due} credits (bid {auction.highBid}{#if discount > 0}
+							− {discount} discount{/if}).
+					{:else}
+						Waiting for {nameOf(auction.highBidder)} to pay…
+					{/if}
+				</div>
+				{#if store.myPayment}
+					<div class="hint">Select cards from your hand below, then confirm the payment in the action bar.</div>
+				{/if}
+			{/if}
+		</div>
+	</div>
+{/if}
+
+<style>
+	.banner {
+		display: flex;
+		gap: 18px;
+		align-items: flex-start;
+		flex-wrap: wrap;
+		background: linear-gradient(160deg, color-mix(in srgb, var(--gold) 14%, var(--bg-panel)), var(--bg-panel));
+		border: 1px solid var(--gold);
+		border-radius: var(--radius);
+		padding: 12px 16px;
+		animation: glowPulse 2.5s ease-in-out infinite;
+	}
+	.block {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		min-width: 170px;
+	}
+	.label {
+		font-size: 10px;
+		font-weight: 800;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--text-dim);
+	}
+	.uname {
+		font-size: 17px;
+		font-weight: 800;
+		color: var(--gold);
+	}
+	.uvp {
+		font-size: 12px;
+		font-weight: 700;
+		color: var(--text);
+	}
+	.ueffect {
+		font-size: 11px;
+		color: var(--text-dim);
+		max-width: 260px;
+	}
+	.status {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		flex: 1;
+		min-width: 220px;
+	}
+	.bid {
+		font-size: 14px;
+	}
+	.turn {
+		font-size: 13px;
+		color: var(--text);
+		font-weight: 600;
+	}
+	.controls {
+		display: flex;
+		gap: 6px;
+		align-items: center;
+	}
+	.confirm {
+		border-color: var(--gold);
+		font-weight: 700;
+	}
+	.pass {
+		color: var(--text-dim);
+	}
+	.hint {
+		font-size: 11.5px;
+		color: var(--text-dim);
+	}
+</style>
