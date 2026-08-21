@@ -34,8 +34,7 @@ export interface ReplayState {
 export type PendingKind =
 	| { kind: "factory"; factory: FactoryType; cost: number }
 	| { kind: "population"; count: number; cost: number }
-	| { kind: "robots"; count: number; cost: number }
-	| { kind: "payAuction"; cost: number };
+	| { kind: "robots"; count: number; cost: number };
 
 export const PLAYER_COLORS = [
 	"#4f8ef7",
@@ -73,7 +72,7 @@ export const UPGRADE_EFFECTS: Record<Upgrade, string> = {
 	nodule: "+3 population limit (per copy).",
 	scientists: "Produces a Research card each round (per copy).",
 	orbitalLab: "Produces a Microbiotics card each round (per copy).",
-	robots: "Allows buying robots — operators that ignore the population limit (per copy: up to population).",
+	robots: "Allows buying robots, operators that ignore the population limit (per copy: up to population).",
 	laboratory: "Allows research factories; comes with a free research factory.",
 	ecoplants: "Colonists cost 5 instead of 10. −10 on Outpost bids (per copy).",
 	outpost: "Free titanium factory, +5 hand capacity, +5 population limit.",
@@ -216,6 +215,10 @@ export class ViewerStore {
 			!this.replay.active &&
 			s.auction?.highBidder === this.playerIndex
 		);
+	}
+
+	get myPaymentDue(): number {
+		return this.myPayment ? this.auctionDue() : 0;
 	}
 
 	get interactive(): boolean {
@@ -422,7 +425,7 @@ export class ViewerStore {
 	bumpPendingCount(delta: number): void {
 		const me = this.me;
 		const pending = this.pending;
-		if (!me || !pending || pending.kind === "factory" || pending.kind === "payAuction") {
+		if (!me || !pending || pending.kind === "factory") {
 			return;
 		}
 		const unit = pending.kind === "population" ? populationCost(me) : 10;
@@ -431,14 +434,6 @@ export class ViewerStore {
 		const max = Math.max(1, Math.min(cap, affordable));
 		const count = Math.min(max, Math.max(1, pending.count + delta));
 		this.pending = { ...pending, count, cost: count * unit };
-	}
-
-	startAuctionPayment(): void {
-		if (!this.myPayment) {
-			return;
-		}
-		this.cancel();
-		this.pending = { kind: "payAuction", cost: this.auctionDue() };
 	}
 
 	pendingValid(): boolean {
@@ -456,6 +451,17 @@ export class ViewerStore {
 		return true;
 	}
 
+	paymentValid(): boolean {
+		return !!this.me && this.pickTotal() >= this.myPaymentDue;
+	}
+
+	confirmPayment(): void {
+		if (!this.myPayment || !this.paymentValid()) {
+			return;
+		}
+		this.send({ action: "pay", cards: this.cardPick });
+	}
+
 	confirmPending(): void {
 		const pending = this.pending;
 		if (!pending || !this.pendingValid()) {
@@ -471,9 +477,6 @@ export class ViewerStore {
 				break;
 			case "robots":
 				this.send({ action: "buyRobots", count: pending.count, cards });
-				break;
-			case "payAuction":
-				this.send({ action: "pay", cards });
 				break;
 		}
 	}

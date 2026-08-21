@@ -11,11 +11,11 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 			return `Game started with ${entry.players} players`;
 		case "round": {
 			const market = entry.market.map((u) => UPGRADE_SPECS[u].name).join(", ") || "empty";
-			return `Round ${entry.round} — colony ship arrives: ${market}`;
+			return `Round ${entry.round}: colony ship arrives: ${market}`;
 		}
 		case "end": {
 			const scores = entry.scores.map((vp, seat) => `${playerName(state, seat)} ${vp} VP`).join(", ");
-			return `Game over — ${scores}`;
+			return `Game over: ${scores}`;
 		}
 		case "move": {
 			const name = playerName(state, entry.player);

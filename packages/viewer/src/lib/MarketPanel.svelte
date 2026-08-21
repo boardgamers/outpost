@@ -24,7 +24,7 @@
 <div class="market">
 	<div class="caption">Colony upgrades for auction</div>
 	{#if state.market.length === 0}
-		<div class="empty">The market is empty — new upgrades arrive with the next colony ship.</div>
+		<div class="empty">The market is empty. New upgrades arrive with the next colony ship.</div>
 	{:else}
 		<div class="cards">
 			{#each state.market as upgrade, i (i)}

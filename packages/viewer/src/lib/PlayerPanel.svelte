@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { FACTORIES, FACTORY_TYPES, UPGRADE_SPECS, UPGRADES, type GameState, type Resource } from "outpost-engine";
 	import ProductionCardView from "./ProductionCardView.svelte";
-	import { RESOURCE_LABELS, playerColor, type ViewerStore } from "./store.svelte";
+	import { RESOURCE_LABELS, UPGRADE_EFFECTS, playerColor, type ViewerStore } from "./store.svelte";
 
 	interface Props {
 		state: GameState;
@@ -55,7 +55,7 @@
 			{#if orderPos > 0}
 				<span
 					class="order"
-					title="purchase order — buys {orderPos}{orderPos === 1
+					title="purchase order: buys {orderPos}{orderPos === 1
 						? 'st'
 						: orderPos === 2
 							? 'nd'
@@ -113,8 +113,13 @@
 	{#if upgrades.length > 0}
 		<div class="row tags">
 			{#each upgrades as x (x.u)}
-				<span class="utag" title={UPGRADE_SPECS[x.u].name}
-					>{UPGRADE_SPECS[x.u].name}{#if x.n > 1}×{x.n}{/if}</span
+				{@const spec = UPGRADE_SPECS[x.u]}
+				<span
+					class="utag"
+					title="{spec.name}: {spec.vp} VP, list {spec.price}. {UPGRADE_EFFECTS[x.u]}{x.n > 1
+						? ` Owns ${x.n} copies.`
+						: ''}"
+					>{spec.name}{#if x.n > 1}×{x.n}{/if}</span
 				>
 			{/each}
 		</div>

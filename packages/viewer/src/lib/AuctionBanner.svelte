@@ -40,7 +40,7 @@
 			{#if state.phase === "auction"}
 				<div class="turn">
 					{#if store.myBidTurn}
-						Your bid — raise to at least {minBid} or pass.
+						Your bid: raise to at least {minBid} or pass.
 					{:else}
 						Waiting for {nameOf(auction.activeBidder)} to bid…
 					{/if}
@@ -57,21 +57,18 @@
 					</div>
 					<div class="hint">
 						You hold {store.myHandValue} credits{#if discount > 0}
-							and get a −{discount} discount on this upgrade{/if} — max bid {maxBid}.
+							and get a −{discount} discount on this upgrade{/if}. Max bid {maxBid}.
 					</div>
 				{/if}
 			{:else}
 				<div class="turn">
 					{#if store.myPayment}
-						You won — pay {due} credits (bid {auction.highBid}{#if discount > 0}
+						You won: select hand cards worth at least {due} credits and confirm below (bid {auction.highBid}{#if discount > 0}
 							− {discount} discount{/if}).
 					{:else}
 						Waiting for {nameOf(auction.highBidder)} to pay…
 					{/if}
 				</div>
-				{#if store.myPayment}
-					<div class="hint">Select cards from your hand below, then confirm the payment in the action bar.</div>
-				{/if}
 			{/if}
 		</div>
 	</div>

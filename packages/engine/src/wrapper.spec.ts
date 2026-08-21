@@ -104,3 +104,14 @@ test("messages drain once", () => {
 	assert.deepEqual(wrapper.messages(state).messages, []);
 	assert.ok(Array.isArray(first.messages));
 });
+
+test("messages only carry major events: auction wins and game end", () => {
+	const state = play(initGame(4, {}, "messages-major"), 100000);
+	assert.ok(state.ended);
+	const all = wrapper.messages(state).messages;
+	assert.ok(all.length > 0);
+	for (const message of all) {
+		assert.ok(message.startsWith("Game over:") || / won .+ for \d+$/.test(message), `unexpected: ${message}`);
+	}
+	assert.ok(all.some((m) => m.startsWith("Game over:")));
+});

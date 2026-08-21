@@ -110,6 +110,10 @@ function finishGame(state: GameState): void {
 	state.phase = "ended";
 	state.auction = null;
 	state.log.push({ type: "end", scores: scores(state) });
+	const final = scores(state);
+	const best = Math.max(...final);
+	const winners = state.players.filter((_, i) => final[i] === best).map((p) => p.name);
+	state.messages.push(`Game over: ${winners.join(" and ")} win${winners.length > 1 ? "" : "s"} with ${best} VP`);
 }
 
 function activePlayers(state: GameState): number {

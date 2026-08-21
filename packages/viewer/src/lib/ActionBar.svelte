@@ -54,7 +54,7 @@
 		{#if store.iMustDiscard && me}
 			<div class="flow">
 				<span class="hint warn">
-					Over hand capacity — discard {store.discardExcess} more card{store.discardExcess === 1 ? "" : "s"}
+					Over hand capacity: discard {store.discardExcess} more card{store.discardExcess === 1 ? "" : "s"}
 					(selected {pickCount}; research and microbiotics don't count).
 				</span>
 				<button class="confirm" disabled={pickCount === 0} onclick={() => store.confirmDiscard()}>
@@ -63,33 +63,25 @@
 			</div>
 		{:else if store.myPayment && me}
 			<div class="flow">
-				{#if pending?.kind === "payAuction"}
-					<span class="hint">
-						Paying for <strong>{UPGRADE_SPECS[state.auction?.upgrade ?? "dataLibrary"].name}</strong>: selected
-						<strong>{total}</strong> / {pending.cost} credits.
-					</span>
-					<button class="confirm" disabled={!store.pendingValid()} onclick={() => store.confirmPending()}>
-						Pay {pending.cost}
-					</button>
-					<button class="cancel" onclick={() => store.cancel()}>Re-pick cards</button>
-				{:else}
-					<span class="hint gold-hint">
-						You won the auction — select hand cards worth at least {store.auctionDue()} credits, then
-					</span>
-					<button class="confirm" onclick={() => store.startAuctionPayment()}>Select payment…</button>
-				{/if}
+				<span class="hint gold-hint">
+					You won <strong>{UPGRADE_SPECS[state.auction?.upgrade ?? "dataLibrary"].name}</strong>: select hand cards
+					worth at least {store.myPaymentDue} credits (selected <strong>{total}</strong>).
+				</span>
+				<button class="confirm" disabled={!store.paymentValid()} onclick={() => store.confirmPayment()}>
+					Pay {store.myPaymentDue}
+				</button>
 			</div>
 		{:else if store.myActionTurn && me}
 			{#if store.manning}
 				<div class="flow">
 					<span class="hint gold-hint">
-						Assign operators: {store.manningPick.length} / {me.population + me.robots} factories manned — click the factory
+						Assign operators: {store.manningPick.length} / {me.population + me.robots} factories manned. Click the factory
 						chips in your panel to toggle them.
 					</span>
 					<button class="confirm" onclick={() => store.confirmEndTurn()}>Confirm & end turn</button>
 					<button class="cancel" onclick={() => store.cancel()}>Back</button>
 				</div>
-			{:else if pending && pending.kind !== "payAuction"}
+			{:else if pending}
 				<div class="flow">
 					<span class="hint">
 						{#if pending.kind === "factory"}
@@ -115,23 +107,25 @@
 				</div>
 			{:else}
 				<div class="flow wrap">
-					<span class="hint">Your turn — cash {store.myHandValue}:</span>
+					<span class="hint">Your turn. Credits: <strong class="cash">◈ {store.myHandValue}</strong></span>
+					<span class="group-label">New factory:</span>
 					{#each FACTORY_TYPES as type (type)}
 						{@const spec = FACTORIES[type]}
 						{@const reason = factoryReason[type]}
 						<button
 							class="buy res-{type}"
 							disabled={!store.canAffordFactory(type)}
-							title={reason ?? `${RESOURCE_LABELS[type]} factory — ${spec.cost} credits, ${spec.vp} VP`}
+							title={reason ?? `${RESOURCE_LABELS[type]} factory: ${spec.cost} credits, ${spec.vp} VP`}
 							onclick={() => store.startFactoryPayment(type)}
 						>
 							{RESOURCE_LABELS[type]} · {spec.cost}
 						</button>
 					{/each}
+					<span class="group-label">Operators:</span>
 					<button
 						class="buy"
 						disabled={me.population >= store.popMaxOf(store.playerIndex ?? -1) || store.myHandValue < store.popCost}
-						title="Recruit a colonist — {store.popCost} credits{me.upgrades.ecoplants > 0
+						title="Recruit a colonist: {store.popCost} credits{me.upgrades.ecoplants > 0
 							? ' (Ecoplants discount)'
 							: ''}"
 						onclick={() => store.startPopulationPayment()}
@@ -142,7 +136,7 @@
 						<button
 							class="buy"
 							disabled={me.robots >= store.robotMaxOf(store.playerIndex ?? -1) || store.myHandValue < 10}
-							title="Buy a robot — 10 credits"
+							title="Buy a robot: 10 credits"
 							onclick={() => store.startRobotsPayment()}
 						>
 							Robot · 10
@@ -218,5 +212,17 @@
 		margin-left: auto;
 		border-color: var(--gold);
 		font-weight: 700;
+	}
+	.group-label {
+		font-size: 11px;
+		font-weight: 800;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--text-dim);
+		margin-left: 4px;
+		align-self: center;
+	}
+	.cash {
+		color: var(--gold);
 	}
 </style>

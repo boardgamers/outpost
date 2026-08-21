@@ -19,7 +19,7 @@
 	class:selectable
 	class:hidden
 	disabled={!selectable}
-	title="{RESOURCE_LABELS[card.t]}{hidden ? '' : ` — ${card.v} credits`}"
+	title="{RESOURCE_LABELS[card.t]}{hidden ? '' : `: ${card.v} credits`}"
 	{onclick}
 >
 	<span class="value">{hidden ? "?" : card.v}</span>
