@@ -1,40 +1,5 @@
 :root {
-	/* Light theme is the default (the BGS wrapper only adds a `dark` class on
-   <html> for dark mode; no class means light). */
-	--bg: #e9ebe4;
-	--bg-panel: #f5f6f0;
-	--bg-elevated: #ffffff;
-	--line: #c9cec0;
-	--text: #23271f;
-	--text-dim: #68705f;
-	--gold: #2f7fa8;
-	--gold-soft: rgba(47, 127, 168, 0.4);
-	--danger: #c24a3f;
-	/* End-game banner: a mission-accomplished panel, sky-toned on light. */
-	--banner-bg: linear-gradient(160deg, #dceef6, #c3dfeb 65%, #a9d0e0);
-	/* Decorative "star chart" background: cool space glows over a light base. */
-	--bg-decor:
-		radial-gradient(55vmax 55vmax at -8% -8%, rgba(47, 127, 168, 0.24), transparent 62%),
-		radial-gradient(50vmax 50vmax at 108% -4%, rgba(90, 141, 197, 0.22), transparent 62%),
-		radial-gradient(48vmax 48vmax at -4% 108%, rgba(200, 149, 42, 0.18), transparent 62%),
-		radial-gradient(52vmax 52vmax at 108% 108%, rgba(127, 111, 209, 0.2), transparent 62%), var(--bg);
-	/* Resource colors (sci-fi tinted, one per production type). */
-	--ore: #94a0ac;
-	--water: #3f8fd2;
-	--titanium: #c8952a;
-	--research: #7a63d2;
-	--microbiotics: #4aa84f;
-	--newChemicals: #d26db0;
-	--orbitalMedicine: #3fb8b2;
-	--ringOre: #e07b39;
-	--moonOre: #d9b13b;
-	--radius: 10px;
-	--card-w: 44px;
-	--card-h: 60px;
-}
-
-/* Dark theme: applied when the BGS wrapper sets <html class="dark">. */
-html.dark {
+	/* Dark space theme (the only theme). */
 	--bg: #0e1016;
 	--bg-panel: #181b23;
 	--bg-elevated: #21252f;
@@ -44,13 +9,19 @@ html.dark {
 	--gold: #58b6dc;
 	--gold-soft: rgba(88, 182, 220, 0.35);
 	--danger: #e0705f;
+	/* End-game banner: a mission-accomplished panel. */
 	--banner-bg: linear-gradient(160deg, #14222e, #0f1a24);
+	/* Starfield + asteroids: one inline SVG (shapes defined once in <defs>,
+	   scattered via <use> over a 1600x1000 canvas) so it never looks tiled. */
+	--stars: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='1000' viewBox='0 0 1600 1000'%3E%3Cdefs%3E%3Ccircle id='s' r='1.1' fill='rgba(225,232,245,0.8)'/%3E%3Ccircle id='n' r='1.7' fill='rgba(140,200,240,0.8)'/%3E%3Cpath id='a' fill='rgba(150,160,175,0.3)' d='M0-4.2 3-3 4.8 0 3 3.6 -1.2 4.8 -4.2 2.4 -4.8-1.8 -2.4-4.2Z'/%3E%3C/defs%3E%3Cg fill='rgba(225,232,245,0.8)'%3E%3Cuse href='%23s' x='1538' y='834' opacity='0.40'/%3E%3Cuse href='%23s' x='691' y='389' opacity='0.65'/%3E%3Cuse href='%23s' x='867' y='510' opacity='0.48'/%3E%3Cuse href='%23s' x='1002' y='416' opacity='0.77'/%3E%3Cuse href='%23s' x='562' y='801' opacity='0.78'/%3E%3Cuse href='%23s' x='1497' y='772' opacity='0.60'/%3E%3Cuse href='%23s' x='762' y='740' opacity='0.84'/%3E%3Cuse href='%23s' x='517' y='845' opacity='0.76'/%3E%3Cuse href='%23s' x='537' y='235' opacity='0.35'/%3E%3Cuse href='%23s' x='174' y='266' opacity='0.66'/%3E%3Cuse href='%23s' x='543' y='579' opacity='0.67'/%3E%3Cuse href='%23s' x='576' y='864' opacity='0.72'/%3E%3Cuse href='%23s' x='1345' y='540' opacity='0.77'/%3E%3Cuse href='%23s' x='441' y='737' opacity='0.82'/%3E%3Cuse href='%23s' x='831' y='58' opacity='0.57'/%3E%3Cuse href='%23s' x='1501' y='939' opacity='0.61'/%3E%3Cuse href='%23s' x='1562' y='737' opacity='0.85'/%3E%3Cuse href='%23s' x='200' y='153' opacity='0.61'/%3E%3Cuse href='%23s' x='1599' y='837' opacity='0.63'/%3E%3Cuse href='%23s' x='1013' y='804' opacity='0.64'/%3E%3Cuse href='%23s' x='1000' y='291' opacity='0.38'/%3E%3Cuse href='%23s' x='974' y='939' opacity='0.61'/%3E%3Cuse href='%23s' x='115' y='45' opacity='0.36'/%3E%3Cuse href='%23s' x='237' y='154' opacity='0.68'/%3E%3Cuse href='%23s' x='1141' y='877' opacity='0.44'/%3E%3Cuse href='%23s' x='1559' y='722' opacity='0.58'/%3E%3Cuse href='%23s' x='70' y='11' opacity='0.71'/%3E%3Cuse href='%23s' x='346' y='960' opacity='0.44'/%3E%3Cuse href='%23s' x='1473' y='675' opacity='0.68'/%3E%3Cuse href='%23s' x='372' y='651' opacity='0.85'/%3E%3Cuse href='%23s' x='1042' y='476' opacity='0.68'/%3E%3Cuse href='%23s' x='664' y='46' opacity='0.60'/%3E%3Cuse href='%23s' x='977' y='724' opacity='0.57'/%3E%3Cuse href='%23s' x='480' y='407' opacity='0.69'/%3E%3Cuse href='%23s' x='1114' y='544' opacity='0.76'/%3E%3Cuse href='%23s' x='1536' y='836' opacity='0.69'/%3E%3Cuse href='%23s' x='293' y='879' opacity='0.70'/%3E%3Cuse href='%23s' x='456' y='569' opacity='0.57'/%3E%3Cuse href='%23s' x='1440' y='530' opacity='0.42'/%3E%3Cuse href='%23s' x='895' y='919' opacity='0.84'/%3E%3Cuse href='%23s' x='206' y='43' opacity='0.41'/%3E%3Cuse href='%23s' x='1200' y='587' opacity='0.38'/%3E%3Cuse href='%23s' x='1363' y='504' opacity='0.61'/%3E%3Cuse href='%23s' x='1461' y='766' opacity='0.74'/%3E%3Cuse href='%23s' x='17' y='420' opacity='0.39'/%3E%3Cuse href='%23s' x='688' y='679' opacity='0.80'/%3E%3Cuse href='%23s' x='1545' y='981' opacity='0.60'/%3E%3Cuse href='%23s' x='1145' y='467' opacity='0.76'/%3E%3Cuse href='%23s' x='1575' y='36' opacity='0.47'/%3E%3Cuse href='%23s' x='402' y='524' opacity='0.77'/%3E%3Cuse href='%23s' x='997' y='355' opacity='0.59'/%3E%3Cuse href='%23s' x='312' y='103' opacity='0.47'/%3E%3Cuse href='%23s' x='1419' y='931' opacity='0.85'/%3E%3Cuse href='%23s' x='310' y='127' opacity='0.55'/%3E%3Cuse href='%23s' x='699' y='225' opacity='0.78'/%3E%3Cuse href='%23s' x='598' y='494' opacity='0.74'/%3E%3Cuse href='%23s' x='1579' y='542' opacity='0.75'/%3E%3Cuse href='%23s' x='957' y='309' opacity='0.51'/%3E%3Cuse href='%23s' x='1214' y='359' opacity='0.54'/%3E%3Cuse href='%23s' x='602' y='130' opacity='0.42'/%3E%3Cuse href='%23s' x='1201' y='7' opacity='0.67'/%3E%3Cuse href='%23s' x='230' y='243' opacity='0.54'/%3E%3Cuse href='%23s' x='1029' y='764' opacity='0.58'/%3E%3Cuse href='%23s' x='246' y='452' opacity='0.46'/%3E%3Cuse href='%23s' x='831' y='124' opacity='0.52'/%3E%3Cuse href='%23s' x='445' y='862' opacity='0.59'/%3E%3Cuse href='%23s' x='452' y='802' opacity='0.47'/%3E%3Cuse href='%23s' x='43' y='336' opacity='0.38'/%3E%3Cuse href='%23s' x='1589' y='633' opacity='0.47'/%3E%3Cuse href='%23s' x='271' y='289' opacity='0.46'/%3E%3Cuse href='%23s' x='355' y='642' opacity='0.75'/%3E%3Cuse href='%23s' x='919' y='257' opacity='0.57'/%3E%3Cuse href='%23s' x='412' y='826' opacity='0.66'/%3E%3Cuse href='%23s' x='851' y='651' opacity='0.53'/%3E%3Cuse href='%23s' x='1072' y='57' opacity='0.44'/%3E%3Cuse href='%23s' x='323' y='79' opacity='0.75'/%3E%3Cuse href='%23s' x='337' y='38' opacity='0.82'/%3E%3Cuse href='%23s' x='1217' y='175' opacity='0.43'/%3E%3Cuse href='%23s' x='1440' y='426' opacity='0.53'/%3E%3Cuse href='%23s' x='343' y='290' opacity='0.83'/%3E%3Cuse href='%23s' x='464' y='527' opacity='0.47'/%3E%3Cuse href='%23s' x='725' y='485' opacity='0.47'/%3E%3Cuse href='%23s' x='493' y='3' opacity='0.49'/%3E%3Cuse href='%23s' x='287' y='816' opacity='0.57'/%3E%3Cuse href='%23s' x='448' y='758' opacity='0.62'/%3E%3Cuse href='%23s' x='650' y='34' opacity='0.65'/%3E%3Cuse href='%23s' x='1344' y='828' opacity='0.74'/%3E%3Cuse href='%23s' x='222' y='311' opacity='0.42'/%3E%3Cuse href='%23s' x='1103' y='610' opacity='0.66'/%3E%3Cuse href='%23s' x='1595' y='945' opacity='0.74'/%3E%3Cuse href='%23s' x='898' y='220' opacity='0.74'/%3E%3Cuse href='%23s' x='1149' y='580' opacity='0.74'/%3E%3Cuse href='%23s' x='447' y='616' opacity='0.58'/%3E%3Cuse href='%23s' x='593' y='499' opacity='0.72'/%3E%3Cuse href='%23s' x='779' y='245' opacity='0.62'/%3E%3Cuse href='%23s' x='205' y='263' opacity='0.66'/%3E%3Cuse href='%23s' x='1302' y='130' opacity='0.51'/%3E%3Cuse href='%23s' x='179' y='921' opacity='0.40'/%3E%3Cuse href='%23s' x='786' y='274' opacity='0.39'/%3E%3Cuse href='%23s' x='660' y='681' opacity='0.66'/%3E%3Cuse href='%23s' x='1322' y='848' opacity='0.52'/%3E%3Cuse href='%23s' x='275' y='932' opacity='0.47'/%3E%3Cuse href='%23s' x='696' y='310' opacity='0.73'/%3E%3Cuse href='%23s' x='323' y='858' opacity='0.47'/%3E%3Cuse href='%23s' x='297' y='164' opacity='0.37'/%3E%3Cuse href='%23s' x='1365' y='620' opacity='0.79'/%3E%3Cuse href='%23s' x='1126' y='663' opacity='0.73'/%3E%3Cuse href='%23s' x='1515' y='916' opacity='0.51'/%3E%3Cuse href='%23s' x='927' y='203' opacity='0.79'/%3E%3Cuse href='%23s' x='1061' y='633' opacity='0.49'/%3E%3Cuse href='%23s' x='606' y='903' opacity='0.84'/%3E%3Cuse href='%23s' x='57' y='787' opacity='0.69'/%3E%3Cuse href='%23s' x='1198' y='272' opacity='0.45'/%3E%3Cuse href='%23s' x='1050' y='190' opacity='0.75'/%3E%3Cuse href='%23s' x='459' y='248' opacity='0.72'/%3E%3Cuse href='%23s' x='932' y='193' opacity='0.52'/%3E%3Cuse href='%23s' x='1377' y='446' opacity='0.65'/%3E%3Cuse href='%23s' x='1342' y='715' opacity='0.73'/%3E%3Cuse href='%23s' x='414' y='542' opacity='0.47'/%3E%3Cuse href='%23s' x='1401' y='22' opacity='0.74'/%3E%3Cuse href='%23n' x='958' y='834' fill='rgba(140,200,240,0.8)' opacity='0.63'/%3E%3Cuse href='%23n' x='217' y='551' fill='%23b0a0f0' opacity='0.67'/%3E%3Cuse href='%23n' x='1595' y='54' fill='%23b0a0f0' opacity='0.61'/%3E%3Cuse href='%23n' x='1528' y='225' fill='%23f0c878' opacity='0.92'/%3E%3Cuse href='%23n' x='1205' y='261' fill='%23b0a0f0' opacity='0.67'/%3E%3Cuse href='%23n' x='999' y='1' fill='%23f0c878' opacity='0.56'/%3E%3Cuse href='%23n' x='1426' y='652' fill='%23f0c878' opacity='0.86'/%3E%3Cuse href='%23n' x='630' y='20' fill='%23b0a0f0' opacity='0.55'/%3E%3Cuse href='%23n' x='1031' y='910' fill='rgba(140,200,240,0.8)' opacity='0.56'/%3E%3Cuse href='%23n' x='903' y='224' fill='rgba(140,200,240,0.8)' opacity='0.89'/%3E%3Cuse href='%23n' x='561' y='539' fill='%23f0c878' opacity='0.72'/%3E%3Cuse href='%23n' x='614' y='429' fill='%23b0a0f0' opacity='0.96'/%3E%3Cuse href='%23n' x='838' y='895' fill='%23f0c878' opacity='0.76'/%3E%3Cuse href='%23n' x='1231' y='764' fill='rgba(140,200,240,0.8)' opacity='0.69'/%3E%3Cuse href='%23n' x='1325' y='406' fill='%23f0c878' opacity='0.79'/%3E%3Cuse href='%23n' x='544' y='50' fill='%23b0a0f0' opacity='0.78'/%3E%3Cuse href='%23n' x='293' y='394' fill='%23b0a0f0' opacity='0.96'/%3E%3Cuse href='%23n' x='14' y='687' fill='rgba(140,200,240,0.8)' opacity='0.80'/%3E%3Cuse href='%23n' x='990' y='83' fill='%23f0c878' opacity='0.90'/%3E%3Cuse href='%23n' x='1371' y='136' fill='rgba(140,200,240,0.8)' opacity='0.62'/%3E%3Cuse href='%23n' x='48' y='516' fill='rgba(140,200,240,0.8)' opacity='0.87'/%3E%3Cuse href='%23n' x='607' y='889' fill='%23b0a0f0' opacity='0.92'/%3E%3Cuse href='%23n' x='16' y='698' fill='rgba(140,200,240,0.8)' opacity='0.82'/%3E%3Cuse href='%23n' x='772' y='7' fill='%23b0a0f0' opacity='0.90'/%3E%3Cuse href='%23n' x='550' y='434' fill='%23f0c878' opacity='0.71'/%3E%3Cuse href='%23n' x='1021' y='55' fill='%23f0c878' opacity='0.78'/%3E%3Cuse href='%23n' x='491' y='180' fill='%23b0a0f0' opacity='0.55'/%3E%3Cuse href='%23n' x='1514' y='224' fill='%23f0c878' opacity='0.64'/%3E%3Cuse href='%23a' transform='translate(813 33) rotate(349) scale(0.83)' opacity='0.62'/%3E%3Cuse href='%23a' transform='translate(662 68) rotate(20) scale(0.77)' opacity='0.64'/%3E%3Cuse href='%23a' transform='translate(1536 460) rotate(95) scale(0.98)' opacity='0.51'/%3E%3Cuse href='%23a' transform='translate(75 314) rotate(237) scale(1.55)' opacity='0.73'/%3E%3Cuse href='%23a' transform='translate(1110 331) rotate(342) scale(1.27)' opacity='0.83'/%3E%3Cuse href='%23a' transform='translate(47 224) rotate(245) scale(1.36)' opacity='0.84'/%3E%3Cuse href='%23a' transform='translate(745 581) rotate(331) scale(1.69)' opacity='0.86'/%3E%3C/g%3E%3C/svg%3E");
 	--bg-decor:
-		radial-gradient(120vmax 90vmax at 50% 40%, transparent 55%, rgba(0, 0, 0, 0.5) 100%),
+		var(--stars), radial-gradient(120vmax 90vmax at 50% 40%, transparent 55%, rgba(0, 0, 0, 0.5) 100%),
 		radial-gradient(60vmax 60vmax at -10% -10%, rgba(47, 127, 168, 0.2), transparent 60%),
 		radial-gradient(55vmax 55vmax at 110% -5%, rgba(90, 141, 197, 0.16), transparent 60%),
 		radial-gradient(50vmax 50vmax at -5% 110%, rgba(200, 149, 42, 0.14), transparent 60%),
 		radial-gradient(55vmax 55vmax at 110% 110%, rgba(127, 111, 209, 0.16), transparent 60%), var(--bg);
+	--bg-decor-size: 1600px 1000px, auto, auto, auto, auto, auto;
+	/* Resource colors (sci-fi tinted, one per production type). */
 	--ore: #a8b4c0;
 	--water: #5aa5e0;
 	--titanium: #d9a53a;
@@ -60,6 +31,9 @@ html.dark {
 	--orbitalMedicine: #55ccc6;
 	--ringOre: #f08c48;
 	--moonOre: #e8c550;
+	--radius: 10px;
+	--card-w: 44px;
+	--card-h: 60px;
 }
 
 * {
@@ -72,6 +46,7 @@ html.dark {
    out the decor. The doubled `:root` outranks `html.dark`. */
 :root:root {
 	background: var(--bg-decor);
+	background-size: var(--bg-decor-size, auto);
 	background-attachment: fixed;
 }
 

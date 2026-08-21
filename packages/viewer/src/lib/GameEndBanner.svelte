@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { VICTORY_VP } from "outpost-engine";
-	import type { ViewerStore } from "./store.svelte";
+	import { playerColor, type ViewerStore } from "./store.svelte";
 
 	interface Props {
 		store: ViewerStore;
@@ -11,6 +11,7 @@
 	const ranks = $derived(store.finalRankings);
 	const scores = $derived(store.finalScores);
 	const winners = $derived(state?.ended ? ranks.map((r, i) => (r === 1 ? i : -1)).filter((i) => i >= 0) : []);
+	const maxScore = $derived(Math.max(1, ...scores));
 </script>
 
 {#if state?.ended}
@@ -25,14 +26,37 @@
 		</p>
 		<table>
 			<thead>
-				<tr><th>#</th><th>Player</th><th>VP</th><th>Factories</th><th>Upgrades</th></tr>
+				<tr><th>#</th><th>Player</th><th>VP</th><th></th><th>Factories</th><th>Upgrades</th></tr>
 			</thead>
 			<tbody>
 				{#each state.players.map((p, i) => ({ p, i })).sort((a, b) => ranks[a.i]! - ranks[b.i]!) as row (row.i)}
 					<tr class:winner={ranks[row.i] === 1}>
-						<td>{ranks[row.i]}</td>
-						<td>{row.p.name}</td>
-						<td>{scores[row.i]}</td>
+						<td class="rank">
+							{#if ranks[row.i] === 1}
+								<svg class="medal" viewBox="0 0 24 24" width="16" height="16" aria-label="winner">
+									<circle cx="12" cy="13" r="6" />
+									<path d="M12 10.2l.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2-1.45-1.4 2-.3z" class="star" />
+									<path d="M8.5 7.5 6 2h4l2 4 2-4h4l-2.5 5.5" class="ribbon" />
+								</svg>
+							{:else}
+								{ranks[row.i]}
+							{/if}
+						</td>
+						<td>
+							<span class="dot" style="background: {playerColor(row.i)}"></span>
+							{row.p.name}
+						</td>
+						<td class="score">{scores[row.i]}</td>
+						<td class="barcell">
+							<span class="bar">
+								<span
+									class="fill"
+									style="width: {Math.round(((scores[row.i] ?? 0) / maxScore) * 100)}%; background: {playerColor(
+										row.i
+									)}"
+								></span>
+							</span>
+						</td>
 						<td>{row.p.factories.length}</td>
 						<td>{Object.values(row.p.upgrades).reduce((a, b) => a + b, 0)}</td>
 					</tr>
@@ -64,13 +88,14 @@
 	table {
 		border-collapse: collapse;
 		width: 100%;
-		max-width: 460px;
+		max-width: 560px;
 	}
 	th,
 	td {
 		text-align: left;
-		padding: 4px 12px 4px 0;
+		padding: 5px 12px 5px 0;
 		font-size: 13px;
+		vertical-align: middle;
 	}
 	th {
 		color: var(--text-dim);
@@ -79,6 +104,50 @@
 	tr.winner td {
 		color: var(--gold);
 		font-weight: 700;
+	}
+	.rank {
+		width: 24px;
+	}
+	.medal {
+		fill: var(--gold);
+		display: block;
+	}
+	.medal .star {
+		fill: var(--bg-elevated);
+	}
+	.medal .ribbon {
+		fill: none;
+		stroke: var(--gold);
+		stroke-width: 1.6;
+		stroke-linejoin: round;
+	}
+	.dot {
+		display: inline-block;
+		width: 9px;
+		height: 9px;
+		border-radius: 50%;
+		margin-right: 6px;
+		vertical-align: middle;
+	}
+	.score {
+		font-weight: 800;
+	}
+	.barcell {
+		width: 40%;
+		padding-right: 18px;
+	}
+	.bar {
+		display: block;
+		height: 8px;
+		border-radius: 4px;
+		background: color-mix(in srgb, var(--text) 12%, transparent);
+		overflow: hidden;
+	}
+	.bar .fill {
+		display: block;
+		height: 100%;
+		border-radius: 4px;
+		transition: width 0.4s ease;
 	}
 	.target {
 		margin: 10px 0 0;

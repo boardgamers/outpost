@@ -5,28 +5,14 @@ import { createStore } from "./lib/store.svelte";
 import type { Emitter } from "./lib/emitter";
 import "./lib/theme.css";
 
-// The BGS wrapper page sets <html class="dark"> for the initial paint, and the
-// shim re-emits { dark } on the launch emitter as "theme" whenever the site
-// theme changes. Light is the default (no `dark` class), so theme.css defines
-// light tokens on :root and overrides them under html.dark.
-function applyTheme(dark: boolean): void {
-	document.documentElement.classList.toggle("dark", dark);
-}
-
 export function launch(selector: string): Emitter {
 	const target = document.querySelector(selector);
 	if (!target) {
 		throw new Error(`outpost-viewer: no element matches "${selector}"`);
 	}
 
-	// Initial paint: the wrapper already set the class.
-	applyTheme(document.documentElement.classList.contains("dark"));
-
 	const bridge = launchBridge();
 	const store = createStore(bridge);
-
-	// Live theme changes via the emitter (shim re-emits the theme message).
-	bridge.on("theme", ({ dark }) => applyTheme(dark));
 
 	mount(App, {
 		target,

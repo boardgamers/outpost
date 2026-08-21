@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { FACTORIES, FACTORY_TYPES, UPGRADE_SPECS, UPGRADES, type GameState, type Resource } from "outpost-engine";
 	import ProductionCardView from "./ProductionCardView.svelte";
+	import ResourceIcon from "./ResourceIcon.svelte";
 	import { RESOURCE_LABELS, UPGRADE_EFFECTS, playerColor, type ViewerStore } from "./store.svelte";
 
 	interface Props {
@@ -101,7 +102,9 @@
 						disabled={!manning}
 						title={manning ? "toggle operator" : factory.manned ? "manned" : "unmanned"}
 						onclick={() => store.toggleManning(factory.index)}
-					></button>
+					>
+						<ResourceIcon resource={group.type} size={manning ? 12 : 10} />
+					</button>
 				{/each}
 			</span>
 		{/each}
@@ -272,21 +275,26 @@
 		border: 1px solid color-mix(in srgb, var(--res) 45%, transparent);
 	}
 	.chip {
-		width: 14px;
-		height: 14px;
-		border-radius: 50%;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 18px;
+		height: 18px;
+		border-radius: 5px;
 		border: 1.5px solid var(--res);
 		background: transparent;
+		color: var(--res);
 		padding: 0;
 	}
 	.chip.manned {
 		background: var(--res);
+		color: var(--res-text);
 		box-shadow: 0 0 4px color-mix(in srgb, var(--res) 70%, transparent);
 	}
 	.chip.toggle {
 		cursor: pointer;
-		width: 18px;
-		height: 18px;
+		width: 22px;
+		height: 22px;
 	}
 	.chip.toggle:hover {
 		transform: scale(1.15);

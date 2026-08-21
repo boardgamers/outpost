@@ -8,6 +8,7 @@
 	import GameEndBanner from "./lib/GameEndBanner.svelte";
 	import ReplayBar from "./lib/ReplayBar.svelte";
 	import LogFeed from "./lib/LogFeed.svelte";
+	import SpaceScene from "./lib/SpaceScene.svelte";
 
 	interface Props {
 		store: ViewerStore;
@@ -17,6 +18,8 @@
 	let { store, onPlayerClick }: Props = $props();
 	const state = $derived(store.state);
 </script>
+
+<SpaceScene />
 
 {#if state}
 	<div class="board">
@@ -54,6 +57,8 @@
 
 <style>
 	.board {
+		position: relative;
+		z-index: 1;
 		display: flex;
 		flex-direction: column;
 		gap: 12px;

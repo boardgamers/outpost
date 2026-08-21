@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { FACTORIES, FACTORY_TYPES, UPGRADE_SPECS } from "outpost-engine";
+	import ResourceIcon from "./ResourceIcon.svelte";
 	import { RESOURCE_LABELS, type ViewerStore } from "./store.svelte";
 
 	interface Props {
@@ -118,6 +119,7 @@
 							title={reason ?? `${RESOURCE_LABELS[type]} factory: ${spec.cost} credits, ${spec.vp} VP`}
 							onclick={() => store.startFactoryPayment(type)}
 						>
+							<ResourceIcon resource={type} size={13} />
 							{RESOURCE_LABELS[type]} · {spec.cost}
 						</button>
 					{/each}
@@ -190,6 +192,9 @@
 		font-weight: 600;
 	}
 	.buy {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
 		padding: 5px 10px;
 		font-size: 12.5px;
 		font-weight: 700;
@@ -200,6 +205,9 @@
 	.buy.res-research,
 	.buy.res-newChemicals {
 		border-color: color-mix(in srgb, var(--res) 65%, transparent);
+	}
+	.buy[class*="res-"] :global(.res-icon) {
+		color: var(--res);
 	}
 	.confirm {
 		border-color: var(--gold);

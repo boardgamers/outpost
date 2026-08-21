@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ProductionCard } from "outpost-engine";
+	import ResourceIcon from "./ResourceIcon.svelte";
 	import { RESOURCE_LABELS } from "./store.svelte";
 
 	interface Props {
@@ -22,6 +23,7 @@
 	title="{RESOURCE_LABELS[card.t]}{hidden ? '' : `: ${card.v} credits`}"
 	{onclick}
 >
+	<span class="icon"><ResourceIcon resource={card.t} size={13} /></span>
 	<span class="value">{hidden ? "?" : card.v}</span>
 	<span class="label">{RESOURCE_LABELS[card.t]}</span>
 </button>
@@ -50,6 +52,11 @@
 		transition:
 			transform 0.12s ease,
 			box-shadow 0.12s ease;
+	}
+	.icon {
+		display: inline-flex;
+		opacity: 0.85;
+		line-height: 0;
 	}
 	.value {
 		font-size: 16px;
