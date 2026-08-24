@@ -1,5 +1,5 @@
 import { FACTORY_TYPES } from "./types.js";
-import type { FactoryType, Move } from "./types.js";
+import type { FactoryType, Move, TurnBuy } from "./types.js";
 
 // Moves arrive as untrusted JSON from the network and are stored verbatim in
 // the game log. Rebuild every move as a fresh literal with exactly the
@@ -36,6 +36,38 @@ function intArray(value: unknown, label: string): number[] {
 	return value.map((v) => int(v, `${label} entry`, 0, 10_000));
 }
 
+const MAX_BUYS = 50;
+
+function buyArray(value: unknown): TurnBuy[] {
+	if (value === undefined) {
+		return [];
+	}
+	if (!Array.isArray(value)) {
+		fail("buys must be an array");
+	}
+	if (value.length > MAX_BUYS) {
+		fail("buys is too large");
+	}
+	return value.map((raw): TurnBuy => {
+		const entry = record(raw);
+		switch (entry.buy) {
+			case "factory": {
+				const factory = entry.factory;
+				if (typeof factory !== "string" || !FACTORY_TYPES.includes(factory as FactoryType)) {
+					fail("unknown factory type");
+				}
+				return { buy: "factory", factory: factory as FactoryType, cards: intArray(entry.cards, "cards") };
+			}
+			case "population":
+				return { buy: "population", count: int(entry.count, "count", 1, 100), cards: intArray(entry.cards, "cards") };
+			case "robots":
+				return { buy: "robots", count: int(entry.count, "count", 1, 100), cards: intArray(entry.cards, "cards") };
+			default:
+				fail("unknown buy kind");
+		}
+	});
+}
+
 export function sanitizeMove(raw: unknown): Move {
 	const move = record(raw);
 	const action = move.action;
@@ -57,19 +89,8 @@ export function sanitizeMove(raw: unknown): Move {
 			return { action };
 		case "pay":
 			return { action, cards: intArray(move.cards, "cards") };
-		case "buyFactory": {
-			const factory = move.factory;
-			if (typeof factory !== "string" || !FACTORY_TYPES.includes(factory as FactoryType)) {
-				fail("unknown factory type");
-			}
-			return { action, factory: factory as FactoryType, cards: intArray(move.cards, "cards") };
-		}
-		case "buyPopulation":
-			return { action, count: int(move.count, "count", 1, 100), cards: intArray(move.cards, "cards") };
-		case "buyRobots":
-			return { action, count: int(move.count, "count", 1, 100), cards: intArray(move.cards, "cards") };
 		case "endTurn":
-			return { action, manned: intArray(move.manned, "manned") };
+			return { action, buys: buyArray(move.buys), manned: intArray(move.manned, "manned") };
 		default:
 			fail(`unknown action ${action}`);
 	}

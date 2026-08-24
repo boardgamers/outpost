@@ -9,9 +9,18 @@
 
 	let { store }: Props = $props();
 
-	const state = $derived(store.liveState);
+	const state = $derived(store.state);
 	const me = $derived(store.me);
 	const pending = $derived(store.pending);
+	const staged = $derived(
+		store.turnBuys.map((buy) =>
+			buy.buy === "factory"
+				? `${RESOURCE_LABELS[buy.factory]} factory`
+				: buy.buy === "population"
+					? `${buy.count} colonist${buy.count === 1 ? "" : "s"}`
+					: `${buy.count} robot${buy.count === 1 ? "" : "s"}`
+		)
+	);
 	const total = $derived(store.pickTotal());
 	const pickCount = $derived(store.cardPick.length);
 	const needsResearch = $derived(pending?.kind === "factory" && FACTORIES[pending.factory].needsResearchCard === true);
@@ -78,6 +87,9 @@
 					<span class="hint gold-hint">
 						Assign operators: {store.manningPick.length} / {me.population + me.robots} factories manned. Click the factory
 						chips in your panel to toggle them.
+						{#if staged.length > 0}
+							Ending the turn also confirms: {staged.join(", ")}.
+						{/if}
 					</span>
 					<button class="confirm" onclick={() => store.confirmEndTurn()}>Confirm & end turn</button>
 					<button class="cancel" onclick={() => store.cancel()}>Back</button>
@@ -146,6 +158,14 @@
 					{/if}
 					<button class="end" onclick={() => store.startManning()}>End turn…</button>
 				</div>
+				{#if staged.length > 0}
+					<div class="flow">
+						<span class="hint gold-hint">
+							Staged this turn: {staged.join(", ")} — sent when you end the turn (undo to open an auction).
+						</span>
+						<button class="cancel" onclick={() => store.undoBuy()}>Undo last</button>
+					</div>
+				{/if}
 				<div class="flow">
 					<span class="hint dim">
 						Click a market upgrade to auction it, or a buy button and then the hand cards to pay with.

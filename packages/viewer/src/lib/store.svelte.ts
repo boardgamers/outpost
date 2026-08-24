@@ -2,6 +2,7 @@ import {
 	FACTORIES,
 	UPGRADE_SPECS,
 	applyMove,
+	applyTurnBuy,
 	canBuyFactory,
 	countingHandSize,
 	describeLog,
@@ -20,6 +21,7 @@ import {
 	type GameState,
 	type Move,
 	type PlayerState,
+	type TurnBuy,
 	type Upgrade,
 } from "outpost-engine";
 import type { ViewerBridge } from "./bgs.svelte";
@@ -98,6 +100,12 @@ export class ViewerStore {
 	manning = $state(false);
 	manningPick = $state<number[]>([]);
 
+	// Purchases staged this turn. They are only sent to the server as part of
+	// the endTurn move (the whole turn is one move); until then `draft` holds
+	// the live state with the staged buys applied, and it is what the UI shows.
+	turnBuys = $state<TurnBuy[]>([]);
+	private draft = $state<GameState | null>(null);
+
 	constructor(private bridge: ViewerBridge) {
 		bridge.on("state", (state) => this.setState(state));
 		bridge.on("player", ({ index }) => {
@@ -113,7 +121,10 @@ export class ViewerStore {
 	}
 
 	get state(): GameState | null {
-		return this.replay.active ? this.replay.state : this.liveState;
+		if (this.replay.active) {
+			return this.replay.state;
+		}
+		return this.draft ?? this.liveState;
 	}
 
 	private setState(state: GameState): void {
@@ -124,7 +135,34 @@ export class ViewerStore {
 			this.cancel();
 			this.lastMoveAt = Date.now();
 		}
+		this.rebuildDraft();
 		this.bridge.replaceLog(this.logLines);
+	}
+
+	// Re-apply the staged buys on top of the (new) live state; drop them when
+	// they no longer apply (turn is over, or the server state moved on).
+	private rebuildDraft(): void {
+		if (this.turnBuys.length === 0) {
+			this.draft = null;
+			return;
+		}
+		const s = this.liveState;
+		if (!s || s.ended || this.playerIndex === undefined || s.phase !== "actions" || s.activeSeat !== this.playerIndex) {
+			this.turnBuys = [];
+			this.draft = null;
+			return;
+		}
+		try {
+			const clone = JSON.parse(JSON.stringify(s)) as GameState;
+			const player = clone.players[this.playerIndex] as PlayerState;
+			for (const buy of this.turnBuys) {
+				applyTurnBuy(clone, player, buy);
+			}
+			this.draft = clone;
+		} catch {
+			this.turnBuys = [];
+			this.draft = null;
+		}
 	}
 
 	private onGamelog(payload: { start: number; end?: number; data: unknown }): void {
@@ -173,7 +211,7 @@ export class ViewerStore {
 	}
 
 	get me(): PlayerState | null {
-		const s = this.liveState;
+		const s = this.draft ?? this.liveState;
 		return s && this.playerIndex !== undefined ? (s.players[this.playerIndex] ?? null) : null;
 	}
 
@@ -328,7 +366,9 @@ export class ViewerStore {
 	openAuction(marketIndex: number): void {
 		const s = this.liveState;
 		const upgrade = s?.market[marketIndex];
-		if (!this.myActionTurn || upgrade === undefined) {
+		// Staged buys reference the current hand; an auction payment would shift
+		// those indices. Auction first, then stage purchases (undo re-enables it).
+		if (!this.myActionTurn || upgrade === undefined || this.turnBuys.length > 0) {
 			return;
 		}
 		this.cancel();
@@ -462,23 +502,45 @@ export class ViewerStore {
 		this.send({ action: "pay", cards: this.cardPick });
 	}
 
+	// Stage the purchase locally: it is only sent with the endTurn move. Card
+	// indices are relative to the draft hand, which is exactly how the engine
+	// applies the steps in order.
 	confirmPending(): void {
 		const pending = this.pending;
-		if (!pending || !this.pendingValid()) {
+		if (!pending || !this.pendingValid() || this.playerIndex === undefined) {
 			return;
 		}
 		const cards = this.cardPick;
-		switch (pending.kind) {
-			case "factory":
-				this.send({ action: "buyFactory", factory: pending.factory, cards });
-				break;
-			case "population":
-				this.send({ action: "buyPopulation", count: pending.count, cards });
-				break;
-			case "robots":
-				this.send({ action: "buyRobots", count: pending.count, cards });
-				break;
+		const buy: TurnBuy =
+			pending.kind === "factory"
+				? { buy: "factory", factory: pending.factory, cards }
+				: pending.kind === "population"
+					? { buy: "population", count: pending.count, cards }
+					: { buy: "robots", count: pending.count, cards };
+		const base = this.draft ?? this.liveState;
+		if (!base) {
+			return;
 		}
+		try {
+			const clone = JSON.parse(JSON.stringify(base)) as GameState;
+			applyTurnBuy(clone, clone.players[this.playerIndex] as PlayerState, buy);
+			this.draft = clone;
+			this.turnBuys = [...this.turnBuys, buy];
+		} catch {
+			return;
+		}
+		this.cardPick = [];
+		this.pending = null;
+	}
+
+	undoBuy(): void {
+		if (this.turnBuys.length === 0) {
+			return;
+		}
+		this.turnBuys = this.turnBuys.slice(0, -1);
+		this.cardPick = [];
+		this.pending = null;
+		this.rebuildDraft();
 	}
 
 	confirmDiscard(): void {
@@ -521,7 +583,10 @@ export class ViewerStore {
 		if (!this.manning) {
 			return;
 		}
-		this.send({ action: "endTurn", manned: this.manningPick });
+		const move: Move = { action: "endTurn", buys: this.turnBuys, manned: this.manningPick };
+		this.turnBuys = [];
+		this.draft = null;
+		this.send(move);
 	}
 
 	cancel(): void {

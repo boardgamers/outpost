@@ -32,14 +32,20 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 					return `${name} passes on the auction`;
 				case "pay":
 					return `${name} buys ${info?.upgrade ? UPGRADE_SPECS[info.upgrade].name : "the upgrade"} (paid ${info?.paid ?? 0})`;
-				case "buyFactory":
-					return `${name} builds a ${FACTORIES[move.factory] ? move.factory : "?"} factory (paid ${info?.paid ?? 0})`;
-				case "buyPopulation":
-					return `${name} recruits ${move.count} colonist(s) (paid ${info?.paid ?? 0})`;
-				case "buyRobots":
-					return `${name} buys ${move.count} robot(s) (paid ${info?.paid ?? 0})`;
-				case "endTurn":
-					return `${name} ends their turn (${move.manned.length} factories manned)`;
+				case "endTurn": {
+					const buys = (move.buys ?? []).map((buy) => {
+						switch (buy.buy) {
+							case "factory":
+								return `builds a ${FACTORIES[buy.factory] ? buy.factory : "?"} factory`;
+							case "population":
+								return `recruits ${buy.count} colonist(s)`;
+							case "robots":
+								return `buys ${buy.count} robot(s)`;
+						}
+					});
+					const spent = buys.length > 0 ? `${buys.join(", ")} (paid ${info?.paid ?? 0}), then ` : "";
+					return `${name} ${spent}ends their turn (${move.manned.length} factories manned)`;
+				}
 				default:
 					return `${name} moves`;
 			}

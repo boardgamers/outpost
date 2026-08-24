@@ -85,16 +85,25 @@ export interface AuctionState {
 	activeBidder: number;
 }
 
+/**
+ * A purchase step inside an endTurn move. Card indices are relative to the hand
+ * as it stands when the step applies (earlier steps have removed their cards).
+ */
+export type TurnBuy =
+	| { buy: "factory"; factory: FactoryType; cards: number[] }
+	| { buy: "population"; count: number; cards: number[] }
+	| { buy: "robots"; count: number; cards: number[] };
+
+// A player's whole action turn (purchases + manning) is one endTurn move: the
+// platform grants time per persisted move, so splitting a turn into many moves
+// would farm extra time. Auctions stay separate moves (they interleave seats).
 export type Move =
 	| { action: "discard"; cards: number[] }
 	| { action: "auction"; marketIndex: number; bid: number }
 	| { action: "bid"; amount: number }
 	| { action: "bidPass" }
 	| { action: "pay"; cards: number[] }
-	| { action: "buyFactory"; factory: FactoryType; cards: number[] }
-	| { action: "buyPopulation"; count: number; cards: number[] }
-	| { action: "buyRobots"; count: number; cards: number[] }
-	| { action: "endTurn"; manned: number[] };
+	| { action: "endTurn"; buys: TurnBuy[]; manned: number[] };
 
 export type LogEntry =
 	| { type: "init"; players: number; seed: string; options: Record<string, unknown> }
@@ -114,6 +123,12 @@ export interface MoveInfo {
 	paid?: number;
 	upgrade?: Upgrade;
 	discarded?: number;
+	/**
+	 * Seats auto-passed out of the auction by this move (public bound or the
+	 * autoPassBids setting). Replay applies these verbatim: the true-value check
+	 * cannot be recomputed from a stripped log.
+	 */
+	autoPassed?: number[];
 }
 
 export interface GameState {
@@ -141,6 +156,4 @@ export interface GameState {
 	moveCount: number;
 	ended: boolean;
 	messages: string[];
-	/** Action of the most recently applied move (drives toSave checkpointing). */
-	lastAction?: Move["action"];
 }

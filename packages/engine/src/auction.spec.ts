@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { UPGRADE_SPECS } from "./data.js";
 import { applyMove, initGame } from "./moves.js";
-import { handValue, upgradeDiscount, victoryPoints } from "./state.js";
-import type { GameState, PlayerState, ProductionCard } from "./types.js";
+import { replay } from "./replay.js";
+import { handValue, publicMaxBid, upgradeDiscount, victoryPoints } from "./state.js";
+import { stripSecret } from "../wrapper.js";
+import type { GameState, PlayerState, ProductionCard, Upgrade } from "./types.js";
 
 function fixedGame(): GameState {
 	const state = initGame(3, {}, "auction-spec");
@@ -176,4 +179,51 @@ test("upgrade effects: outpost grants capacity, population max, free titanium fa
 	assert.equal(player.factories.filter((f) => f.type === "titanium").length, 1);
 	assert.equal(player.factories.at(-1)?.manned, false);
 	assert.equal(victoryPoints(player), before + 5);
+});
+
+test("auction: true-value auto-passes are logged and replay identically (stripped too)", () => {
+	const state = initGame(3, {}, "autopass-replay-spec");
+	const opener = state.activeSeat;
+	const order = state.purchaseOrder;
+	const weak = order[(order.indexOf(opener) + 1) % order.length] as number;
+	// Stay within hand capacity (10): the replayed round entry must not trigger a discard phase.
+	const richHand = (): ProductionCard[] => Array.from({ length: 10 }, () => ({ t: "water", v: 10 }));
+	const weakHand = (): ProductionCard[] => Array.from({ length: 8 }, () => ({ t: "water", v: 1 }));
+	// Hands must come from the round entry too, so the replayed game sees them.
+	const roundEntry = state.log.find((e) => e.type === "round");
+	assert.ok(roundEntry && roundEntry.type === "round");
+	for (const rec of roundEntry.produced) {
+		rec.cards = rec.player === weak ? weakHand() : richHand();
+	}
+	for (const p of state.players) {
+		p.hand = richHand();
+	}
+	(state.players[weak] as PlayerState).hand = weakHand();
+	(state.players[weak] as PlayerState).settings.autoPassBids = true;
+
+	const upgrade = state.market[0] as Upgrade;
+	const bid = UPGRADE_SPECS[upgrade].price;
+	// The regression needs the TRUE-VALUE branch: the public bound could still
+	// beat the bid, only the real hand value (8) cannot.
+	assert.ok(publicMaxBid(state, weak, upgrade) > bid);
+	assert.ok(handValue(state.players[weak] as PlayerState) < bid);
+
+	applyMove(state, { action: "auction", marketIndex: 0, bid }, opener);
+	assert.ok(state.auction?.passed.includes(weak));
+	const entry = state.log.at(-1);
+	assert.ok(entry?.type === "move" && entry.info?.autoPassed?.includes(weak));
+
+	applyMove(state, { action: "bidPass" }, state.auction?.activeBidder as number);
+	assert.equal(state.phase, "auctionPayment");
+	assert.equal(state.auction?.highBidder, opener);
+
+	const replayed = replay(state);
+	assert.equal(replayed.phase, "auctionPayment");
+	assert.deepEqual(replayed.auction?.passed, state.auction?.passed);
+
+	// A stripped log (weak player's values hidden from this viewer) must replay too.
+	const viewer = order[(order.indexOf(opener) + 2) % order.length] as number;
+	const replayedStripped = replay(stripSecret(state, viewer));
+	assert.equal(replayedStripped.phase, "auctionPayment");
+	assert.deepEqual(replayedStripped.auction?.passed, state.auction?.passed);
 });

@@ -312,10 +312,6 @@ export function availableMoves(state: GameState, player?: number): string[] {
 			if (state.market.length > 0) {
 				moves.push("auction");
 			}
-			moves.push("buyFactory", "buyPopulation");
-			if (p.upgrades.robots > 0) {
-				moves.push("buyRobots");
-			}
 			return moves;
 		}
 		default:

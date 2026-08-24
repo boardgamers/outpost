@@ -148,20 +148,14 @@ export function playerSettings(data: GameState, player: number): Record<string, 
 	return { autoPassBids: data.players[player]?.settings.autoPassBids === true };
 }
 
-// Persist only at meaningful checkpoints (a full turn completed, an auction
-// resolved, discards finalized, or the game ending). Intermediate moves —
-// opening an auction, placing a bid, passing, buying a factory/colonist/robot —
-// return undefined so the platform skips the write. Each toSave costs the
-// platform time, and the game is fully replayable from the log, so skipping
-// intermediate saves is safe: the acting player's viewer still gets the
-// tentative state via logSlice, and the next checkpoint persists everything.
-const SAVE_ACTIONS = new Set(["endTurn", "pay", "discard"]);
-
-export function toSave(data: GameState): GameState | undefined {
-	if (data.ended || (data.lastAction !== undefined && SAVE_ACTIONS.has(data.lastAction))) {
-		return data;
-	}
-	return undefined;
+// Every state must be persisted: the platform keeps no memory between requests
+// (each move reloads the saved state), bids interleave seats so they cannot be
+// resent as one player's tentative turn, and dropPlayer / setPlayerSettings
+// also persist through toSave. Time farming via many small moves is prevented
+// structurally instead: a whole action turn (purchases + manning) is a single
+// composite endTurn move.
+export function toSave(data: GameState): GameState {
+	return data;
 }
 
 export function messages(data: GameState): { messages: string[]; data: GameState } {

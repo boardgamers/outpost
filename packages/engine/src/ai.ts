@@ -1,7 +1,7 @@
 import { FACTORIES, PRODUCTION_DECKS, UPGRADE_SPECS } from "./data.js";
 import { applyMove } from "./moves.js";
 import { canBuyFactory, handCapacity, handValue, populationCost, populationMax, upgradeDiscount } from "./state.js";
-import type { GameState, Move, PlayerState, Upgrade } from "./types.js";
+import type { GameState, Move, PlayerState, TurnBuy, Upgrade } from "./types.js";
 
 /** Pick a legal (and mildly sensible) move for the player, then apply it. */
 export function moveAI(state: GameState, seat: number): GameState {
@@ -90,32 +90,60 @@ function chooseAction(state: GameState, player: PlayerState): Move {
 		return { action: "auction", marketIndex: bestIndex, bid: UPGRADE_SPECS[upgrade].price };
 	}
 
-	// 2. Recruit population while there are factories to man.
-	const unmanned = player.factories.length - (player.population + player.robots);
-	if (unmanned > 0 && player.population < populationMax(player) && cash >= populationCost(player)) {
-		return { action: "buyPopulation", count: 1, cards: choosePayment(player, populationCost(player)) };
-	}
+	return chooseTurn(player);
+}
 
-	// 3. Expand production while there are operators (or room) for it.
-	for (const type of ["titanium", "water", "ore"] as const) {
-		const cost = FACTORIES[type].cost;
-		if (
-			canBuyFactory(player, type) &&
-			cash >= cost &&
-			player.factories.length < populationMax(player) + player.robots
-		) {
-			if (type === "titanium" || cash >= cost + populationCost(player)) {
-				return { action: "buyFactory", factory: type, cards: choosePayment(player, cost) };
-			}
+/** Greedily assemble a whole turn (purchases + manning) as one composite endTurn move. */
+function chooseTurn(player: PlayerState): Move {
+	// Simulate the buys on a private copy so each step's card indices are
+	// relative to the hand as the engine will see it at that step.
+	const sim = JSON.parse(JSON.stringify(player)) as PlayerState;
+	const buys: TurnBuy[] = [];
+	const spend = (due: number): number[] => {
+		const cards = choosePayment(sim, due);
+		for (const i of [...cards].sort((a, b) => b - a)) {
+			sim.hand.splice(i, 1);
 		}
+		return cards;
+	};
+
+	for (let guard = 0; guard < 100; guard++) {
+		const cash = handValue(sim);
+
+		// 2. Recruit population while there are factories to man.
+		const unmanned = sim.factories.length - (sim.population + sim.robots);
+		if (unmanned > 0 && sim.population < populationMax(sim) && cash >= populationCost(sim)) {
+			const cards = spend(populationCost(sim));
+			buys.push({ buy: "population", count: 1, cards });
+			sim.population += 1;
+			continue;
+		}
+
+		// 3. Expand production while there are operators (or room) for it.
+		const type = (["titanium", "water", "ore"] as const).find((t) => {
+			const cost = FACTORIES[t].cost;
+			return (
+				canBuyFactory(sim, t) &&
+				cash >= cost &&
+				sim.factories.length < populationMax(sim) + sim.robots &&
+				(t === "titanium" || cash >= cost + populationCost(sim))
+			);
+		});
+		if (type) {
+			const cards = spend(FACTORIES[type].cost);
+			buys.push({ buy: "factory", factory: type, cards });
+			sim.factories.push({ type, manned: false });
+			continue;
+		}
+		break;
 	}
 
 	// 4. Man the most valuable factories and end the turn.
-	const operators = player.population + player.robots;
-	const manned = player.factories
+	const operators = sim.population + sim.robots;
+	const manned = sim.factories
 		.map((factory, index) => ({ index, value: PRODUCTION_DECKS[factory.type].average }))
 		.sort((a, b) => b.value - a.value)
 		.slice(0, operators)
 		.map((e) => e.index);
-	return { action: "endTurn", manned };
+	return { action: "endTurn", buys, manned };
 }

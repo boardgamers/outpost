@@ -98,9 +98,8 @@ test("dropPlayer removes the player from play and can end the game", async () =>
 	assert.equal(ranks.length, 3);
 });
 
-test("toSave persists only at checkpoints, not intermediate moves", () => {
+test("toSave persists every state (the platform has no memory between moves)", () => {
 	const state = initGame(3, {}, "tosave-spec");
-	// Give everyone a comfortable hand so auctions/bids/buys are legal.
 	for (const p of state.players) {
 		p.hand = [
 			{ t: "water", v: 10 },
@@ -111,42 +110,26 @@ test("toSave persists only at checkpoints, not intermediate moves", () => {
 			{ t: "water", v: 10 },
 		];
 	}
-	// Opening an auction / bidding are intermediate: no save.
+	// Every move must be saved: bids come from different seats, and drops or
+	// settings changes also persist through toSave.
 	const opener = state.activeSeat;
 	applyMove(state, { action: "auction", marketIndex: 0, bid: 25 }, opener);
-	assert.equal(wrapper.toSave(state), undefined);
+	assert.equal(wrapper.toSave(state), state);
 	const bidder = state.auction?.activeBidder as number;
 	applyMove(state, { action: "bid", amount: 30 }, bidder);
-	assert.equal(wrapper.toSave(state), undefined);
-	// Everyone else passes until the auction resolves to a payment.
+	assert.equal(wrapper.toSave(state), state);
 	let guard = 0;
 	while (state.phase === "auction" && guard++ < 20) {
 		applyMove(state, { action: "bidPass" }, state.auction?.activeBidder as number);
 	}
 	assert.equal(state.phase, "auctionPayment");
-	// Resolve the auction: the winner pays -> checkpoint.
-	const winner = state.auction?.highBidder as number;
-	const hand = state.players[winner]?.hand ?? [];
-	applyMove(state, { action: "pay", cards: hand.map((_, i) => i) }, winner);
-	assert.ok(wrapper.toSave(state));
-	// Buying a factory is intermediate: no save.
-	const me = state.players[state.activeSeat];
-	if (me && me.hand.length > 0) {
-		const before = state.moveCount;
-		applyMove(state, { action: "buyFactory", factory: "ore", cards: me.hand.map((_, i) => i) }, state.activeSeat);
-		if (state.moveCount > before) {
-			assert.equal(wrapper.toSave(state), undefined);
-		}
-	}
-	// Ending the turn is a checkpoint.
-	applyMove(state, { action: "endTurn", manned: [] }, state.activeSeat);
-	assert.ok(wrapper.toSave(state));
+	assert.equal(wrapper.toSave(state), state);
 });
 
-test("toSave always persists a finished game", () => {
+test("toSave persists a finished game", () => {
 	const state = play(initGame(4, {}, "tosave-end"), 100000);
 	assert.ok(state.ended);
-	assert.ok(wrapper.toSave(state));
+	assert.equal(wrapper.toSave(state), state);
 });
 
 test("messages drain once", () => {

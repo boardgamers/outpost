@@ -10,14 +10,13 @@ import {
 	mustAutoPassBid,
 	populationCost,
 	populationMax,
-	publicMaxBid,
 	robotMax,
 	scores,
 	setup,
 	upgradeDiscount,
 } from "./state.js";
 import { sanitizeMove } from "./sanitize.js";
-import type { GameState, Move, MoveInfo, PlayerState, ProductionCard, Upgrade } from "./types.js";
+import type { GameState, Move, MoveInfo, PlayerState, ProductionCard, TurnBuy, Upgrade } from "./types.js";
 
 /** Safety valve: no sane game lasts anywhere near this long. */
 export const MAX_ROUNDS = 200;
@@ -29,6 +28,16 @@ let replayMode = false;
 
 export function setReplayMode(value: boolean): void {
 	replayMode = value;
+}
+
+// Seats the currently replayed move auto-passed out of the auction (from the
+// logged MoveInfo). The live auto-pass check can use true hand values (the
+// autoPassBids setting), which a stripped log cannot recompute, so replay
+// applies the recorded seats verbatim instead.
+let replayAutoPassed: number[] = [];
+
+export function setReplayAutoPassed(seats: number[]): void {
+	replayAutoPassed = seats;
 }
 
 export function initGame(players: number, options: Record<string, unknown>, seed: string): GameState {
@@ -203,15 +212,6 @@ export function applyMove(state: GameState, rawMove: Move | unknown, seat: numbe
 		case "pay":
 			info = movePay(state, move, seat, player);
 			break;
-		case "buyFactory":
-			info = moveBuyFactory(state, move, seat, player);
-			break;
-		case "buyPopulation":
-			info = moveBuyPopulation(state, move, seat, player);
-			break;
-		case "buyRobots":
-			info = moveBuyRobots(state, move, seat, player);
-			break;
 		case "endTurn":
 			info = moveEndTurn(state, move, seat, player);
 			break;
@@ -220,7 +220,6 @@ export function applyMove(state: GameState, rawMove: Move | unknown, seat: numbe
 	}
 
 	state.moveCount += 1;
-	state.lastAction = move.action;
 	state.log.push(info ? { type: "move", player: seat, move, info } : { type: "move", player: seat, move });
 	postMove(state, move);
 	return state;
@@ -295,8 +294,9 @@ function moveAuction(
 		passed: [],
 		activeBidder: seat,
 	};
-	advanceBidder(state);
-	return { upgrade };
+	const autoPassed: number[] = [];
+	advanceBidder(state, autoPassed);
+	return autoPassed.length > 0 ? { upgrade, autoPassed } : { upgrade };
 }
 
 function assertCanPayBid(player: PlayerState, upgrade: Upgrade, bid: number): void {
@@ -319,7 +319,7 @@ function biddingOrder(state: GameState): number[] {
 	return order.map((_, i) => order[(start + i) % order.length] as number);
 }
 
-function advanceBidder(state: GameState): void {
+function advanceBidder(state: GameState, autoPassed?: number[]): void {
 	const auction = state.auction;
 	if (!auction) {
 		err("no auction in progress");
@@ -337,16 +337,14 @@ function advanceBidder(state: GameState): void {
 		}
 		const p = state.players[seat];
 		if (p && !p.dropped && !auction.passed.includes(seat)) {
-			// Auto-pass a bidder who can't beat the high bid. During replay the
-			// public bound is recomputed identically from the stripped log, but a
-			// true-value auto-pass (the autoPassBids setting) can't be — so in
-			// replay only the public bound is used, and the logged bidPass entries
-			// that true-value passes produced are skipped as already-applied.
-			const autoPass = replayMode
-				? publicMaxBid(state, seat, auction.upgrade) <= auction.highBid
-				: mustAutoPassBid(state, seat);
+			// Auto-pass a bidder who can't beat the high bid (public bound, or true
+			// hand value when they opted into autoPassBids). The seats are recorded
+			// in the move's info so replay reproduces them verbatim — the true-value
+			// check cannot be recomputed from a stripped log.
+			const autoPass = replayMode ? replayAutoPassed.includes(seat) : mustAutoPassBid(state, seat);
 			if (autoPass) {
 				auction.passed.push(seat);
+				autoPassed?.push(seat);
 				continue;
 			}
 			auction.activeBidder = seat;
@@ -370,8 +368,9 @@ function moveBid(state: GameState, move: Move & { action: "bid" }, seat: number,
 	assertCanPayBid(player, auction.upgrade, move.amount);
 	auction.highBid = move.amount;
 	auction.highBidder = seat;
-	advanceBidder(state);
-	return { upgrade: auction.upgrade };
+	const autoPassed: number[] = [];
+	advanceBidder(state, autoPassed);
+	return autoPassed.length > 0 ? { upgrade: auction.upgrade, autoPassed } : { upgrade: auction.upgrade };
 }
 
 function moveBidPass(state: GameState, _move: Move & { action: "bidPass" }, seat: number): MoveInfo {
@@ -380,8 +379,9 @@ function moveBidPass(state: GameState, _move: Move & { action: "bidPass" }, seat
 		err("not this player's turn to bid");
 	}
 	auction.passed.push(seat);
-	advanceBidder(state);
-	return { upgrade: auction.upgrade };
+	const autoPassed: number[] = [];
+	advanceBidder(state, autoPassed);
+	return autoPassed.length > 0 ? { upgrade: auction.upgrade, autoPassed } : { upgrade: auction.upgrade };
 }
 
 function movePay(state: GameState, move: Move & { action: "pay" }, seat: number, player: PlayerState): MoveInfo {
@@ -413,68 +413,50 @@ function movePay(state: GameState, move: Move & { action: "pay" }, seat: number,
 	return { upgrade, paid };
 }
 
-function moveBuyFactory(
-	state: GameState,
-	move: Move & { action: "buyFactory" },
-	seat: number,
-	player: PlayerState
-): MoveInfo {
-	requireActionTurn(state, seat, player);
-	const type = move.factory;
-	const spec = FACTORIES[type];
-	if (!canBuyFactory(player, type)) {
-		err(`cannot build ${type} factories`);
+/** Apply one purchase step of a turn. Validates against the current state and mutates it; returns the amount paid. */
+export function applyTurnBuy(state: GameState, player: PlayerState, buy: TurnBuy): number {
+	switch (buy.buy) {
+		case "factory": {
+			const spec = FACTORIES[buy.factory];
+			if (!canBuyFactory(player, buy.factory)) {
+				err(`cannot build ${buy.factory} factories`);
+			}
+			const indices = sanitizeIndices(buy.cards, player.hand.length, "buy factory");
+			if (spec.needsResearchCard && !indices.some((i) => player.hand[i]?.t === "research")) {
+				err("buying a New Chemicals factory requires spending a research card");
+			}
+			const paid = spendCards(state, player, indices, spec.cost);
+			player.factories.push({ type: buy.factory, manned: false });
+			return paid;
+		}
+		case "population": {
+			if (!Number.isInteger(buy.count) || buy.count < 1) {
+				err("invalid population count");
+			}
+			if (player.population + buy.count > populationMax(player)) {
+				err(`population limit is ${populationMax(player)}`);
+			}
+			const indices = sanitizeIndices(buy.cards, player.hand.length, "buy population");
+			const paid = spendCards(state, player, indices, populationCost(player) * buy.count);
+			player.population += buy.count;
+			return paid;
+		}
+		case "robots": {
+			if (player.upgrades.robots === 0) {
+				err("requires the Robots upgrade");
+			}
+			if (!Number.isInteger(buy.count) || buy.count < 1) {
+				err("invalid robot count");
+			}
+			if (player.robots + buy.count > robotMax(player)) {
+				err(`robot limit is ${robotMax(player)}`);
+			}
+			const indices = sanitizeIndices(buy.cards, player.hand.length, "buy robots");
+			const paid = spendCards(state, player, indices, ROBOT_COST * buy.count);
+			player.robots += buy.count;
+			return paid;
+		}
 	}
-	const indices = sanitizeIndices(move.cards, player.hand.length, "buyFactory");
-	if (spec.needsResearchCard && !indices.some((i) => player.hand[i]?.t === "research")) {
-		err("buying a New Chemicals factory requires spending a research card");
-	}
-	const paid = spendCards(state, player, indices, spec.cost);
-	player.factories.push({ type, manned: false });
-	return { paid };
-}
-
-function moveBuyPopulation(
-	state: GameState,
-	move: Move & { action: "buyPopulation" },
-	seat: number,
-	player: PlayerState
-): MoveInfo {
-	requireActionTurn(state, seat, player);
-	const count = move.count;
-	if (!Number.isInteger(count) || count < 1) {
-		err("invalid population count");
-	}
-	if (player.population + count > populationMax(player)) {
-		err(`population limit is ${populationMax(player)}`);
-	}
-	const indices = sanitizeIndices(move.cards, player.hand.length, "buyPopulation");
-	const paid = spendCards(state, player, indices, populationCost(player) * count);
-	player.population += count;
-	return { paid };
-}
-
-function moveBuyRobots(
-	state: GameState,
-	move: Move & { action: "buyRobots" },
-	seat: number,
-	player: PlayerState
-): MoveInfo {
-	requireActionTurn(state, seat, player);
-	if (player.upgrades.robots === 0) {
-		err("requires the Robots upgrade");
-	}
-	const count = move.count;
-	if (!Number.isInteger(count) || count < 1) {
-		err("invalid robot count");
-	}
-	if (player.robots + count > robotMax(player)) {
-		err(`robot limit is ${robotMax(player)}`);
-	}
-	const indices = sanitizeIndices(move.cards, player.hand.length, "buyRobots");
-	const paid = spendCards(state, player, indices, ROBOT_COST * count);
-	player.robots += count;
-	return { paid };
 }
 
 function moveEndTurn(
@@ -484,6 +466,19 @@ function moveEndTurn(
 	player: PlayerState
 ): MoveInfo {
 	requireActionTurn(state, seat, player);
+	// A multi-step move must reject without mutating anything: dry-run the whole
+	// turn on a clone first (the state is JSON-serializable by invariant, and no
+	// step draws randomness, so the second run is identical).
+	runTurn(JSON.parse(JSON.stringify(state)) as GameState, seat, move);
+	return runTurn(state, seat, move);
+}
+
+function runTurn(state: GameState, seat: number, move: Move & { action: "endTurn" }): MoveInfo {
+	const player = state.players[seat] as PlayerState;
+	let paid = 0;
+	for (const buy of move.buys) {
+		paid += applyTurnBuy(state, player, buy);
+	}
 	const manned = sanitizeIndices(move.manned, player.factories.length, "endTurn");
 	if (manned.length > player.population + player.robots) {
 		err(`only ${player.population + player.robots} operators available`);
@@ -492,7 +487,7 @@ function moveEndTurn(
 		factory.manned = manned.includes(i);
 	});
 	player.done = true;
-	return {};
+	return move.buys.length > 0 ? { paid } : {};
 }
 
 export function dropPlayer(state: GameState, seat: number): GameState {
