@@ -31,13 +31,18 @@
 				{@const spec = UPGRADE_SPECS[upgrade]}
 				{@const open = pick?.marketIndex === i}
 				{@const due = myDue(upgrade)}
+				{@const blocked = store.turnBuys.length > 0}
 				<div class="slot">
 					<button
 						class="ucard"
 						class:open
-						class:clickable={store.myActionTurn}
-						disabled={!store.myActionTurn}
-						title={store.myActionTurn ? "Put up for auction" : spec.name}
+						class:clickable={store.myActionTurn && !blocked}
+						disabled={!store.myActionTurn || blocked}
+						title={store.myActionTurn
+							? blocked
+								? "Undo your staged purchases to open an auction (auctions come first)"
+								: "Put up for auction"
+							: spec.name}
 						onclick={() => (open ? store.cancel() : store.openAuction(i))}
 					>
 						<span class="uname">{spec.name}</span>

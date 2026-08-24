@@ -47,6 +47,24 @@
 				return "";
 		}
 	});
+	const idleOperators = $derived(me ? Math.max(0, me.population + me.robots - store.manningPick.length) : 0);
+	const idleFactories = $derived(me ? me.factories.length - store.manningPick.length : 0);
+
+	// Preselect sensible cards when a payment or discard is asked of the player
+	// (adjustable by clicking cards; one suggestion per context).
+	$effect(() => {
+		if (store.autoSuggested) {
+			return;
+		}
+		if (store.myPayment) {
+			store.autoSuggested = true;
+			store.suggestPayment(store.myPaymentDue);
+		} else if (store.iMustDiscard) {
+			store.autoSuggested = true;
+			store.suggestDiscard();
+		}
+	});
+
 	const factoryReason = $derived.by((): Partial<Record<(typeof FACTORY_TYPES)[number], string>> => {
 		if (!me) {
 			return {};
@@ -85,8 +103,13 @@
 			{#if store.manning}
 				<div class="flow">
 					<span class="hint gold-hint">
-						Assign operators: {store.manningPick.length} / {me.population + me.robots} factories manned. Click the factory
-						chips in your panel to toggle them.
+						Assign operators — click the glowing factory chips in your panel to toggle them.
+						<strong>{store.manningPick.length} / {me.factories.length}</strong> factories manned.
+						{#if idleOperators > 0 && idleFactories > 0}
+							<span class="warn">
+								{Math.min(idleOperators, idleFactories)} more could be manned.
+							</span>
+						{/if}
 						{#if staged.length > 0}
 							Ending the turn also confirms: {staged.join(", ")}.
 						{/if}
@@ -156,7 +179,7 @@
 							Robot · 10
 						</button>
 					{/if}
-					<button class="end" onclick={() => store.startManning()}>End turn…</button>
+					<button class="end" onclick={() => store.startManning()}>Assign operators & end turn…</button>
 				</div>
 				{#if staged.length > 0}
 					<div class="flow">

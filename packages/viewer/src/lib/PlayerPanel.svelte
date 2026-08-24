@@ -42,6 +42,9 @@
 	});
 	const manning = $derived(store.manning && isMe);
 	const operators = $derived(player.population + player.robots);
+	const pickTotal = $derived(isMe ? store.pickTotal() : 0);
+	const pickRequired = $derived(isMe ? store.pickRequired : null);
+	const pickCount = $derived(isMe ? store.cardPick.length : 0);
 </script>
 
 <div
@@ -83,12 +86,15 @@
 		<span title="hand cards counting toward capacity / hand capacity (research and microbiotics are exempt)">
 			🂠 {store.countingOf(index)}/{store.handCapOf(index)}
 		</span>
+		{#if isMe}
+			<span class="cash" title="total hand value in credits">◈ {store.myHandValue}</span>
+		{/if}
 		{#if player.done && !state.ended}
 			<span class="done" title="has ended their turn this round">✓ done</span>
 		{/if}
 	</div>
 
-	<div class="row chips">
+	<div class="row chips" class:manning>
 		{#each factories as group (group.type)}
 			<span
 				class="fgroup res-{group.type}"
@@ -111,6 +117,9 @@
 		{#if factories.length === 0}
 			<span class="none">no factories</span>
 		{/if}
+		{#if manning}
+			<span class="assign">← click to assign your {operators} operator{operators === 1 ? "" : "s"}</span>
+		{/if}
 	</div>
 
 	{#if upgrades.length > 0}
@@ -128,6 +137,24 @@
 		</div>
 	{/if}
 
+	{#if isMe && pickCount > 0}
+		<div class="row picksum">
+			{#if pickRequired !== null}
+				<span class="total" class:short={pickTotal < pickRequired} class:ok={pickTotal >= pickRequired}>
+					◈ {pickTotal} / {pickRequired} selected
+				</span>
+				{#if pickTotal > pickRequired}
+					<span class="lost" title="overpaid credits are lost: the colony gives no change">
+						{pickTotal - pickRequired} overpaid
+					</span>
+				{/if}
+			{:else}
+				<span class="total">
+					{pickCount} card{pickCount === 1 ? "" : "s"} selected · ◈ {pickTotal}
+				</span>
+			{/if}
+		</div>
+	{/if}
 	<div class="row hand">
 		{#if isMe}
 			{#each player.hand as card, i (i)}
@@ -298,6 +325,38 @@
 	}
 	.chip.toggle:hover {
 		transform: scale(1.15);
+	}
+	.chips.manning .fgroup {
+		border-color: var(--gold);
+		box-shadow: 0 0 6px color-mix(in srgb, var(--gold) 45%, transparent);
+		animation: glowPulse 2s ease-in-out infinite;
+	}
+	.assign {
+		color: var(--gold);
+		font-size: 11.5px;
+		font-weight: 700;
+	}
+	.stats .cash {
+		color: var(--gold);
+		font-weight: 700;
+	}
+	.picksum {
+		font-size: 12px;
+		gap: 8px;
+	}
+	.picksum .total {
+		font-weight: 800;
+		color: var(--text);
+	}
+	.picksum .total.ok {
+		color: var(--microbiotics);
+	}
+	.picksum .total.short {
+		color: var(--danger);
+	}
+	.picksum .lost {
+		color: var(--text-dim);
+		font-size: 11px;
 	}
 	.utag {
 		font-size: 10px;

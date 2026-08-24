@@ -1,5 +1,6 @@
 import {
 	FACTORIES,
+	PRODUCTION_DECKS,
 	UPGRADE_SPECS,
 	applyMove,
 	applyTurnBuy,
@@ -99,6 +100,8 @@ export class ViewerStore {
 	bidAmount = $state(0);
 	manning = $state(false);
 	manningPick = $state<number[]>([]);
+	/** One auto card-suggestion per context (payment due, discard); reset by cancel(). */
+	autoSuggested = $state(false);
 
 	// Purchases staged this turn. They are only sent to the server as part of
 	// the endTurn move (the whole turn is one move); until then `draft` holds
@@ -344,6 +347,75 @@ export class ViewerStore {
 		return this.cardPick.reduce((sum, i) => sum + (me.hand[i]?.v ?? 0), 0);
 	}
 
+	/** Credits the current selection must reach (buy being paid, or auction payment). */
+	get pickRequired(): number | null {
+		if (this.pending) {
+			return this.pending.cost;
+		}
+		if (this.myPayment) {
+			return this.myPaymentDue;
+		}
+		return null;
+	}
+
+	/** Preselect a payment: smallest cards first (keeps the big ones), research card forced in when required. */
+	suggestPayment(due: number, mustIncludeResearch = false): void {
+		const me = this.me;
+		if (!me) {
+			return;
+		}
+		const picked: number[] = [];
+		let total = 0;
+		if (mustIncludeResearch) {
+			const research = me.hand
+				.map((card, index) => ({ card, index }))
+				.filter(({ card }) => card.t === "research")
+				.sort((a, b) => a.card.v - b.card.v)[0];
+			if (research) {
+				picked.push(research.index);
+				total += research.card.v;
+			}
+		}
+		const ascending = me.hand
+			.map((card, index) => ({ card, index }))
+			.filter(({ index }) => !picked.includes(index))
+			.sort((a, b) => a.card.v - b.card.v);
+		for (const { card, index } of ascending) {
+			if (total >= due) {
+				break;
+			}
+			picked.push(index);
+			total += card.v;
+		}
+		if (total < due) {
+			this.cardPick = [];
+			return;
+		}
+		// Prune overpay: drop picked cards (smallest first) that aren't needed.
+		for (const { card, index } of ascending) {
+			const at = picked.indexOf(index);
+			if (at >= 0 && total - card.v >= due) {
+				picked.splice(at, 1);
+				total -= card.v;
+			}
+		}
+		this.cardPick = picked;
+	}
+
+	/** Preselect the cheapest counting cards to get back under the hand cap. */
+	suggestDiscard(): void {
+		const me = this.me;
+		if (!me) {
+			return;
+		}
+		this.cardPick = me.hand
+			.map((card, index) => ({ card, index }))
+			.filter(({ card }) => card.t !== "research" && card.t !== "microbiotics")
+			.sort((a, b) => a.card.v - b.card.v)
+			.slice(0, this.discardExcess)
+			.map((e) => e.index);
+	}
+
 	canBuy(type: FactoryType): boolean {
 		const me = this.me;
 		return !!me && canBuyFactory(me, type);
@@ -435,6 +507,7 @@ export class ViewerStore {
 		}
 		this.cancel();
 		this.pending = { kind: "factory", factory, cost: FACTORIES[factory].cost };
+		this.suggestPayment(FACTORIES[factory].cost, FACTORIES[factory].needsResearchCard === true);
 	}
 
 	startPopulationPayment(): void {
@@ -448,6 +521,7 @@ export class ViewerStore {
 		}
 		this.cancel();
 		this.pending = { kind: "population", count: 1, cost };
+		this.suggestPayment(cost);
 	}
 
 	startRobotsPayment(): void {
@@ -460,6 +534,7 @@ export class ViewerStore {
 		}
 		this.cancel();
 		this.pending = { kind: "robots", count: 1, cost: 10 };
+		this.suggestPayment(10);
 	}
 
 	bumpPendingCount(delta: number): void {
@@ -474,6 +549,7 @@ export class ViewerStore {
 		const max = Math.max(1, Math.min(cap, affordable));
 		const count = Math.min(max, Math.max(1, pending.count + delta));
 		this.pending = { ...pending, count, cost: count * unit };
+		this.suggestPayment(count * unit);
 	}
 
 	pendingValid(): boolean {
@@ -563,7 +639,21 @@ export class ViewerStore {
 		}
 		this.cancel();
 		this.manning = true;
-		this.manningPick = me.factories.flatMap((f, i) => (f.manned ? [i] : [])).slice(0, me.population + me.robots);
+		// Sensible default: keep last round's assignment, then fill any spare
+		// operators into the most productive unmanned factories (deck average).
+		const operators = me.population + me.robots;
+		const pick = me.factories.flatMap((f, i) => (f.manned ? [i] : [])).slice(0, operators);
+		const spare = me.factories
+			.map((f, index) => ({ index, value: PRODUCTION_DECKS[f.type].average }))
+			.filter(({ index }) => !pick.includes(index))
+			.sort((a, b) => b.value - a.value);
+		for (const { index } of spare) {
+			if (pick.length >= operators) {
+				break;
+			}
+			pick.push(index);
+		}
+		this.manningPick = pick;
 	}
 
 	toggleManning(index: number): void {
@@ -595,6 +685,7 @@ export class ViewerStore {
 		this.auctionPick = null;
 		this.manning = false;
 		this.manningPick = [];
+		this.autoSuggested = false;
 	}
 
 	private send(move: Move): void {

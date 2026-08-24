@@ -47,17 +47,32 @@
 				</div>
 				{#if store.myBidTurn}
 					<div class="controls">
+						<button
+							onclick={() => (store.bidAmount = Math.max(minBid, store.bidAmount - 1))}
+							disabled={store.bidAmount <= minBid}>−1</button
+						>
 						<input type="number" min={minBid} max={maxBid} bind:value={store.bidAmount} />
+						<button
+							onclick={() => (store.bidAmount = Math.min(maxBid, store.bidAmount + 1))}
+							disabled={store.bidAmount >= maxBid}>+1</button
+						>
+						<button
+							onclick={() => (store.bidAmount = Math.min(maxBid, store.bidAmount + 5))}
+							disabled={store.bidAmount >= maxBid}>+5</button
+						>
 						<button
 							class="confirm"
 							disabled={store.bidAmount < minBid || store.bidAmount > maxBid}
-							onclick={() => store.confirmBid()}>Bid</button
+							onclick={() => store.confirmBid()}>Bid {store.bidAmount}</button
 						>
 						<button class="pass" onclick={() => store.passBid()}>Pass</button>
 					</div>
 					<div class="hint">
 						You hold {store.myHandValue} credits{#if discount > 0}
 							and get a −{discount} discount on this upgrade{/if}. Max bid {maxBid}.
+						{#if store.bidAmount >= minBid && store.bidAmount <= maxBid}
+							Winning at {store.bidAmount} would cost you {Math.max(0, store.bidAmount - discount)} in cards.
+						{/if}
 					</div>
 				{/if}
 			{:else}
@@ -133,6 +148,10 @@
 		display: flex;
 		gap: 6px;
 		align-items: center;
+		flex-wrap: wrap;
+	}
+	.controls input {
+		width: 70px;
 	}
 	.confirm {
 		border-color: var(--gold);
