@@ -23,10 +23,9 @@
 
 {#if state}
 	<div class="board">
-		<ReplayBar {store} />
-		<HeaderStrip {state} />
-
 		<div class="page">
+			<ReplayBar {store} />
+			<HeaderStrip {state} />
 			<GameEndBanner {store} />
 
 			<div class="columns">
