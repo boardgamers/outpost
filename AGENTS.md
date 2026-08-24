@@ -91,3 +91,51 @@ pnpm check    # fmt:check + lint + tsc + test + build
 
 Run `pnpm check` before committing. Commit with clear messages; do not create PRs
 (this repo has no remote).
+
+## Deploying to BGS (prod)
+
+Publishing goes through the BGS admin API with an admin token (`bgs_admin_...`,
+sent as `Authorization: Bearer <token>`; only valid under `/api/admin/*` and the
+token needs the `gameinfo` grant). Base URL: `https://admin.boardgamers.space/api`.
+Never commit a token; take it from the environment (`$BGS_ADMIN_TOKEN`).
+
+Outpost is registered as game `outpost`, version doc `1`, engine entryPoint
+`dist/wrapper.js`. Ongoing games are pinned to the _game version integer_ but
+hot-swap the _engine package_ on that doc, so re-uploading the engine upgrades
+the running games within ~60 s (the game-server install cron). Upgrade the
+engine and viewer together — the move format couples them.
+
+```bash
+AUTH="Authorization: Bearer $BGS_ADMIN_TOKEN"
+BASE=https://admin.boardgamers.space/api/admin/gameinfo/outpost
+
+# 0. Bump packages/engine/package.json version, then:
+pnpm check && (cd packages/engine && pnpm pack)
+
+# 1. Engine: raw npm-pack tgz body. Reads name/version from the tarball,
+#    stores it on S3 and $sets engine.package (incl. url) on the doc itself.
+curl -X POST "$BASE/1/engine" -H "$AUTH" \
+	-H "Content-Type: application/octet-stream" \
+	--data-binary @packages/engine/outpost-engine-<version>.tgz
+
+# 2. Viewer files: each upload returns { url } (content-hashed, S3).
+curl -X POST "$BASE/1/viewer/file?filename=outpost-viewer.iife.js" -H "$AUTH" \
+	-H "Content-Type: application/octet-stream" \
+	--data-binary @packages/viewer/dist/outpost-viewer.iife.js
+curl -X POST "$BASE/1/viewer/file?filename=outpost-viewer.css" -H "$AUTH" \
+	-H "Content-Type: application/octet-stream" \
+	--data-binary @packages/viewer/dist/outpost-viewer.css
+
+# 3. Persist the new viewer URLs: GET the doc, set viewer.url (and
+#    viewer.dependencies.stylesheets if the css hash changed), drop
+#    _id/createdAt/updatedAt/meta, PUT it back.
+curl "$BASE/1" -H "$AUTH"           # read
+curl -X PUT "$BASE/1" -H "$AUTH" -H "Content-Type: application/json" \
+	--data-binary @gameinfo.json      # write
+
+# 4. Verify: engine.package.version and viewer.url on the doc.
+curl "$BASE/1" -H "$AUTH"
+```
+
+Step 1 alone is enough for an engine-only fix (no PUT needed). A brand-new game
+version integer (`$BASE/2`) instead leaves ongoing games on the old code forever.
