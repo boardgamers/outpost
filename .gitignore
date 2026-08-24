@@ -6,3 +6,4 @@ dist
 dist-test
 .pnpm-store
 .playwright-mcp
+*.tgz

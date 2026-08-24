@@ -145,7 +145,8 @@ export function setPlayerSettings(data: GameState, player: number, settings: Rec
 }
 
 export function playerSettings(data: GameState, player: number): Record<string, unknown> {
-	return { autoPassBids: data.players[player]?.settings.autoPassBids === true };
+	// Optional chain: states saved before the settings field existed lack it.
+	return { autoPassBids: data.players[player]?.settings?.autoPassBids === true };
 }
 
 // Every state must be persisted: the platform keeps no memory between requests

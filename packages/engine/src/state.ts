@@ -285,7 +285,8 @@ export function mustAutoPassBid(state: GameState, seat: number): boolean {
 	if (publicMaxBid(state, seat, auction.upgrade) <= auction.highBid) {
 		return true;
 	}
-	return player.settings.autoPassBids === true && maxBid(state, seat, auction.upgrade) <= auction.highBid;
+	// Optional chain: states saved before the settings field existed lack it.
+	return player.settings?.autoPassBids === true && maxBid(state, seat, auction.upgrade) <= auction.highBid;
 }
 
 /** Coarse list of the moves available to a player, for the BGS sidebar. */
