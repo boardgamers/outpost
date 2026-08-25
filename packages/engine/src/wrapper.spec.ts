@@ -3,6 +3,7 @@ import { test } from "node:test";
 import { moveAI } from "./ai.js";
 import { applyMove, initGame } from "./moves.js";
 import { replay } from "./replay.js";
+import { handValueRange } from "./state.js";
 import * as wrapper from "../wrapper.js";
 import type { GameState } from "./types.js";
 
@@ -148,4 +149,18 @@ test("messages only carry major events: auction wins and game end", () => {
 		assert.ok(message.startsWith("Game over:") || / won .+ for \d+$/.test(message), `unexpected: ${message}`);
 	}
 	assert.ok(all.some((m) => m.startsWith("Game over:")));
+});
+
+test("handValueRange brackets the true value on stripped hands, collapses on visible ones", () => {
+	const state = play(initGame(3, {}, "range-spec"), 30);
+	const stripped = wrapper.stripSecret(state, 0);
+	for (const seat of [1, 2]) {
+		const truth = state.players[seat]?.hand.reduce((sum, c) => sum + c.v, 0) ?? 0;
+		const range = handValueRange(stripped.players[seat]!);
+		assert.ok(range.min <= truth && truth <= range.max, `${range.min} <= ${truth} <= ${range.max}`);
+	}
+	const own = handValueRange(stripped.players[0]!);
+	const ownTruth = state.players[0]?.hand.reduce((sum, c) => sum + c.v, 0) ?? 0;
+	assert.equal(own.min, ownTruth);
+	assert.equal(own.max, ownTruth);
 });

@@ -1,5 +1,13 @@
 <script lang="ts">
-	import { FACTORIES, FACTORY_TYPES, UPGRADE_SPECS, UPGRADES, type GameState, type Resource } from "outpost-engine";
+	import {
+		FACTORIES,
+		FACTORY_TYPES,
+		UPGRADE_SPECS,
+		UPGRADES,
+		handValueRange,
+		type GameState,
+		type Resource,
+	} from "outpost-engine";
 	import ProductionCardView from "./ProductionCardView.svelte";
 	import ResourceIcon from "./ResourceIcon.svelte";
 	import { RESOURCE_LABELS, UPGRADE_EFFECTS, playerColor, type ViewerStore } from "./store.svelte";
@@ -88,6 +96,11 @@
 		</span>
 		{#if isMe}
 			<span class="cash" title="total hand value in credits">◈ {store.myHandValue}</span>
+		{:else if player.hand.length > 0}
+			{@const range = handValueRange(player)}
+			<span class="cash dim" title="possible hand value: card types are public, values are hidden">
+				◈ {range.min === range.max ? range.min : `${range.min}–${range.max}`}
+			</span>
 		{/if}
 		{#if player.done && !state.ended}
 			<span class="done" title="has ended their turn this round">✓ done</span>
@@ -339,6 +352,10 @@
 	.stats .cash {
 		color: var(--gold);
 		font-weight: 700;
+	}
+	.stats .cash.dim {
+		color: color-mix(in srgb, var(--gold) 65%, var(--text-dim));
+		font-weight: 600;
 	}
 	.picksum {
 		font-size: 12px;

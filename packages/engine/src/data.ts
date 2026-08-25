@@ -34,6 +34,13 @@ export const MAX_CARD_VALUE: Record<Resource, number> = Object.fromEntries(
 	])
 ) as Record<Resource, number>;
 
+export const MIN_CARD_VALUE: Record<Resource, number> = Object.fromEntries(
+	Object.entries(PRODUCTION_DECKS).map(([resource, spec]) => [
+		resource,
+		Math.min(...Object.keys(spec.distribution).map(Number)),
+	])
+) as Record<Resource, number>;
+
 /** Resources that do not count against hand capacity. */
 export const CAP_EXEMPT: readonly Resource[] = ["research", "microbiotics"];
 

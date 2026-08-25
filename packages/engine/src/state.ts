@@ -7,6 +7,7 @@ import {
 	LAST_THREE,
 	MAX_CARD_VALUE,
 	MAX_PLAYERS,
+	MIN_CARD_VALUE,
 	MIN_PLAYERS,
 	POPULATION_COST,
 	POPULATION_COST_ECOPLANTS,
@@ -163,6 +164,27 @@ export function countingHandSize(player: PlayerState): number {
 
 export function handValue(player: PlayerState): number {
 	return player.hand.reduce((sum, c) => sum + c.v, 0);
+}
+
+/**
+ * Bounds on a hand's value from PUBLIC information only: card types are always
+ * visible (stripSecret hides just the values), so each hidden card is worth
+ * between its deck's minimum and maximum. Known values count exactly, so for
+ * the viewer's own hand this collapses to the true value.
+ */
+export function handValueRange(player: PlayerState): { min: number; max: number } {
+	let min = 0;
+	let max = 0;
+	for (const card of player.hand) {
+		if (card.v >= 0) {
+			min += card.v;
+			max += card.v;
+		} else {
+			min += MIN_CARD_VALUE[card.t];
+			max += MAX_CARD_VALUE[card.t];
+		}
+	}
+	return { min, max };
 }
 
 export function populationCost(player: PlayerState): number {
