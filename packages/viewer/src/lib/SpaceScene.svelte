@@ -110,7 +110,10 @@
 
 	.rock {
 		position: absolute;
-		fill: rgba(150, 160, 175, 0.22);
+		/* Opaque blends of the old translucent greys over the bg: the rocks are
+		   nearer than the starfield, so they must occlude stars, not let them
+		   shine through. */
+		fill: #2c3038;
 		animation-name: drift, tumble;
 		animation-timing-function: linear, linear;
 		animation-iteration-count: infinite, infinite;
@@ -124,14 +127,14 @@
 	.r2 {
 		width: 16px;
 		top: 64%;
-		fill: rgba(150, 160, 175, 0.16);
+		fill: #24272e;
 		animation-duration: 200s, 52s;
 		animation-delay: -120s, 0s;
 	}
 	.r3 {
 		width: 20px;
 		top: 84%;
-		fill: rgba(150, 160, 175, 0.19);
+		fill: #282b33;
 		animation-duration: 175s, 44s;
 		animation-delay: -70s, 0s;
 	}
