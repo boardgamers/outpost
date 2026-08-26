@@ -12,6 +12,8 @@
 
 	let { card, selected = false, selectable = false, onclick }: Props = $props();
 	const hidden = $derived(card.v < 0);
+	// Soft hyphen so long single-word labels wrap inside the narrow card.
+	const label = $derived(RESOURCE_LABELS[card.t]?.replace("Microbiotics", "Micro\u00ADbiotics") ?? card.t);
 </script>
 
 <button
@@ -25,7 +27,7 @@
 >
 	<span class="icon"><ResourceIcon resource={card.t} size={13} /></span>
 	<span class="value">{hidden ? "?" : card.v}</span>
-	<span class="label">{RESOURCE_LABELS[card.t]}</span>
+	<span class="label">{label}</span>
 </button>
 
 <style>
@@ -72,6 +74,8 @@
 		text-align: center;
 		line-height: 1.1;
 		opacity: 0.9;
+		max-width: 100%;
+		hyphens: manual;
 	}
 	.pcard.selectable {
 		cursor: pointer;

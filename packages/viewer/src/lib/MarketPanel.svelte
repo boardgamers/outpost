@@ -152,13 +152,13 @@
 		color: var(--gold);
 	}
 	.uprice {
-		font-size: 11px;
-		color: var(--text-dim);
+		font-size: 11.5px;
+		color: var(--text-mid);
 	}
 	.ueffect {
-		font-size: 10.5px;
-		line-height: 1.3;
-		color: var(--text-dim);
+		font-size: 11.5px;
+		line-height: 1.35;
+		color: var(--text-mid);
 	}
 	.bidbox {
 		display: flex;
@@ -197,8 +197,8 @@
 		flex-wrap: wrap;
 	}
 	.stag {
-		font-size: 10px;
-		color: var(--text-dim);
+		font-size: 11px;
+		color: var(--text-mid);
 		background: var(--bg-panel);
 		border: 1px solid var(--line);
 		border-radius: 4px;

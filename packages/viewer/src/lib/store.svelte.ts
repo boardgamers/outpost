@@ -1,5 +1,7 @@
 import {
 	FACTORIES,
+	MAX_CARD_VALUE,
+	MIN_CARD_VALUE,
 	PRODUCTION_DECKS,
 	UPGRADE_SPECS,
 	applyMove,
@@ -68,20 +70,24 @@ export const RESOURCE_LABELS: Record<string, string> = {
 	moonOre: "Moon Ore",
 };
 
+function cardRange(resource: keyof typeof MIN_CARD_VALUE): string {
+	return `${MIN_CARD_VALUE[resource]}–${MAX_CARD_VALUE[resource]}`;
+}
+
 export const UPGRADE_EFFECTS: Record<Upgrade, string> = {
 	dataLibrary: "−10 on Scientists and Laboratory bids (per copy).",
 	warehouse: "+3 hand capacity (per copy).",
-	heavyEquipment: "Allows titanium factories. −5 on Warehouse/Nodule, −15 on Outpost (per copy).",
+	heavyEquipment: `Allows titanium factories (${cardRange("titanium")} cards). −5 on Warehouse/Nodule, −15 on Outpost (per copy).`,
 	nodule: "+3 population limit (per copy).",
-	scientists: "Produces a Research card each round (per copy).",
-	orbitalLab: "Produces a Microbiotics card each round (per copy).",
+	scientists: `Produces a Research card (${cardRange("research")}) each round (per copy).`,
+	orbitalLab: `Produces a Microbiotics card (${cardRange("microbiotics")}) each round (per copy).`,
 	robots: "Allows buying robots, operators that ignore the population limit (per copy: up to population).",
-	laboratory: "Allows research factories; comes with a free research factory.",
+	laboratory: `Allows research factories (${cardRange("research")} cards); comes with a free one.`,
 	ecoplants: "Colonists cost 5 instead of 10. −10 on Outpost bids (per copy).",
 	outpost: "Free titanium factory, +5 hand capacity, +5 population limit.",
-	spaceStation: "Produces an Orbital Medicine card each round.",
-	planetaryCruiser: "Produces a Ring Ore card each round.",
-	moonBase: "Produces a Moon Ore card each round.",
+	spaceStation: `Produces an Orbital Medicine card (${cardRange("orbitalMedicine")}) each round.`,
+	planetaryCruiser: `Produces a Ring Ore card (${cardRange("ringOre")}) each round.`,
+	moonBase: `Produces a Moon Ore card (${cardRange("moonOre")}) each round.`,
 };
 
 export class ViewerStore {

@@ -46,34 +46,41 @@
 					{/if}
 				</div>
 				{#if store.myBidTurn}
-					<div class="controls">
-						<button
-							onclick={() => (store.bidAmount = Math.max(minBid, store.bidAmount - 1))}
-							disabled={store.bidAmount <= minBid}>−1</button
-						>
-						<input type="number" min={minBid} max={maxBid} bind:value={store.bidAmount} />
-						<button
-							onclick={() => (store.bidAmount = Math.min(maxBid, store.bidAmount + 1))}
-							disabled={store.bidAmount >= maxBid}>+1</button
-						>
-						<button
-							onclick={() => (store.bidAmount = Math.min(maxBid, store.bidAmount + 5))}
-							disabled={store.bidAmount >= maxBid}>+5</button
-						>
-						<button
-							class="confirm"
-							disabled={store.bidAmount < minBid || store.bidAmount > maxBid}
-							onclick={() => store.confirmBid()}>Bid {store.bidAmount}</button
-						>
-						<button class="pass" onclick={() => store.passBid()}>Pass</button>
-					</div>
-					<div class="hint">
-						You hold {store.myHandValue} credits{#if discount > 0}
-							and get a −{discount} discount on this upgrade{/if}. Max bid {maxBid}.
-						{#if store.bidAmount >= minBid && store.bidAmount <= maxBid}
-							Winning at {store.bidAmount} would cost you {Math.max(0, store.bidAmount - discount)} in cards.
-						{/if}
-					</div>
+					{#if maxBid < minBid}
+						<div class="controls">
+							<span class="cantbid">You can't beat the high bid (your max is {maxBid}).</span>
+							<button class="confirm" onclick={() => store.passBid()}>Pass</button>
+						</div>
+					{:else}
+						<div class="controls">
+							<button
+								onclick={() => (store.bidAmount = Math.max(minBid, store.bidAmount - 1))}
+								disabled={store.bidAmount <= minBid}>−1</button
+							>
+							<input type="number" min={minBid} max={maxBid} bind:value={store.bidAmount} />
+							<button
+								onclick={() => (store.bidAmount = Math.min(maxBid, store.bidAmount + 1))}
+								disabled={store.bidAmount >= maxBid}>+1</button
+							>
+							<button
+								onclick={() => (store.bidAmount = Math.min(maxBid, store.bidAmount + 5))}
+								disabled={store.bidAmount >= maxBid}>+5</button
+							>
+							<button
+								class="confirm"
+								disabled={store.bidAmount < minBid || store.bidAmount > maxBid}
+								onclick={() => store.confirmBid()}>Bid {store.bidAmount}</button
+							>
+							<button class="pass" onclick={() => store.passBid()}>Pass</button>
+						</div>
+						<div class="hint">
+							You hold {store.myHandValue} credits{#if discount > 0}
+								and get a −{discount} discount on this upgrade{/if}. Max bid {maxBid}.
+							{#if store.bidAmount >= minBid && store.bidAmount <= maxBid}
+								Winning at {store.bidAmount} would cost you {Math.max(0, store.bidAmount - discount)} in cards.
+							{/if}
+						</div>
+					{/if}
 				{/if}
 			{:else}
 				<div class="turn">
@@ -125,8 +132,8 @@
 		color: var(--text);
 	}
 	.ueffect {
-		font-size: 11px;
-		color: var(--text-dim);
+		font-size: 11.5px;
+		color: var(--text-mid);
 		max-width: 260px;
 	}
 	.status {
@@ -159,6 +166,10 @@
 	}
 	.pass {
 		color: var(--text-dim);
+	}
+	.cantbid {
+		font-size: 12.5px;
+		color: var(--text-mid);
 	}
 	.hint {
 		font-size: 11.5px;

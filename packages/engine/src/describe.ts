@@ -43,8 +43,10 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 								return `buys ${buy.count} robot(s)`;
 						}
 					});
-					const spent = buys.length > 0 ? `${buys.join(", ")} (paid ${info?.paid ?? 0}), then ` : "";
-					return `${name} ${spent}ends their turn (${move.manned.length} factories manned)`;
+					const mans = `mans ${move.manned.length} factor${move.manned.length === 1 ? "y" : "ies"}`;
+					return buys.length > 0
+						? `${name} ${buys.join(", ")} (paid ${info?.paid ?? 0}) and ${mans}`
+						: `${name} ${mans}`;
 				}
 				default:
 					return `${name} moves`;

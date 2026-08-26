@@ -376,7 +376,7 @@
 		font-size: 11px;
 	}
 	.utag {
-		font-size: 10px;
+		font-size: 11px;
 		font-weight: 600;
 		color: var(--text);
 		background: color-mix(in srgb, var(--gold) 14%, var(--bg-elevated));

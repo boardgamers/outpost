@@ -111,10 +111,10 @@
 							</span>
 						{/if}
 						{#if staged.length > 0}
-							Ending the turn also confirms: {staged.join(", ")}.
+							Also confirms: {staged.join(", ")}.
 						{/if}
 					</span>
-					<button class="confirm" onclick={() => store.confirmEndTurn()}>Confirm & end turn</button>
+					<button class="confirm" onclick={() => store.confirmEndTurn()}>End turn</button>
 					<button class="cancel" onclick={() => store.cancel()}>Back</button>
 				</div>
 			{:else if pending}
@@ -179,12 +179,12 @@
 							Robot · 10
 						</button>
 					{/if}
-					<button class="end" onclick={() => store.startManning()}>Assign operators & end turn…</button>
+					<button class="end" onclick={() => store.startManning()}>Assign operators…</button>
 				</div>
 				{#if staged.length > 0}
 					<div class="flow">
 						<span class="hint gold-hint">
-							Staged this turn: {staged.join(", ")} — sent when you end the turn (undo to open an auction).
+							Staged this turn: {staged.join(", ")} (undo to open an auction).
 						</span>
 						<button class="cancel" onclick={() => store.undoBuy()}>Undo last</button>
 					</div>
