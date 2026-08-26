@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { UPGRADE_SPECS, UPGRADES, type GameState } from "outpost-engine";
+	import UpgradeBadges from "./UpgradeBadges.svelte";
 	import { UPGRADE_EFFECTS, type ViewerStore } from "./store.svelte";
 
 	interface Props {
@@ -48,9 +49,10 @@
 						<span class="uname">{spec.name}</span>
 						<span class="uvp">{spec.vp} VP</span>
 						<span class="uprice">
-							min {spec.price}{#if due < spec.price}
-								· you pay {due}{/if}
+							min ◈ {spec.price}{#if due < spec.price}
+								· you pay ◈ {due}{/if}
 						</span>
+						<UpgradeBadges {upgrade} />
 						<span class="ueffect">{UPGRADE_EFFECTS[upgrade]}</span>
 					</button>
 					{#if open && pick}
@@ -67,7 +69,7 @@
 								<button onclick={() => store.bumpAuctionBid(5)}>+5</button>
 							</div>
 							<div class="bidrow">
-								<button class="confirm" onclick={() => store.confirmAuction()}>Auction at {pick.bid}</button>
+								<button class="confirm" onclick={() => store.confirmAuction()}>Auction at ◈ {pick.bid}</button>
 								<button class="cancel" onclick={() => store.cancel()}>Cancel</button>
 							</div>
 						</div>

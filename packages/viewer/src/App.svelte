@@ -99,21 +99,19 @@
 		align-items: start;
 	}
 	/* Wide screens: two columns — players/market on the left, action bar + event
-   feed in a fixed right sidebar. */
+   feed in a fixed right sidebar. The main column grows to fill the board, so
+   the header strip and the content row always share the same width (sizing
+   the page to its content instead would track unwrapped log lines and drift
+   wider than what's visible). */
 	@media (min-width: 1100px) {
-		.page {
-			width: fit-content;
-			margin: 0 auto;
-			align-items: stretch;
-		}
 		.columns {
 			flex-direction: row;
 			align-items: flex-start;
-			justify-content: center;
 			gap: 24px;
 		}
 		.main {
-			flex: 0 1 auto;
+			flex: 1 1 auto;
+			min-width: 0;
 			align-items: stretch;
 		}
 		.side {

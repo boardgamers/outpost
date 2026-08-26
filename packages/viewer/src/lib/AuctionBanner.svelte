@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { UPGRADE_SPECS, type GameState } from "outpost-engine";
+	import UpgradeBadges from "./UpgradeBadges.svelte";
 	import { UPGRADE_EFFECTS, type ViewerStore } from "./store.svelte";
 
 	interface Props {
@@ -30,17 +31,18 @@
 		<div class="block">
 			<span class="label">On the block</span>
 			<span class="uname">{spec.name}</span>
-			<span class="uvp">{spec.vp} VP · list {spec.price}</span>
+			<span class="uvp">{spec.vp} VP · list ◈ {spec.price}</span>
+			<UpgradeBadges upgrade={auction.upgrade} />
 			<span class="ueffect">{UPGRADE_EFFECTS[auction.upgrade]}</span>
 		</div>
 		<div class="status">
 			<div class="bid">
-				High bid <strong>{auction.highBid}</strong> by <strong>{nameOf(auction.highBidder)}</strong>
+				High bid <strong>◈ {auction.highBid}</strong> by <strong>{nameOf(auction.highBidder)}</strong>
 			</div>
 			{#if state.phase === "auction"}
 				<div class="turn">
 					{#if store.myBidTurn}
-						Your bid: raise to at least {minBid} or pass.
+						Your bid: raise to at least ◈ {minBid} or pass.
 					{:else}
 						Waiting for {nameOf(auction.activeBidder)} to bid…
 					{/if}
@@ -48,7 +50,7 @@
 				{#if store.myBidTurn}
 					{#if maxBid < minBid}
 						<div class="controls">
-							<span class="cantbid">You can't beat the high bid (your max is {maxBid}).</span>
+							<span class="cantbid">You can't beat the high bid (your max is ◈ {maxBid}).</span>
 							<button class="confirm" onclick={() => store.passBid()}>Pass</button>
 						</div>
 					{:else}
@@ -69,15 +71,15 @@
 							<button
 								class="confirm"
 								disabled={store.bidAmount < minBid || store.bidAmount > maxBid}
-								onclick={() => store.confirmBid()}>Bid {store.bidAmount}</button
+								onclick={() => store.confirmBid()}>Bid ◈ {store.bidAmount}</button
 							>
 							<button class="pass" onclick={() => store.passBid()}>Pass</button>
 						</div>
 						<div class="hint">
-							You hold {store.myHandValue} credits{#if discount > 0}
-								and get a −{discount} discount on this upgrade{/if}. Max bid {maxBid}.
+							You hold ◈ {store.myHandValue}{#if discount > 0}
+								and get a −{discount} discount on this upgrade{/if}. Max bid ◈ {maxBid}.
 							{#if store.bidAmount >= minBid && store.bidAmount <= maxBid}
-								Winning at {store.bidAmount} would cost you {Math.max(0, store.bidAmount - discount)} in cards.
+								Winning at {store.bidAmount} would cost you ◈ {Math.max(0, store.bidAmount - discount)} in cards.
 							{/if}
 						</div>
 					{/if}
@@ -85,7 +87,7 @@
 			{:else}
 				<div class="turn">
 					{#if store.myPayment}
-						You won: select hand cards worth at least {due} credits and confirm below (bid {auction.highBid}{#if discount > 0}
+						You won: select hand cards worth at least ◈ {due} and confirm below (bid {auction.highBid}{#if discount > 0}
 							− {discount} discount{/if}).
 					{:else}
 						Waiting for {nameOf(auction.highBidder)} to pay…

@@ -93,10 +93,10 @@
 			<div class="flow">
 				<span class="hint gold-hint">
 					You won <strong>{UPGRADE_SPECS[state.auction?.upgrade ?? "dataLibrary"].name}</strong>: select hand cards
-					worth at least {store.myPaymentDue} credits (selected <strong>{total}</strong>).
+					worth at least ◈ {store.myPaymentDue} (selected <strong>◈ {total}</strong>).
 				</span>
 				<button class="confirm" disabled={!store.paymentValid()} onclick={() => store.confirmPayment()}>
-					Pay {store.myPaymentDue}
+					Pay ◈ {store.myPaymentDue}
 				</button>
 			</div>
 		{:else if store.myActionTurn && me}
@@ -127,7 +127,7 @@
 						{:else}
 							Buying <strong>{pending.count}</strong> robot{pending.count === 1 ? "" : "s"}:
 						{/if}
-						selected <strong>{total}</strong> / {pending.cost} credits.
+						selected <strong>◈ {total}</strong> / ◈ {pending.cost}.
 						{#if needsResearch && !hasResearch}
 							<span class="warn">Payment must include a research card.</span>
 						{/if}
@@ -137,7 +137,7 @@
 						<button onclick={() => store.bumpPendingCount(1)}>+1</button>
 					{/if}
 					<button class="confirm" disabled={!store.pendingValid()} onclick={() => store.confirmPending()}>
-						Confirm ({pending.cost})
+						Confirm (◈ {pending.cost})
 					</button>
 					<button class="cancel" onclick={() => store.cancel()}>Cancel</button>
 				</div>
@@ -155,7 +155,7 @@
 							onclick={() => store.startFactoryPayment(type)}
 						>
 							<ResourceIcon resource={type} size={13} />
-							{RESOURCE_LABELS[type]} · {spec.cost}
+							{RESOURCE_LABELS[type]} · ◈ {spec.cost}
 						</button>
 					{/each}
 					<span class="group-label">Operators:</span>
@@ -167,7 +167,7 @@
 							: ''}"
 						onclick={() => store.startPopulationPayment()}
 					>
-						Colonist · {store.popCost}
+						Colonist · ◈ {store.popCost}
 					</button>
 					{#if me.upgrades.robots > 0}
 						<button
@@ -176,7 +176,7 @@
 							title="Buy a robot: 10 credits"
 							onclick={() => store.startRobotsPayment()}
 						>
-							Robot · 10
+							Robot · ◈ 10
 						</button>
 					{/if}
 					<button class="end" onclick={() => store.startManning()}>Assign operators…</button>
