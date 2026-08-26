@@ -2,6 +2,8 @@
 	import {
 		FACTORIES,
 		FACTORY_TYPES,
+		MAX_CARD_VALUE,
+		MIN_CARD_VALUE,
 		UPGRADE_SPECS,
 		UPGRADES,
 		handValueRange,
@@ -111,7 +113,9 @@
 		{#each factories as group (group.type)}
 			<span
 				class="fgroup res-{group.type}"
-				title="{RESOURCE_LABELS[group.type]} factories ({FACTORIES[group.type].vp} VP each when manned)"
+				title="{RESOURCE_LABELS[group.type]} factories: {FACTORIES[group.type].vp} VP each and a ◈ {MIN_CARD_VALUE[
+					group.type
+				]}–{MAX_CARD_VALUE[group.type]} card each round when manned"
 			>
 				{#each group.items as factory (factory.index)}
 					<button

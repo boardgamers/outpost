@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { FACTORIES, FACTORY_TYPES, UPGRADE_SPECS } from "outpost-engine";
+	import { FACTORIES, FACTORY_TYPES, MAX_CARD_VALUE, MIN_CARD_VALUE, UPGRADE_SPECS } from "outpost-engine";
 	import ResourceIcon from "./ResourceIcon.svelte";
 	import { RESOURCE_LABELS, type ViewerStore } from "./store.svelte";
 
@@ -121,7 +121,9 @@
 				<div class="flow">
 					<span class="hint">
 						{#if pending.kind === "factory"}
-							Building a <strong>{RESOURCE_LABELS[pending.factory]}</strong> factory:
+							Building a <strong>{RESOURCE_LABELS[pending.factory]}</strong> factory (produces ◈ {MIN_CARD_VALUE[
+								pending.factory
+							]}–{MAX_CARD_VALUE[pending.factory]} per round when manned):
 						{:else if pending.kind === "population"}
 							Recruiting <strong>{pending.count}</strong> colonist{pending.count === 1 ? "" : "s"}:
 						{:else}
@@ -151,7 +153,8 @@
 						<button
 							class="buy res-{type}"
 							disabled={!store.canAffordFactory(type)}
-							title={reason ?? `${RESOURCE_LABELS[type]} factory: ${spec.cost} credits, ${spec.vp} VP`}
+							title={reason ??
+								`${RESOURCE_LABELS[type]} factory: ◈ ${spec.cost}, ${spec.vp} VP manned, produces a ◈ ${MIN_CARD_VALUE[type]}–${MAX_CARD_VALUE[type]} card each round when manned`}
 							onclick={() => store.startFactoryPayment(type)}
 						>
 							<ResourceIcon resource={type} size={13} />
