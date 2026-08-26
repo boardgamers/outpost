@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { applyMove, initGame } from "./moves.js";
-import { countingHandSize, handCapacity, populationMax, robotMax } from "./state.js";
+import { bestPayment, countingHandSize, handCapacity, populationMax, robotMax } from "./state.js";
 import type { GameState, PlayerState } from "./types.js";
 
 function activePlayer(state: GameState): PlayerState {
@@ -258,4 +258,36 @@ test("hardening: extra keys and __proto__ payloads are stripped before logging",
 	assert.equal(({} as { polluted?: boolean }).polluted, undefined);
 	// The logged move is a fresh literal, not the network object.
 	assert.notEqual(logged.move, malicious);
+});
+
+test("bestPayment: exact sums beat overpay, more cards beat fewer at equal totals", () => {
+	const state = initGame(3, {}, "payment-spec");
+	const player = activePlayer(state);
+	const hand = (values: number[]) => {
+		player.hand = values.map((v) => ({ t: "water" as const, v }));
+	};
+	// 3+2 preferred over a lone 5 (same total, more cards spent).
+	hand([5, 3, 2]);
+	assert.deepEqual(bestPayment(player, 5), [1, 2]);
+	// Exact combination found where greedy smallest-first would overpay: due 10
+	// from [9, 3, 2] is 9+2=11, not 3+9=12.
+	hand([9, 3, 2]);
+	assert.deepEqual(bestPayment(player, 10), [0, 2]);
+	// Everything needed.
+	hand([4, 4]);
+	assert.deepEqual(bestPayment(player, 8), [0, 1]);
+	// Unaffordable.
+	hand([4, 4]);
+	assert.equal(bestPayment(player, 9), null);
+	// Forced research card: picks the research card that minimizes the total
+	// (12 + 18 = 30 exactly), not the cheapest one.
+	player.hand = [
+		{ t: "research", v: 9 },
+		{ t: "research", v: 12 },
+		{ t: "water", v: 18 },
+		{ t: "water", v: 25 },
+	];
+	assert.deepEqual(bestPayment(player, 30, true), [1, 2]);
+	// Without the research constraint the same due is cheaper without one.
+	assert.deepEqual(bestPayment(player, 25, false), [3]);
 });

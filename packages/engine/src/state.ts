@@ -167,6 +167,88 @@ export function handValue(player: PlayerState): number {
 }
 
 /**
+ * Pick hand-card indices paying at least `due`, minimizing the total paid
+ * (overpaid credits are lost) and, among equal totals, spending as MANY cards
+ * as possible (several small cards are worth less kept than one big card).
+ * Exact 0/1 subset-sum DP — hands are tiny, so this is a few thousand ops.
+ * Returns null when the hand cannot cover `due`.
+ */
+export function bestPayment(player: PlayerState, due: number, mustIncludeResearch = false): number[] | null {
+	const cards = player.hand.map((card, index) => ({ v: card.v, index })).filter((c) => c.v >= 0);
+	if (!mustIncludeResearch) {
+		const solved = solvePayment(cards, due);
+		return solved ? solved.picked.sort((a, b) => a - b) : null;
+	}
+	// Try each research card as the forced one and keep the best overall pick.
+	let best: { total: number; picked: number[] } | null = null;
+	for (const forced of cards) {
+		if (player.hand[forced.index]?.t !== "research") {
+			continue;
+		}
+		const rest = cards.filter((c) => c.index !== forced.index);
+		const sub = solvePayment(rest, Math.max(0, due - forced.v));
+		if (!sub) {
+			continue;
+		}
+		const total = forced.v + sub.total;
+		const count = 1 + sub.picked.length;
+		if (!best || total < best.total || (total === best.total && count > best.picked.length)) {
+			best = { total, picked: [forced.index, ...sub.picked] };
+		}
+	}
+	return best ? best.picked.sort((a, b) => a - b) : null;
+}
+
+/** 0/1 knapsack over exact sums: dp[i][s] = max cards among the first i reaching exactly s. */
+function solvePayment(cards: { v: number; index: number }[], due: number): { total: number; picked: number[] } | null {
+	if (due <= 0) {
+		return { total: 0, picked: [] };
+	}
+	const totalAll = cards.reduce((sum, c) => sum + c.v, 0);
+	if (totalAll < due) {
+		return null;
+	}
+	const n = cards.length;
+	const width = totalAll + 1;
+	// Flat (n+1) x width table of best counts; -1 = sum unreachable.
+	const dp = new Int32Array((n + 1) * width).fill(-1);
+	dp[0] = 0;
+	for (let i = 0; i < n; i++) {
+		const v = (cards[i] as { v: number }).v;
+		const prev = i * width;
+		const cur = prev + width;
+		for (let s = 0; s < width; s++) {
+			let count = dp[prev + s] as number;
+			if (s >= v && dp[prev + s - v] !== -1 && (dp[prev + s - v] as number) + 1 > count) {
+				count = (dp[prev + s - v] as number) + 1;
+			}
+			dp[cur + s] = count;
+		}
+	}
+	let sum = -1;
+	for (let s = due; s < width; s++) {
+		if (dp[n * width + s] !== -1) {
+			sum = s;
+			break;
+		}
+	}
+	if (sum === -1) {
+		return null;
+	}
+	const total = sum;
+	const picked: number[] = [];
+	for (let i = n; i > 0; i--) {
+		const card = cards[i - 1] as { v: number; index: number };
+		const withoutIt = dp[(i - 1) * width + sum] as number;
+		if (dp[i * width + sum] !== withoutIt) {
+			picked.push(card.index);
+			sum -= card.v;
+		}
+	}
+	return { total, picked };
+}
+
+/**
  * Bounds on a hand's value from PUBLIC information only: card types are always
  * visible (stripSecret hides just the values), so each hidden card is worth
  * between its deck's minimum and maximum. Known values count exactly, so for

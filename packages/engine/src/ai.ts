@@ -1,6 +1,14 @@
 import { FACTORIES, PRODUCTION_DECKS, UPGRADE_SPECS } from "./data.js";
 import { applyMove } from "./moves.js";
-import { canBuyFactory, handCapacity, handValue, populationCost, populationMax, upgradeDiscount } from "./state.js";
+import {
+	bestPayment,
+	canBuyFactory,
+	handCapacity,
+	handValue,
+	populationCost,
+	populationMax,
+	upgradeDiscount,
+} from "./state.js";
 import type { GameState, Move, PlayerState, TurnBuy, Upgrade } from "./types.js";
 
 /** Pick a legal (and mildly sensible) move for the player, then apply it. */
@@ -24,7 +32,7 @@ export function chooseMove(state: GameState, seat: number): Move {
 				throw new Error("no auction in progress");
 			}
 			const due = Math.max(0, auction.highBid - upgradeDiscount(player, auction.upgrade));
-			return { action: "pay", cards: choosePayment(player, due) };
+			return { action: "pay", cards: bestPayment(player, due) ?? player.hand.map((_, i) => i) };
 		}
 		case "actions":
 			return chooseAction(state, player);
@@ -41,34 +49,6 @@ function chooseDiscard(player: PlayerState): Move {
 		.sort((a, b) => a.card.v - b.card.v);
 	const excess = Math.max(0, counting.length - cap);
 	return { action: "discard", cards: counting.slice(0, excess).map((e) => e.index) };
-}
-
-/** Smallest cards first until the amount is covered — burns change, keeps big cards. */
-function choosePayment(player: PlayerState, due: number, mustIncludeResearch = false): number[] {
-	const picked: number[] = [];
-	let total = 0;
-	if (mustIncludeResearch) {
-		const research = player.hand
-			.map((card, index) => ({ card, index }))
-			.filter(({ card }) => card.t === "research")
-			.sort((a, b) => a.card.v - b.card.v)[0];
-		if (research) {
-			picked.push(research.index);
-			total += research.card.v;
-		}
-	}
-	const ascending = player.hand
-		.map((card, index) => ({ card, index }))
-		.filter(({ index }) => !picked.includes(index))
-		.sort((a, b) => a.card.v - b.card.v);
-	for (const { card, index } of ascending) {
-		if (total >= due) {
-			break;
-		}
-		picked.push(index);
-		total += card.v;
-	}
-	return picked;
 }
 
 function chooseAction(state: GameState, player: PlayerState): Move {
@@ -100,7 +80,7 @@ function chooseTurn(player: PlayerState): Move {
 	const sim = JSON.parse(JSON.stringify(player)) as PlayerState;
 	const buys: TurnBuy[] = [];
 	const spend = (due: number): number[] => {
-		const cards = choosePayment(sim, due);
+		const cards = bestPayment(sim, due) ?? [];
 		for (const i of [...cards].sort((a, b) => b - a)) {
 			sim.hand.splice(i, 1);
 		}

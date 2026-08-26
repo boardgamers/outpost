@@ -6,6 +6,7 @@ import {
 	UPGRADE_SPECS,
 	applyMove,
 	applyTurnBuy,
+	bestPayment,
 	canBuyFactory,
 	countingHandSize,
 	describeLog,
@@ -364,48 +365,13 @@ export class ViewerStore {
 		return null;
 	}
 
-	/** Preselect a payment: smallest cards first (keeps the big ones), research card forced in when required. */
+	/** Preselect the optimal payment: least overpay, then as many (small) cards as possible. */
 	suggestPayment(due: number, mustIncludeResearch = false): void {
 		const me = this.me;
 		if (!me) {
 			return;
 		}
-		const picked: number[] = [];
-		let total = 0;
-		if (mustIncludeResearch) {
-			const research = me.hand
-				.map((card, index) => ({ card, index }))
-				.filter(({ card }) => card.t === "research")
-				.sort((a, b) => a.card.v - b.card.v)[0];
-			if (research) {
-				picked.push(research.index);
-				total += research.card.v;
-			}
-		}
-		const ascending = me.hand
-			.map((card, index) => ({ card, index }))
-			.filter(({ index }) => !picked.includes(index))
-			.sort((a, b) => a.card.v - b.card.v);
-		for (const { card, index } of ascending) {
-			if (total >= due) {
-				break;
-			}
-			picked.push(index);
-			total += card.v;
-		}
-		if (total < due) {
-			this.cardPick = [];
-			return;
-		}
-		// Prune overpay: drop picked cards (smallest first) that aren't needed.
-		for (const { card, index } of ascending) {
-			const at = picked.indexOf(index);
-			if (at >= 0 && total - card.v >= due) {
-				picked.splice(at, 1);
-				total -= card.v;
-			}
-		}
-		this.cardPick = picked;
+		this.cardPick = bestPayment(me, due, mustIncludeResearch) ?? [];
 	}
 
 	/** Preselect the cheapest counting cards to get back under the hand cap. */
