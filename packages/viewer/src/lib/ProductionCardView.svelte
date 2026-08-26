@@ -12,8 +12,11 @@
 
 	let { card, selected = false, selectable = false, onclick }: Props = $props();
 	const hidden = $derived(card.v < 0);
-	// Soft hyphen so long single-word labels wrap inside the narrow card.
-	const label = $derived(RESOURCE_LABELS[card.t]?.replace("Microbiotics", "Micro\u00ADbiotics") ?? card.t);
+	// Soft hyphens so long words wrap inside the narrow card only when needed.
+	const label = $derived(
+		RESOURCE_LABELS[card.t]?.replace("Microbiotics", "Micro\u00ADbiotics").replace("Chemicals", "Chemi\u00ADcals") ??
+			card.t
+	);
 </script>
 
 <button
