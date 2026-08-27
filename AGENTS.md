@@ -59,21 +59,7 @@ data deviations (some production deck distributions are inferred, not confirmed)
   exist after build (it is the registered `entryPoint`).
 - Production deck data (`src/data.ts`) reproduces the published card counts; treat it as
   rules data, not creative content. See README.md "Data notes / deviations" before changing
-  distributions.
-- **Mega production cards are NOT implemented.** Expert Rules v1.32 uses optional rule
-  12.1 (standard in the 20th Anniversary edition): with 4+ manned water/titanium/
-  newChemicals factories a player may take 1 Mega card per group of 4 draws instead
-  (fixed value, counts as 4 cards toward hand capacity). Mega Water = 30 and Mega
-  New Chemicals = 88 are documented; the printed Mega Titanium value is not available
-  in any text source (only on the physical card), so the rule is on hold until it can
-  be confirmed — do not guess the value.
-- **fastBid option**: `options.fastBid === true` turns auctions into simultaneous
-  sealed-bid (see `src/moves.ts` `fastBidMaybeResolve`): `auction.bids` holds seat →
-  amount (0 = pass), `currentPlayer` returns all pending seats, no auto-pass (a pass
-  is a private 0), winner = highest bid (ties: earliest in purchase order from the
-  auctioneer) paying second-highest + 1 capped at their own bid (sole bidder: list
-  price). The resolving move records `info.winningBid/secondBid/winner` so a stripped
-  log replays the outcome verbatim (other bids are hidden to −1 by stripSecret).
+  distributions — it also lists the rules not yet implemented (mega production cards).
 
 ## Viewer specifics
 
@@ -87,9 +73,9 @@ data deviations (some production deck distributions are inferred, not confirmed)
   `src/lib/theme.css`.
 - The BGS host measures `body.scrollHeight` — normal top-down document flow, no vertical
   centering tricks.
-- `wrapper.currentPlayer` returns an **array** of seats during the simultaneous discard
-  phase and during fastBid auctions; the dev backend (and any future integration) must
-  handle both shapes.
+- `wrapper.currentPlayer` returns an **array** of seats whenever several players act
+  at once (discard phase, fastBid auctions); the dev backend (and any future
+  integration) must handle both shapes.
 - **Responsive layout** (`App.svelte`): mobile is one column ordered action bar → own
   panel → market → other players → event log (the action bar is sticky, see
   `ActionBar.svelte`); desktop is a two-column grid with the players grid + market on

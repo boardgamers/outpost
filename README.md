@@ -44,6 +44,9 @@ physical decks differ in a few counts (e.g. only two "4" water cards).
   fixed-value Mega card) are not implemented: the printed Mega Titanium value could not be
   confirmed from any text source (Mega Water = 30 and Mega New Chemicals = 88 are known).
   Production always draws one card per manned factory.
+- Tom Lehmann's 1994 Expert Game v1.32 document lists Laboratory at 80 and Ecoplants at 30;
+  this implementation follows the 20th Anniversary printing at 100 and 50. If a physical
+  copy shows the lower values, it's a one-line change in `packages/engine/src/data.ts`.
 
 ## Development
 
