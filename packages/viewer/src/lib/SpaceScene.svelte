@@ -10,6 +10,18 @@
 	} from "outpost-engine";
 	import { RESOURCE_LABELS, playerColor } from "./store.svelte";
 
+	const RESOURCE_COLORS: Record<Resource, string> = {
+		ore: "#a8b4c0",
+		water: "#5aa5e0",
+		titanium: "#d9a53a",
+		research: "#9a86e8",
+		microbiotics: "#5cbd62",
+		newChemicals: "#e082c2",
+		orbitalMedicine: "#55ccc6",
+		ringOre: "#f08c48",
+		moonOre: "#e8c550",
+	};
+
 	// A decorative space backdrop: a few asteroids drifting at different speeds,
 	// a space station slowly crossing, and an occasional comet. Fixed behind the
 	// board (z-index 0); the board sits above it. Asteroids/station are pure CSS;
@@ -91,19 +103,15 @@
 		if (n === 0) {
 			return [];
 		}
-		// Spread cluster centers across the full moon width, leaving margins.
-		// The decorative outpost sits at ~x=1128-1207; shift clusters left when
-		// there are few players, use full width for many.
-		const margin = 100;
-		const usableWidth = 1400;
+		// Spread cluster centers across the moon, staying left of the
+		// decorative outpost at ~x=1128-1207.
+		const margin = 80;
+		const xMax = 1020;
+		const usableWidth = xMax - margin;
 		for (let ci = 0; ci < n; ci++) {
 			const cluster = clusters[ci]!;
 			const buildings = cluster.buildings;
-			// Cluster center x: evenly spaced, but avoid the outpost zone (1100-1250).
-			let cx = margin + (usableWidth / Math.max(n, 1)) * (ci + 0.5);
-			if (cx > 1050 && cx < 1300) {
-				cx = cx < 1175 ? 1050 : 1300;
-			}
+			const cx = margin + (usableWidth / Math.max(n, 1)) * (ci + 0.5);
 			// Cluster center y: well below the rim so buildings (which extend
 			// upward ~14 units) never clip into space.
 			const cy = surfaceY(cx) + 10 + (ci % 2 === 0 ? 0 : 4);
@@ -225,7 +233,7 @@
 				class="bldg"
 				class:manned={b.manned}
 				class:upgrade={b.kind === "upgrade"}
-				style="--bc: {b.color}"
+				style="--bc: {b.color}; --rc: {RESOURCE_COLORS[b.resource]}"
 				transform="translate({b.x} {b.y})"
 			>
 				<title>{b.label}</title>
@@ -560,13 +568,13 @@
 		stroke-width: 1.4;
 	}
 	.bldg .res {
-		fill: rgba(255, 240, 200, 0.85);
+		fill: var(--rc);
 		stroke: none;
 		animation: domeGlow 3s ease-in-out infinite;
 	}
 	.bldg .res .thin {
 		fill: none;
-		stroke: rgba(255, 240, 200, 0.85);
+		stroke: var(--rc);
 		stroke-width: 0.6;
 	}
 	@keyframes domeGlow {
