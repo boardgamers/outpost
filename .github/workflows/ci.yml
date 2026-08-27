@@ -29,6 +29,9 @@ jobs:
       - name: Lint (oxlint)
         run: pnpm lint
 
+      - name: Build engine (needed for viewer typecheck)
+        run: pnpm --filter outpost-engine build
+
       - name: Typecheck (engine tsc + viewer svelte-check)
         run: pnpm tsc
 
