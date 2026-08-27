@@ -39,13 +39,20 @@
 						<LogFeed {store} />
 					</div>
 
-					<MarketPanel {state} {store} />
-
 					<div class="players" data-count={state.players.length}>
+						{#if store.playerIndex !== undefined}
+							<div class="me">
+								<PlayerPanel {state} {store} index={store.playerIndex} onNameClick={onPlayerClick} />
+							</div>
+						{/if}
 						{#each state.players as _, i (i)}
-							<PlayerPanel {state} {store} index={i} onNameClick={onPlayerClick} />
+							{#if i !== store.playerIndex}
+								<PlayerPanel {state} {store} index={i} onNameClick={onPlayerClick} />
+							{/if}
 						{/each}
 					</div>
+
+					<MarketPanel {state} {store} />
 				</div>
 			</div>
 		</div>
@@ -73,9 +80,12 @@
 		flex-direction: column;
 		gap: 14px;
 	}
-	/* Narrow screens are one column: auction banner, action bar, market, then the
-	   player panels. The action bar and the hand cards (the two halves of any
-	   move) stay adjacent instead of being split by the market. */
+	/* Narrow screens are one column: auction banner, action bar, your own panel,
+	   market, other players, and the event log last. Every move happens between
+	   the action bar and your own board (hand cards, factory chips), so those
+	   two stay adjacent instead of being split by the market. The grid becomes a
+	   plain column and order does the arranging; on wide screens the DOM order
+	   (players, market) is already right. */
 	.columns {
 		display: flex;
 		flex-direction: column;
@@ -87,13 +97,18 @@
 		gap: 14px;
 		min-width: 0;
 	}
-	/* `display: contents` lifts the action bar out of `.side` so its sticky
-	   containing block is `.main`, which spans the market and the player panels —
-	   otherwise the bar could not travel past the event feed. The sticky rule
-	   itself lives in ActionBar.svelte (scoped styles can't reach child roots). */
+	/* `display: contents` lifts the action bar and the event log out of `.side`
+	   so the bar's sticky containing block is `.main`, which spans everything
+	   below. The log is ordered to the very bottom — it is reference info, not
+	   part of the current move. The sticky rule itself lives in
+	   ActionBar.svelte (scoped styles can't reach child roots). */
 	.side {
 		display: contents;
 	}
+	.side > :global(.side) {
+		order: 10;
+	}
+	/* One grid of player panels, yours first. */
 	.players {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr));
@@ -133,6 +148,7 @@
 		.main > :global(.market) {
 			grid-row: 3;
 		}
+		/* Action bar + event log form the sticky right sidebar again. */
 		.side {
 			display: flex;
 			flex-direction: column;
@@ -141,6 +157,41 @@
 			grid-row: 1 / span 3;
 			position: sticky;
 			top: 16px;
+		}
+		.side > :global(.side) {
+			order: 0;
+		}
+		/* Your panel rejoins the grid as a regular cell. */
+		.players > .me {
+			display: contents;
+		}
+	}
+	/* Narrow screens: one column — auction banner, action bar, your own panel,
+	   market, other players, event log. The players grid becomes a plain vertical
+	   stack and the market is threaded between your panel and the opponents with
+	   order: every move happens between the action bar and your own board (hand
+	   cards, factory chips), never split by the market. */
+	@media (max-width: 1099px) {
+		.players {
+			display: contents;
+		}
+		.players > .me {
+			order: 3;
+		}
+		.players > :global(.panel) {
+			order: 5;
+		}
+		.main > :global(.market) {
+			order: 4;
+		}
+		.main > :global(.banner) {
+			order: 1;
+		}
+		.side > :global(.actionbar) {
+			order: 2;
+		}
+		.side > :global(.side) {
+			order: 6;
 		}
 	}
 	.loading {
@@ -153,10 +204,6 @@
 		.board {
 			padding: 10px;
 			gap: 10px;
-		}
-		.players {
-			grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-			gap: 8px;
 		}
 	}
 </style>
