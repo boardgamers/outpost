@@ -6,7 +6,9 @@
 		MIN_CARD_VALUE,
 		UPGRADE_SPECS,
 		UPGRADES,
+		handValueExpected,
 		handValueRange,
+		productionRange,
 		type GameState,
 		type Resource,
 	} from "outpost-engine";
@@ -55,6 +57,7 @@
 	const pickTotal = $derived(isMe ? store.pickTotal() : 0);
 	const pickRequired = $derived(isMe ? store.pickRequired : null);
 	const pickCount = $derived(isMe ? store.cardPick.length : 0);
+	const production = $derived(productionRange(player));
 </script>
 
 <div
@@ -100,8 +103,26 @@
 			<span class="cash" title="total hand value in credits">◈ {store.myHandValue}</span>
 		{:else if player.hand.length > 0}
 			{@const range = handValueRange(player)}
-			<span class="cash dim" title="possible hand value: card types are public, values are hidden">
+			<span
+				class="cash dim"
+				title="possible hand value: card types are public, values are hidden (average shown in parentheses)"
+			>
 				◈ {range.min === range.max ? range.min : `${range.min}–${range.max}`}
+				{#if range.min !== range.max}
+					<span class="avg">(~{Math.round(handValueExpected(player))})</span>
+				{/if}
+			</span>
+		{/if}
+		{#if production.max > 0}
+			<span
+				class="prod"
+				title="production per round: one card per manned factory plus free cards from producing upgrades (average in parentheses)"
+			>
+				⚙ ◈ {production.min === production.max
+					? production.min
+					: `${production.min}–${production.max}`}{#if production.min !== production.max}
+					<span class="avg">(~{Math.round(production.avg)})</span>
+				{/if}
 			</span>
 		{/if}
 		{#if player.done && !state.ended}
@@ -359,6 +380,14 @@
 	}
 	.stats .cash.dim {
 		color: color-mix(in srgb, var(--gold) 65%, var(--text-dim));
+		font-weight: 600;
+	}
+	.stats .avg {
+		opacity: 0.75;
+		font-weight: 500;
+	}
+	.stats .prod {
+		color: var(--text-mid);
 		font-weight: 600;
 	}
 	.picksum {

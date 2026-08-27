@@ -60,6 +60,20 @@ data deviations (some production deck distributions are inferred, not confirmed)
 - Production deck data (`src/data.ts`) reproduces the published card counts; treat it as
   rules data, not creative content. See README.md "Data notes / deviations" before changing
   distributions.
+- **Mega production cards are NOT implemented.** Expert Rules v1.32 uses optional rule
+  12.1 (standard in the 20th Anniversary edition): with 4+ manned water/titanium/
+  newChemicals factories a player may take 1 Mega card per group of 4 draws instead
+  (fixed value, counts as 4 cards toward hand capacity). Mega Water = 30 and Mega
+  New Chemicals = 88 are documented; the printed Mega Titanium value is not available
+  in any text source (only on the physical card), so the rule is on hold until it can
+  be confirmed — do not guess the value.
+- **fastBid option**: `options.fastBid === true` turns auctions into simultaneous
+  sealed-bid (see `src/moves.ts` `fastBidMaybeResolve`): `auction.bids` holds seat →
+  amount (0 = pass), `currentPlayer` returns all pending seats, no auto-pass (a pass
+  is a private 0), winner = highest bid (ties: earliest in purchase order from the
+  auctioneer) paying second-highest + 1 capped at their own bid (sole bidder: list
+  price). The resolving move records `info.winningBid/secondBid/winner` so a stripped
+  log replays the outcome verbatim (other bids are hidden to −1 by stripSecret).
 
 ## Viewer specifics
 
@@ -74,7 +88,14 @@ data deviations (some production deck distributions are inferred, not confirmed)
 - The BGS host measures `body.scrollHeight` — normal top-down document flow, no vertical
   centering tricks.
 - `wrapper.currentPlayer` returns an **array** of seats during the simultaneous discard
-  phase; the dev backend (and any future integration) must handle both shapes.
+  phase and during fastBid auctions; the dev backend (and any future integration) must
+  handle both shapes.
+- **Responsive layout** (`App.svelte`): mobile is one column ordered action bar → own
+  panel → market → other players → event log (the action bar is sticky, see
+  `ActionBar.svelte`); desktop is a two-column grid with the players grid + market on
+  the left and a sticky action-bar/log sidebar on the right. Child-component roots
+  (`.banner`, `.market`, `.panel`, LogFeed's `.side`) need `:global()` to be targeted
+  from `App.svelte` (Svelte scoped styles).
 
 ## Workflow
 
@@ -89,8 +110,12 @@ pnpm build    # engine dist/ + viewer dist/ (iife + css)
 pnpm check    # fmt:check + lint + tsc + test + build
 ```
 
-Run `pnpm check` before committing. Commit with clear messages; do not create PRs
-(this repo has no remote).
+Run `pnpm check` before committing. Commit with clear messages. The repo has a
+GitHub remote (`origin` = github.com:boardgamers/outpost); push `main` directly
+(`git pull --rebase` first if behind), no PR workflow.
+
+The dev harness (`pnpm dev`) is a hot-seat vs bots: `?players=N&seed=S&auto=1&
+delay=ms&fastBid=1` (auto = bots also play your seat).
 
 ## Deploying to BGS (prod)
 
@@ -139,3 +164,20 @@ curl "$BASE/1" -H "$AUTH"
 
 Step 1 alone is enough for an engine-only fix (no PUT needed). A brand-new game
 version integer (`$BASE/2`) instead leaves ongoing games on the old code forever.
+
+### Rules page (CMS)
+
+The public rules page (`/page/outpost/rules`) is a CMS doc in the `pages`
+collection, not a repo file. Edit it via the admin API (same token; the
+`gameinfo:outpost` grant covers pages named `outpost:*`):
+
+```bash
+curl "https://admin.boardgamers.space/api/page/outpost:rules"   # read (public)
+curl -X PUT "https://admin.boardgamers.space/api/admin/page/outpost:rules/en" \
+	-H "$AUTH" -H "Content-Type: application/json" \
+	--data-binary @payload.json   # { "title": "Outpost rules", "content": "<markdown>" }
+```
+
+Game-creation options (e.g. `fastBid`) are declared in the `options` array on the
+gameinfo doc (same GET/PUT flow as step 3); option values are captured on the game
+doc at creation, so editing the declaration never affects ongoing games.

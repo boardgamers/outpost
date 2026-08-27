@@ -40,6 +40,10 @@ physical decks differ in a few counts (e.g. only two "4" water cards).
   game seed; BGS supplies the seed, so replays and save/load are exact.
 - Random VP tie-breaks in purchase order are resolved by seat order (never relevant online).
 - Auction winners receive no change when overpaying, per the rules.
+- Mega production cards (expert rule 12.1: trade 4 water/titanium/new-chemicals draws for a
+  fixed-value Mega card) are not implemented: the printed Mega Titanium value could not be
+  confirmed from any text source (Mega Water = 30 and Mega New Chemicals = 88 are known).
+  Production always draws one card per manned factory.
 
 ## Development
 

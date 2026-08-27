@@ -269,6 +269,45 @@ export function handValueRange(player: PlayerState): { min: number; max: number 
 	return { min, max };
 }
 
+/** Expected hand value from public information: known cards exact, hidden cards at their deck average. */
+export function handValueExpected(player: PlayerState): number {
+	let total = 0;
+	for (const card of player.hand) {
+		total += card.v >= 0 ? card.v : PRODUCTION_DECKS[card.t].average;
+	}
+	return total;
+}
+
+/**
+ * Per-round production of a player: one card per manned factory plus the free
+ * cards from producing upgrades. Returns the min/max/expected total value —
+ * all public information (manned factories and upgrades are visible).
+ */
+export function productionRange(player: PlayerState): { min: number; max: number; avg: number } {
+	let min = 0;
+	let max = 0;
+	let avg = 0;
+	const add = (resource: Resource) => {
+		min += MIN_CARD_VALUE[resource];
+		max += MAX_CARD_VALUE[resource];
+		avg += PRODUCTION_DECKS[resource].average;
+	};
+	for (const factory of player.factories) {
+		if (factory.manned) {
+			add(factory.type);
+		}
+	}
+	for (const u of UPGRADES) {
+		const resource = UPGRADE_SPECS[u].produces;
+		if (resource) {
+			for (let i = 0; i < player.upgrades[u]; i++) {
+				add(resource);
+			}
+		}
+	}
+	return { min, max, avg };
+}
+
 export function populationCost(player: PlayerState): number {
 	return player.upgrades.ecoplants > 0 ? POPULATION_COST_ECOPLANTS : POPULATION_COST;
 }

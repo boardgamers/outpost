@@ -80,7 +80,13 @@
 	{/if}
 	<div class="supply">
 		{#each supplyLeft as x (x.u)}
-			<span class="stag" title="{UPGRADE_SPECS[x.u].name} left in the supply">{UPGRADE_SPECS[x.u].name} ×{x.n}</span>
+			{@const spec = UPGRADE_SPECS[x.u]}
+			<span
+				class="stag"
+				title="{spec.name} ({spec.vp} VP, list ◈ {spec.price}): {UPGRADE_EFFECTS[x.u]} ×{x.n} left in the supply"
+			>
+				{spec.name} ×{x.n}
+			</span>
 		{/each}
 		{#if supplyLeft.length === 0}
 			<span class="stag dim">Supply exhausted</span>

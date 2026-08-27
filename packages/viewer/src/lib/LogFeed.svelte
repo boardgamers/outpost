@@ -10,7 +10,7 @@
 	const recent = $derived(
 		lines
 			.map((line, index) => ({ line, index }))
-			.slice(-10)
+			.slice(-40)
 			.reverse()
 	);
 </script>
@@ -46,7 +46,7 @@
 		border: 1px solid var(--line);
 		border-radius: var(--radius);
 		padding: 8px 12px;
-		max-height: 170px;
+		max-height: 320px;
 		overflow-y: auto;
 		display: flex;
 		flex-direction: column;
