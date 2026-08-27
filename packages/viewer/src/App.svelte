@@ -19,7 +19,7 @@
 	const state = $derived(store.state);
 </script>
 
-<SpaceScene />
+<SpaceScene gameState={state} />
 
 {#if state}
 	<div class="board">

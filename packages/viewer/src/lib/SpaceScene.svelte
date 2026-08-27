@@ -1,11 +1,58 @@
 <script lang="ts">
 	import { onMount } from "svelte";
+	import type { GameState } from "outpost-engine";
+	import { playerColor } from "./store.svelte";
 
 	// A decorative space backdrop: a few asteroids drifting at different speeds,
 	// a space station slowly crossing, and an occasional comet. Fixed behind the
 	// board (z-index 0); the board sits above it. Asteroids/station are pure CSS;
 	// the comet is launched by JS at random intervals/positions/angles so it
 	// feels organic rather than a fixed loop. Honors prefers-reduced-motion.
+	// Factory domes on the moon surface mirror the actual game state: one dome
+	// per factory, colored by owner, lit when manned.
+
+	interface Props {
+		gameState: GameState | null;
+	}
+
+	let { gameState }: Props = $props();
+
+	interface Dome {
+		cx: number;
+		cy: number;
+		color: string;
+		manned: boolean;
+	}
+
+	const domes = $derived.by((): Dome[] => {
+		if (!gameState) {
+			return [];
+		}
+		const all: { playerIndex: number; manned: boolean }[] = [];
+		for (let i = 0; i < gameState.players.length; i++) {
+			for (const f of gameState.players[i]!.factories) {
+				all.push({ playerIndex: i, manned: f.manned });
+			}
+		}
+		if (all.length === 0) {
+			return [];
+		}
+		// Spread domes along the moon surface. The outpost cluster sits at
+		// ~x=1128-1207, so domes occupy the left ~65% of the 1600-wide viewBox.
+		// Surface y varies along the rim curve; approximate it for placement.
+		const xStart = 60;
+		const xEnd = 1050;
+		const spacing = Math.min(38, (xEnd - xStart) / Math.max(all.length, 1));
+		const totalWidth = spacing * (all.length - 1);
+		const x0 = xStart + Math.max(0, (xEnd - xStart - totalWidth) / 2);
+		return all.map((f, i) => {
+			const cx = x0 + i * spacing;
+			// Approximate the rim curve: parabolic dip matching the Q/T path.
+			const t = cx / 1600;
+			const cy = 52 + 18 * Math.sin(t * Math.PI * 2.2) * (1 - t * 0.3);
+			return { cx, cy, color: playerColor(f.playerIndex), manned: f.manned };
+		});
+	});
 
 	let cometEl = $state<HTMLDivElement | null>(null);
 
@@ -96,6 +143,15 @@
 			<rect x="1164" y="52" width="3" height="4" rx="0.5" class="win" />
 			<rect x="1187" y="55" width="2.5" height="3.5" rx="0.5" class="win" />
 		</g>
+		{#each domes as dome, i (i)}
+			<g class="dome" class:manned={dome.manned} style="--dc: {dome.color}">
+				<path d="M{dome.cx - 7} {dome.cy} a7 7 0 0 1 14 0 z" />
+				<rect x={dome.cx - 8} y={dome.cy - 1} width="16" height="2" rx="0.8" />
+				{#if dome.manned}
+					<rect x={dome.cx - 2} y={dome.cy - 5} width="4" height="3.5" rx="0.5" class="glow" />
+				{/if}
+			</g>
+		{/each}
 	</svg>
 </div>
 
@@ -273,11 +329,51 @@
 		}
 	}
 
+	/* Factory domes: one per factory, colored by owner. Unmanned domes are
+	   dark outlines; manned domes are filled with the player color and have
+	   a lit window. */
+	.dome path {
+		fill: #1a1e26;
+		stroke: var(--dc);
+		stroke-width: 1.2;
+		opacity: 0.55;
+	}
+	.dome rect {
+		fill: #1a1e26;
+		stroke: var(--dc);
+		stroke-width: 0.8;
+		opacity: 0.55;
+	}
+	.dome.manned path {
+		fill: var(--dc);
+		opacity: 0.85;
+	}
+	.dome.manned rect {
+		fill: color-mix(in srgb, var(--dc) 60%, #1a1e26);
+		opacity: 0.85;
+	}
+	.dome .glow {
+		fill: rgba(255, 240, 200, 0.9);
+		stroke: none;
+		opacity: 1;
+		animation: domeGlow 3s ease-in-out infinite;
+	}
+	@keyframes domeGlow {
+		0%,
+		100% {
+			opacity: 0.6;
+		}
+		50% {
+			opacity: 1;
+		}
+	}
+
 	@media (prefers-reduced-motion: reduce) {
 		.rock,
 		.station,
 		.comet,
-		.moon .outpost .beacon {
+		.moon .outpost .beacon,
+		.dome .glow {
 			animation: none;
 		}
 		.comet {
