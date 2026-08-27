@@ -43,7 +43,7 @@
 
 	function surfaceY(x: number): number {
 		const t = x / 1600;
-		return 52 + 18 * Math.sin(t * Math.PI * 2.2) * (1 - t * 0.3);
+		return 68 + 14 * Math.sin(t * Math.PI * 2.2) * (1 - t * 0.3);
 	}
 
 	const clusters = $derived.by((): Cluster[] => {
@@ -104,25 +104,27 @@
 			if (cx > 1050 && cx < 1300) {
 				cx = cx < 1175 ? 1050 : 1300;
 			}
-			// Cluster center y: on the surface, with slight vertical offset per
-			// cluster so they don't all sit on the same line.
-			const cy = surfaceY(cx) + (ci % 2 === 0 ? 0 : 6);
+			// Cluster center y: well below the rim so buildings (which extend
+			// upward ~14 units) never clip into space.
+			const cy = surfaceY(cx) + 10 + (ci % 2 === 0 ? 0 : 4);
 
-			// Arrange buildings in a rough circle/ellipse around the center.
-			// Radius grows with building count.
+			// Fill the ellipse interior: use sunflower/spiral phyllotaxis so
+			// buildings spread evenly across the whole area, not just the rim.
 			const count = buildings.length;
-			const rx = Math.max(20, Math.min(60, count * 5));
-			const ry = Math.max(8, rx * 0.35);
+			const rx = Math.max(25, Math.min(70, count * 4.5));
+			const ry = Math.max(10, rx * 0.3);
+			const goldenAngle = Math.PI * (3 - Math.sqrt(5));
 
 			for (let bi = 0; bi < count; bi++) {
 				const b = buildings[bi]!;
-				// Distribute around an ellipse, with slight deterministic jitter
-				// so it doesn't look like a perfect circle.
-				const angle = (bi / count) * Math.PI * 2 + ci * 1.3;
-				const jitterX = ((bi * 7 + ci * 13) % 11) - 5;
-				const jitterY = ((bi * 5 + ci * 9) % 7) - 3;
-				const x = cx + Math.cos(angle) * rx + jitterX;
-				const y = cy + Math.sin(angle) * ry + jitterY;
+				// Phyllotaxis: each point at radius proportional to sqrt(index),
+				// angle stepping by the golden angle. This fills the ellipse.
+				const r = Math.sqrt((bi + 0.5) / count);
+				const angle = bi * goldenAngle + ci * 2.1;
+				const jitterX = ((bi * 7 + ci * 13) % 9) - 4;
+				const jitterY = ((bi * 5 + ci * 9) % 5) - 2;
+				const x = cx + Math.cos(angle) * r * rx + jitterX;
+				const y = cy + Math.sin(angle) * r * ry + jitterY;
 				result.push({ ...b, x, y });
 			}
 		}
@@ -315,7 +317,31 @@
 					{/if}
 				{/if}
 				{#if b.manned}
-					<circle class="win" cx="0" cy="-4" r="1.2" />
+					<g class="res" transform="translate(0 -5)">
+						{#if b.resource === "ore"}
+							<path d="M-2.5 1.5 L0 -2.5 L2.5 1.5 z" />
+						{:else if b.resource === "water"}
+							<path d="M0 -2.5 C1.5 -0.5 2 0.5 2 1.5 A2 2 0 1 1 -2 1.5 C-2 0.5 -1.5 -0.5 0 -2.5 z" />
+						{:else if b.resource === "titanium"}
+							<path d="M0 -2.5 L2 -1 L2 1.5 L0 2.5 L-2 1.5 L-2 -1 z" />
+						{:else if b.resource === "research"}
+							<circle cx="0" cy="0" r="1" />
+							<ellipse cx="0" cy="0" rx="3" ry="1.2" class="thin" />
+						{:else if b.resource === "microbiotics"}
+							<circle cx="-1" cy="-1" r="1.5" />
+							<circle cx="1" cy="1" r="1.8" class="thin" />
+						{:else if b.resource === "newChemicals"}
+							<path d="M-1 -2.5 L-1 -0.5 L-2.5 2 L2.5 2 L1 -0.5 L1 -2.5 z" />
+						{:else if b.resource === "orbitalMedicine"}
+							<circle cx="0" cy="0" r="2.5" class="thin" />
+							<path d="M0 -1.5 L0 1.5 M-1.5 0 L1.5 0" />
+						{:else if b.resource === "ringOre"}
+							<circle cx="0" cy="0" r="1.5" />
+							<ellipse cx="0" cy="0" rx="3.5" ry="1.2" transform="rotate(-18)" class="thin" />
+						{:else if b.resource === "moonOre"}
+							<path d="M2 1.5 A2.5 2.5 0 1 1 -1 -2 2 2 0 0 0 2 1.5 z" />
+						{/if}
+					</g>
 				{/if}
 			</g>
 		{/each}
@@ -533,9 +559,15 @@
 	.bldg.upgrade .body {
 		stroke-width: 1.4;
 	}
-	.bldg .win {
-		fill: rgba(255, 240, 200, 0.9);
+	.bldg .res {
+		fill: rgba(255, 240, 200, 0.85);
+		stroke: none;
 		animation: domeGlow 3s ease-in-out infinite;
+	}
+	.bldg .res .thin {
+		fill: none;
+		stroke: rgba(255, 240, 200, 0.85);
+		stroke-width: 0.6;
 	}
 	@keyframes domeGlow {
 		0%,
@@ -552,7 +584,7 @@
 		.station,
 		.comet,
 		.moon .outpost .beacon,
-		.bldg .win {
+		.bldg .res {
 			animation: none;
 		}
 		.comet {
