@@ -30,22 +30,22 @@
 
 			<div class="columns">
 				<div class="main">
+					{#if state.auction && !state.ended}
+						<AuctionBanner {state} {store} />
+					{/if}
+
+					<div class="side">
+						<ActionBar {store} />
+						<LogFeed {store} />
+					</div>
+
+					<MarketPanel {state} {store} />
+
 					<div class="players" data-count={state.players.length}>
 						{#each state.players as _, i (i)}
 							<PlayerPanel {state} {store} index={i} onNameClick={onPlayerClick} />
 						{/each}
 					</div>
-
-					{#if state.auction && !state.ended}
-						<AuctionBanner {state} {store} />
-					{/if}
-
-					<MarketPanel {state} {store} />
-				</div>
-
-				<div class="side">
-					<ActionBar {store} />
-					<LogFeed {store} />
 				</div>
 			</div>
 		</div>
@@ -73,6 +73,9 @@
 		flex-direction: column;
 		gap: 14px;
 	}
+	/* Narrow screens are one column: auction banner, action bar, market, then the
+	   player panels. The action bar and the hand cards (the two halves of any
+	   move) stay adjacent instead of being split by the market. */
 	.columns {
 		display: flex;
 		flex-direction: column;
@@ -84,11 +87,12 @@
 		gap: 14px;
 		min-width: 0;
 	}
+	/* `display: contents` lifts the action bar out of `.side` so its sticky
+	   containing block is `.main`, which spans the market and the player panels —
+	   otherwise the bar could not travel past the event feed. The sticky rule
+	   itself lives in ActionBar.svelte (scoped styles can't reach child roots). */
 	.side {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-		min-width: 0;
+		display: contents;
 	}
 	.players {
 		display: grid;
@@ -99,23 +103,42 @@
 		align-items: start;
 	}
 	/* Wide screens: two columns — players/market on the left, action bar + event
-   feed in a fixed right sidebar. The main column grows to fill the board, so
-   the header strip and the content row always share the same width (sizing
-   the page to its content instead would track unwrapped log lines and drift
-   wider than what's visible). */
+	   feed in a fixed right sidebar. The main column grows to fill the board, so
+	   the header strip and the content row always share the same width (sizing
+	   the page to its content instead would track unwrapped log lines and drift
+	   wider than what's visible). */
 	@media (min-width: 1100px) {
 		.columns {
-			flex-direction: row;
-			align-items: flex-start;
-			gap: 24px;
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) 360px;
+			align-items: start;
+			gap: 14px 24px;
 		}
 		.main {
-			flex: 1 1 auto;
-			min-width: 0;
-			align-items: stretch;
+			display: contents;
+		}
+		/* .banner/.market are child-component roots, so they need :global to be
+		   visible to this scoped stylesheet. */
+		.main > .players,
+		.main > :global(.banner),
+		.main > :global(.market) {
+			grid-column: 1;
+		}
+		.main > .players {
+			grid-row: 1;
+		}
+		.main > :global(.banner) {
+			grid-row: 2;
+		}
+		.main > :global(.market) {
+			grid-row: 3;
 		}
 		.side {
-			flex: 0 0 360px;
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+			grid-column: 2;
+			grid-row: 1 / span 3;
 			position: sticky;
 			top: 16px;
 		}

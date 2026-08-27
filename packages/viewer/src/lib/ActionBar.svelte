@@ -216,6 +216,16 @@
 		flex-direction: column;
 		gap: 6px;
 	}
+	/* Narrow screens: the bar concludes every interaction (pay, confirm,
+	   discard), so keep it pinned while scrolling down to the hand cards. Wide
+	   screens already pin the whole sidebar from App.svelte. */
+	@media (max-width: 1099px) {
+		.actionbar {
+			position: sticky;
+			top: 10px;
+			z-index: 5;
+		}
+	}
 	.flow {
 		display: flex;
 		align-items: center;
