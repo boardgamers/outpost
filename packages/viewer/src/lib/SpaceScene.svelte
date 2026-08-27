@@ -1,7 +1,14 @@
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { UPGRADE_SPECS, type FactoryType, type GameState, type Resource, type Upgrade } from "outpost-engine";
-	import { playerColor } from "./store.svelte";
+	import {
+		FACTORIES,
+		UPGRADE_SPECS,
+		type FactoryType,
+		type GameState,
+		type Resource,
+		type Upgrade,
+	} from "outpost-engine";
+	import { RESOURCE_LABELS, playerColor } from "./store.svelte";
 
 	// A decorative space backdrop: a few asteroids drifting at different speeds,
 	// a space station slowly crossing, and an occasional comet. Fixed behind the
@@ -9,7 +16,7 @@
 	// the comet is launched by JS at random intervals/positions/angles so it
 	// feels organic rather than a fixed loop. Honors prefers-reduced-motion.
 	// The moon surface shows per-player clusters of buildings: one shape per
-	// factory type, special structures for producing upgrades, colored by owner.
+	// factory type, special structures for upgrades, colored by owner.
 
 	interface Props {
 		gameState: GameState | null;
@@ -25,11 +32,18 @@
 		type: FactoryType | Upgrade;
 		resource: Resource;
 		manned: boolean;
+		label: string;
 	}
 
 	interface Cluster {
 		color: string;
+		name: string;
 		buildings: Omit<Building, "x" | "y">[];
+	}
+
+	function surfaceY(x: number): number {
+		const t = x / 1600;
+		return 52 + 18 * Math.sin(t * Math.PI * 2.2) * (1 - t * 0.3);
 	}
 
 	const clusters = $derived.by((): Cluster[] => {
@@ -46,6 +60,7 @@
 						type: f.type,
 						resource: f.type,
 						manned: f.manned,
+						label: `${p.name}: ${RESOURCE_LABELS[f.type]} factory (${f.manned ? "manned" : "unmanned"})`,
 					});
 				}
 				for (const u of Object.keys(p.upgrades) as Upgrade[]) {
@@ -54,47 +69,60 @@
 						continue;
 					}
 					const spec = UPGRADE_SPECS[u];
-					if (!spec.produces && !spec.freeFactory) {
-						continue;
-					}
 					for (let n = 0; n < count; n++) {
 						buildings.push({
 							color: playerColor(i),
 							kind: "upgrade",
 							type: u,
-							resource: spec.produces ?? (spec.freeFactory as Resource),
+							resource: spec.produces ?? (spec.freeFactory as Resource) ?? "ore",
 							manned: true,
+							label: `${p.name}: ${spec.name}${count > 1 ? ` ×${count}` : ""}`,
 						});
 					}
 				}
-				return { color: playerColor(i), buildings };
+				return { color: playerColor(i), name: p.name, buildings };
 			})
 			.filter((c) => c.buildings.length > 0);
 	});
 
 	const positioned = $derived.by((): Building[] => {
 		const result: Building[] = [];
-		const xStart = 80;
-		const xEnd = 1050;
 		const n = clusters.length;
 		if (n === 0) {
 			return [];
 		}
-		const clusterSpace = (xEnd - xStart) / n;
+		// Spread cluster centers across the full moon width, leaving margins.
+		// The decorative outpost sits at ~x=1128-1207; shift clusters left when
+		// there are few players, use full width for many.
+		const margin = 100;
+		const usableWidth = 1400;
 		for (let ci = 0; ci < n; ci++) {
 			const cluster = clusters[ci]!;
-			const cx = xStart + clusterSpace * (ci + 0.5);
 			const buildings = cluster.buildings;
-			for (let bi = 0; bi < buildings.length; bi++) {
+			// Cluster center x: evenly spaced, but avoid the outpost zone (1100-1250).
+			let cx = margin + (usableWidth / Math.max(n, 1)) * (ci + 0.5);
+			if (cx > 1050 && cx < 1300) {
+				cx = cx < 1175 ? 1050 : 1300;
+			}
+			// Cluster center y: on the surface, with slight vertical offset per
+			// cluster so they don't all sit on the same line.
+			const cy = surfaceY(cx) + (ci % 2 === 0 ? 0 : 6);
+
+			// Arrange buildings in a rough circle/ellipse around the center.
+			// Radius grows with building count.
+			const count = buildings.length;
+			const rx = Math.max(20, Math.min(60, count * 5));
+			const ry = Math.max(8, rx * 0.35);
+
+			for (let bi = 0; bi < count; bi++) {
 				const b = buildings[bi]!;
-				const row = Math.floor(bi / 4);
-				const col = bi % 4;
-				const rowCount = Math.min(4, buildings.length - row * 4);
-				const offsetX = (col - (rowCount - 1) / 2) * 26;
-				const x = cx + offsetX;
-				const t = x / 1600;
-				const baseY = 52 + 18 * Math.sin(t * Math.PI * 2.2) * (1 - t * 0.3);
-				const y = baseY - row * 24;
+				// Distribute around an ellipse, with slight deterministic jitter
+				// so it doesn't look like a perfect circle.
+				const angle = (bi / count) * Math.PI * 2 + ci * 1.3;
+				const jitterX = ((bi * 7 + ci * 13) % 11) - 5;
+				const jitterY = ((bi * 5 + ci * 9) % 7) - 3;
+				const x = cx + Math.cos(angle) * rx + jitterX;
+				const y = cy + Math.sin(angle) * ry + jitterY;
 				result.push({ ...b, x, y });
 			}
 		}
@@ -198,6 +226,7 @@
 				style="--bc: {b.color}"
 				transform="translate({b.x} {b.y})"
 			>
+				<title>{b.label}</title>
 				{#if b.kind === "factory"}
 					{#if b.type === "ore"}
 						<path class="body" d="M-8 0 a8 8 0 0 1 16 0 z" />
@@ -251,6 +280,34 @@
 						<rect class="body" x="-5" y="-14" width="10" height="14" rx="1" />
 						<line class="detail" x1="0" y1="-14" x2="0" y2="-19" />
 						<circle class="detail" cx="0" cy="-20" r="1.5" />
+						<rect class="base" x="-7" y="-1" width="14" height="2" rx="0.8" />
+					{:else if b.type === "dataLibrary"}
+						<rect class="body" x="-6" y="-8" width="12" height="8" rx="1" />
+						<line class="detail" x1="-3" y1="-5" x2="3" y2="-5" />
+						<line class="detail" x1="-3" y1="-3" x2="3" y2="-3" />
+						<rect class="base" x="-7" y="-1" width="14" height="2" rx="0.8" />
+					{:else if b.type === "warehouse"}
+						<rect class="body" x="-8" y="-7" width="16" height="7" rx="1" />
+						<line class="detail" x1="-4" y1="-7" x2="-4" y2="0" />
+						<line class="detail" x1="4" y1="-7" x2="4" y2="0" />
+						<rect class="base" x="-9" y="-1" width="18" height="2" rx="0.8" />
+					{:else if b.type === "heavyEquipment"}
+						<rect class="body" x="-7" y="-6" width="14" height="6" rx="1" />
+						<circle class="detail" cx="-4" cy="-8" r="2" />
+						<circle class="detail" cx="4" cy="-8" r="2" />
+						<rect class="base" x="-8" y="-1" width="16" height="2" rx="0.8" />
+					{:else if b.type === "nodule"}
+						<circle class="body" cx="0" cy="-5" r="5" />
+						<rect class="base" x="-6" y="-1" width="12" height="2" rx="0.8" />
+					{:else if b.type === "robots"}
+						<rect class="body" x="-4" y="-10" width="8" height="10" rx="2" />
+						<circle class="detail" cx="0" cy="-12" r="2.5" />
+						<rect class="base" x="-6" y="-1" width="12" height="2" rx="0.8" />
+					{:else if b.type === "ecoplants"}
+						<path class="body" d="M-6 0 a6 6 0 0 1 12 0 z" />
+						<line class="detail" x1="0" y1="-6" x2="0" y2="-10" />
+						<circle class="detail" cx="-2" cy="-11" r="1.5" />
+						<circle class="detail" cx="2" cy="-11" r="1.5" />
 						<rect class="base" x="-7" y="-1" width="14" height="2" rx="0.8" />
 					{:else}
 						<path class="body" d="M-7 0 a7 7 0 0 1 14 0 z" />
@@ -439,8 +496,11 @@
 		}
 	}
 
-	/* Player buildings: factories and producing upgrades clustered per player.
+	/* Player buildings: factories and upgrades clustered per player.
 	   Player color is the outline/accent; unmanned factories are dimmer. */
+	.bldg {
+		pointer-events: all;
+	}
 	.bldg .body {
 		fill: #1a1e26;
 		stroke: var(--bc);
