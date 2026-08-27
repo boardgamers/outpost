@@ -53,9 +53,49 @@
 		buildings: Omit<Building, "x" | "y">[];
 	}
 
+	// The rim path is: M0 70 Q 200 40 420 58 T 820 52 T 1220 62 T 1600 48
+	// Piecewise quadratic bezier segments. Compute the exact y for a given x
+	// by finding the segment and evaluating the quadratic at parameter t.
+	interface Seg {
+		x0: number;
+		y0: number;
+		cx: number;
+		cy: number;
+		x1: number;
+		y1: number;
+	}
+	const RIM_SEGMENTS: Seg[] = [
+		{ x0: 0, y0: 70, cx: 200, cy: 40, x1: 420, y1: 58 },
+		{ x0: 420, y0: 58, cx: 640, cy: 76, x1: 820, y1: 52 },
+		{ x0: 820, y0: 52, cx: 1000, cy: 28, x1: 1220, y1: 62 },
+		{ x0: 1220, y0: 62, cx: 1440, cy: 96, x1: 1600, y1: 48 },
+	];
+
 	function surfaceY(x: number): number {
-		const t = x / 1600;
-		return 68 + 14 * Math.sin(t * Math.PI * 2.2) * (1 - t * 0.3);
+		for (const s of RIM_SEGMENTS) {
+			if (x >= s.x0 && x <= s.x1) {
+				// Solve quadratic bezier for t given x (x is monotonic in t here).
+				// x(t) = (1-t)²x0 + 2(1-t)t·cx + t²x1
+				// Rearranged: (x0 - 2cx + x1)t² + 2(cx - x0)t + (x0 - x) = 0
+				const a = s.x0 - 2 * s.cx + s.x1;
+				const b = 2 * (s.cx - s.x0);
+				const c = s.x0 - x;
+				let t: number;
+				if (Math.abs(a) < 1e-9) {
+					t = -c / b;
+				} else {
+					const disc = b * b - 4 * a * c;
+					t = (-b + Math.sqrt(Math.max(0, disc))) / (2 * a);
+					if (t < 0 || t > 1) {
+						t = (-b - Math.sqrt(Math.max(0, disc))) / (2 * a);
+					}
+				}
+				t = Math.max(0, Math.min(1, t));
+				const mt = 1 - t;
+				return mt * mt * s.y0 + 2 * mt * t * s.cy + t * t * s.y1;
+			}
+		}
+		return 60;
 	}
 
 	const clusters = $derived.by((): Cluster[] => {
@@ -112,9 +152,9 @@
 			const cluster = clusters[ci]!;
 			const buildings = cluster.buildings;
 			const cx = margin + (usableWidth / Math.max(n, 1)) * (ci + 0.5);
-			// Cluster center y: well below the rim so buildings (which extend
-			// upward ~14 units) never clip into space.
-			const cy = surfaceY(cx) + 10 + (ci % 2 === 0 ? 0 : 4);
+			// Cluster center y: below the rim with enough clearance for the
+			// tallest building (outpost tower extends -20 above its origin).
+			const cy = surfaceY(cx) + 22 + (ci % 2 === 0 ? 0 : 4);
 
 			// Fill the ellipse interior: use sunflower/spiral phyllotaxis so
 			// buildings spread evenly across the whole area, not just the rim.
@@ -132,7 +172,10 @@
 				const jitterX = ((bi * 7 + ci * 13) % 9) - 4;
 				const jitterY = ((bi * 5 + ci * 9) % 5) - 2;
 				const x = cx + Math.cos(angle) * r * rx + jitterX;
-				const y = cy + Math.sin(angle) * r * ry + jitterY;
+				const rawY = cy + Math.sin(angle) * r * ry + jitterY;
+				// Clamp: never above the surface at this x (buildings extend up to -20).
+				const minY = surfaceY(x) + 20;
+				const y = Math.max(rawY, minY);
 				result.push({ ...b, x, y });
 			}
 		}
