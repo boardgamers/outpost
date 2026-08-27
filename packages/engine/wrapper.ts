@@ -49,8 +49,16 @@ export function currentPlayer(data: GameState): number | number[] | undefined {
 			const waiting = data.players.flatMap((p, seat) => (p.mustDiscard && !p.dropped ? [seat] : []));
 			return waiting.length === 1 ? waiting[0] : waiting;
 		}
-		case "auction":
+		case "auction": {
+			// fastBid: everyone who hasn't bid yet is on the clock at once.
+			if (data.auction?.bids) {
+				const pending = data.players.flatMap((p, seat) =>
+					!p.dropped && data.auction?.bids?.[seat] === undefined ? [seat] : []
+				);
+				return pending.length === 1 ? pending[0] : pending;
+			}
 			return data.auction?.activeBidder;
+		}
 		case "auctionPayment":
 			return data.auction?.highBidder;
 		case "actions":
@@ -69,6 +77,12 @@ function hideProduced(entry: LogEntry, viewer?: number): LogEntry {
 		// The seed derives every deck order; it must never reach a client.
 		return { ...entry, seed: "" };
 	}
+	if (entry.type === "move" && entry.move.action === "bid" && entry.player !== viewer) {
+		// fastBid: another player's sealed bid stays hidden. Masking a
+		// sequential bid too is harmless — the amount is already public via
+		// auction.highBid for the seats it concerns.
+		return { ...entry, move: { action: "bid", amount: -1 } };
+	}
 	if (entry.type !== "round") {
 		return entry;
 	}
@@ -83,10 +97,22 @@ function hideProduced(entry: LogEntry, viewer?: number): LogEntry {
 
 export function stripSecret(data: GameState, player?: number): GameState {
 	const viewer = player !== undefined && player >= 0 ? player : undefined;
+	// fastBid: other players' sealed bids are hidden while the auction runs.
+	const auction = data.auction;
+	const maskedAuction =
+		auction?.bids && data.phase === "auction"
+			? {
+					...auction,
+					bids: Object.fromEntries(
+						Object.entries(auction.bids).map(([seat, amount]) => [seat, Number(seat) === viewer ? amount : -1])
+					),
+				}
+			: auction;
 	return {
 		...data,
 		// The seed derives every deck order; hiding it is what keeps hands secret.
 		seed: "",
+		auction: maskedAuction,
 		decks: Object.fromEntries(
 			Object.entries(data.decks).map(([resource, deck]) => [resource, deck.map(() => -1)])
 		) as GameState["decks"],

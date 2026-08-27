@@ -84,7 +84,9 @@ export function sanitizeMove(raw: unknown): Move {
 				bid: int(move.bid, "bid", 0),
 			};
 		case "bid":
-			return { action, amount: int(move.amount, "amount", 0) };
+			// -1 is the masked value of another player's sealed bid in a stripped
+			// log (fastBid); the live game never sends it, replay does.
+			return { action, amount: int(move.amount, "amount", -1) };
 		case "bidPass":
 			return { action };
 		case "pay":

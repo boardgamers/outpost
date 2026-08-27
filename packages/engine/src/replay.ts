@@ -1,4 +1,4 @@
-import { applyMove, enterDiscardPhase, setReplayAutoPassed, setReplayMode } from "./moves.js";
+import { applyMove, enterDiscardPhase, setReplayAutoPassed, setReplayFastResolve, setReplayMode } from "./moves.js";
 import { setup } from "./state.js";
 import type { GameState, LogEntry } from "./types.js";
 
@@ -28,14 +28,19 @@ export function replay(state: GameState, options?: { to?: number }): GameState {
 			} else if (entry.type === "move") {
 				// Seats the live game auto-passed during this move are recorded in
 				// its info; advanceBidder replays them verbatim (the true-value
-				// auto-pass cannot be recomputed from a stripped log).
+				// auto-pass cannot be recomputed from a stripped log). Same for a
+				// fastBid resolution: the other sealed bids are hidden.
 				setReplayAutoPassed(entry.info?.autoPassed ?? []);
+				if (entry.info?.winningBid !== undefined) {
+					setReplayFastResolve(entry.info.winningBid, entry.info.secondBid ?? 0, entry.info.winner ?? entry.player);
+				}
 				applyMove(replayed, entry.move, entry.player);
 			}
 		}
 	} finally {
 		setReplayMode(false);
 		setReplayAutoPassed([]);
+		setReplayFastResolve(0, 0, -1);
 	}
 	return replayed;
 }

@@ -16,8 +16,10 @@
 	const meIndex = $derived(store.playerIndex);
 	const discount = $derived(auction && meIndex !== undefined ? store.discountOf(meIndex, auction.upgrade) : 0);
 	const due = $derived(store.auctionDue());
-	const minBid = $derived((auction?.highBid ?? 0) + 1);
+	const fast = $derived(store.fastBid);
+	const minBid = $derived(fast ? (spec?.price ?? 0) : (auction?.highBid ?? 0) + 1);
 	const maxBid = $derived(store.maxBid);
+	const pendingNames = $derived(store.fastBidPending.map(nameOf).join(", "));
 
 	$effect(() => {
 		if (store.myBidTurn) {
@@ -36,10 +38,55 @@
 			<span class="ueffect">{UPGRADE_EFFECTS[auction.upgrade]}</span>
 		</div>
 		<div class="status">
-			<div class="bid">
-				High bid <strong>◈ {auction.highBid}</strong> by <strong>{nameOf(auction.highBidder)}</strong>
-			</div>
-			{#if state.phase === "auction"}
+			{#if fast && state.phase === "auction"}
+				<div class="bid">
+					Sealed bids — <strong>{store.fastBidPending.length}</strong> still to bid{#if pendingNames}
+						: {pendingNames}{/if}
+				</div>
+				{#if store.myBidTurn}
+					{#if maxBid < minBid}
+						<div class="controls">
+							<span class="cantbid">You can't match the list price (your max is ◈ {maxBid}).</span>
+							<button class="confirm" onclick={() => store.passBid()}>Pass</button>
+						</div>
+					{:else}
+						<div class="turn">Your sealed bid (hidden until everyone has bid):</div>
+						<div class="controls">
+							<button
+								onclick={() => (store.bidAmount = Math.max(minBid, store.bidAmount - 1))}
+								disabled={store.bidAmount <= minBid}>−1</button
+							>
+							<input type="number" min={minBid} max={maxBid} bind:value={store.bidAmount} />
+							<button
+								onclick={() => (store.bidAmount = Math.min(maxBid, store.bidAmount + 1))}
+								disabled={store.bidAmount >= maxBid}>+1</button
+							>
+							<button
+								onclick={() => (store.bidAmount = Math.min(maxBid, store.bidAmount + 5))}
+								disabled={store.bidAmount >= maxBid}>+5</button
+							>
+							<button
+								class="confirm"
+								disabled={store.bidAmount < minBid || store.bidAmount > maxBid}
+								onclick={() => store.confirmBid()}>Bid ◈ {store.bidAmount}</button
+							>
+							<button class="pass" onclick={() => store.passBid()}>Pass</button>
+						</div>
+						<div class="hint">
+							You hold ◈ {store.myHandValue}{#if discount > 0}
+								and get a −{discount} discount on this upgrade{/if}. Max bid ◈ {maxBid}. Highest bid wins at
+							second-highest + 1; ties go to the earliest in turn order.
+						</div>
+					{/if}
+				{:else}
+					<div class="turn">Your bid is in — waiting for the rest…</div>
+				{/if}
+			{:else}
+				<div class="bid">
+					High bid <strong>◈ {auction.highBid}</strong> by <strong>{nameOf(auction.highBidder)}</strong>
+				</div>
+			{/if}
+			{#if !fast && state.phase === "auction"}
 				<div class="turn">
 					{#if store.myBidTurn}
 						Your bid: raise to at least ◈ {minBid} or pass.
@@ -84,7 +131,7 @@
 						</div>
 					{/if}
 				{/if}
-			{:else}
+			{:else if state.phase !== "auction"}
 				<div class="turn">
 					{#if store.myPayment}
 						You won: select hand cards worth at least ◈ {due} and confirm below (bid {auction.highBid}{#if discount > 0}

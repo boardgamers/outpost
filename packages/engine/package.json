@@ -1,6 +1,6 @@
 {
 	"name": "outpost-engine",
-	"version": "0.4.3",
+	"version": "0.5.0",
 	"description": "Unofficial Outpost rules engine for boardgamers.space",
 	"license": "AGPL-3.0",
 	"files": [

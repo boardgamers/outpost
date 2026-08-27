@@ -26,8 +26,17 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 					return `${name} discards ${info?.discarded ?? move.cards.length} card(s)`;
 				case "auction":
 					return `${name} puts ${info?.upgrade ? UPGRADE_SPECS[info.upgrade].name : "an upgrade"} up for auction at ${move.bid}`;
-				case "bid":
+				case "bid": {
+					// fastBid: the resolving move carries the outcome in its info.
+					if (info?.winningBid !== undefined) {
+						const won = playerName(state, info.winner ?? entry.player);
+						return `${name} bids (sealed) — ${won} wins at ${info.winningBid === info.secondBid ? info.winningBid : Math.min((info.secondBid ?? 0) + 1, info.winningBid)}`;
+					}
+					if (move.amount < 0) {
+						return `${name} bids (sealed)`;
+					}
 					return `${name} bids ${move.amount}`;
+				}
 				case "bidPass":
 					return `${name} passes on the auction`;
 				case "pay":

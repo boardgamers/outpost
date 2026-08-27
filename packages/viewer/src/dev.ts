@@ -6,9 +6,10 @@ const players = Math.min(9, Math.max(2, Number(params.get("players") ?? 4)));
 const seed = params.get("seed") ?? undefined;
 const auto = params.get("auto") === "1" || params.get("auto") === "true";
 const delayMs = params.get("delay") ? Number(params.get("delay")) : undefined;
+const fastBid = params.get("fastBid") === "1" || params.get("fastBid") === "true";
 
 const emitter = launch("#app");
-startDevBackend(emitter as never, { players, seed, auto, delayMs });
+startDevBackend(emitter as never, { players, seed, auto, delayMs, gameOptions: fastBid ? { fastBid: true } : {} });
 
 (window as unknown as { outpostDev?: unknown }).outpostDev = {
 	emitter,

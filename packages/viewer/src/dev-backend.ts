@@ -6,8 +6,10 @@ export interface DevOptions {
 	seed?: string;
 	delayMs?: number;
 	/* When true, the human seat also auto-plays — the whole game plays itself
-   out (handy for reaching the end screen in dev). */
+	   out (handy for reaching the end screen in dev). */
 	auto?: boolean;
+	/* Game options passed to initGame (e.g. { fastBid: true }). */
+	gameOptions?: Record<string, unknown>;
 }
 
 const NAMES = [
@@ -46,7 +48,7 @@ export function startDevBackend(
 	const seed = options.seed ?? `dev-${Math.floor(Math.random() * 1e6)}`;
 	const delay = options.delayMs ?? 700;
 
-	let state: GameState = initGame(playerCount, {}, seed);
+	let state: GameState = initGame(playerCount, options.gameOptions ?? {}, seed);
 	for (let i = 0; i < playerCount; i++) {
 		state.players[i]!.name = NAMES[i] ?? `Player ${i + 1}`;
 	}

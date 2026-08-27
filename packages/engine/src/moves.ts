@@ -40,6 +40,19 @@ export function setReplayAutoPassed(seats: number[]): void {
 	replayAutoPassed = seats;
 }
 
+// fastBid resolution recorded on the replayed move (winning bid, runner-up
+// bid, winner seat). A stripped log hides the other sealed bids, so replay
+// cannot recompute the outcome and applies the recorded one verbatim instead.
+let replayFastResolve: { winningBid: number; secondBid: number; winner: number } | null = null;
+
+export function setReplayFastResolve(winningBid: number, secondBid: number, winner: number): void {
+	replayFastResolve = { winningBid, secondBid, winner };
+}
+
+export function isFastBid(state: GameState): boolean {
+	return state.options.fastBid === true;
+}
+
 export function initGame(players: number, options: Record<string, unknown>, seed: string): GameState {
 	const state = setup(players, options, seed);
 	beginRound(state);
@@ -294,6 +307,13 @@ function moveAuction(
 		passed: [],
 		activeBidder: seat,
 	};
+	if (isFastBid(state)) {
+		// Sealed-bid auction: everyone bids at once, the auctioneer's opening
+		// bid is their sealed bid. No auto-pass — passing is itself a private
+		// bid of 0, so a weak hand is not revealed by skipping the player.
+		state.auction.bids = { [seat]: bid };
+		return { upgrade };
+	}
 	const autoPassed: number[] = [];
 	advanceBidder(state, autoPassed);
 	return autoPassed.length > 0 ? { upgrade, autoPassed } : { upgrade };
@@ -359,7 +379,13 @@ function advanceBidder(state: GameState, autoPassed?: number[]): void {
 
 function moveBid(state: GameState, move: Move & { action: "bid" }, seat: number, player: PlayerState): MoveInfo {
 	const auction = state.auction;
-	if (state.phase !== "auction" || !auction || auction.activeBidder !== seat) {
+	if (state.phase !== "auction" || !auction) {
+		err("not this player's turn to bid");
+	}
+	if (auction.bids) {
+		return moveFastBid(state, move, seat, player, auction);
+	}
+	if (auction.activeBidder !== seat) {
 		err("not this player's turn to bid");
 	}
 	if (!Number.isInteger(move.amount) || move.amount <= auction.highBid) {
@@ -375,13 +401,103 @@ function moveBid(state: GameState, move: Move & { action: "bid" }, seat: number,
 
 function moveBidPass(state: GameState, _move: Move & { action: "bidPass" }, seat: number): MoveInfo {
 	const auction = state.auction;
-	if (state.phase !== "auction" || !auction || auction.activeBidder !== seat) {
+	if (state.phase !== "auction" || !auction) {
+		err("not this player's turn to bid");
+	}
+	if (auction.bids) {
+		return moveFastBidPass(state, seat, auction);
+	}
+	if (auction.activeBidder !== seat) {
 		err("not this player's turn to bid");
 	}
 	auction.passed.push(seat);
 	const autoPassed: number[] = [];
 	advanceBidder(state, autoPassed);
 	return autoPassed.length > 0 ? { upgrade: auction.upgrade, autoPassed } : { upgrade: auction.upgrade };
+}
+
+/** Seats still expected to bid in a fast auction (everyone active who hasn't). */
+export function fastBidPending(state: GameState): number[] {
+	const auction = state.auction;
+	if (!auction?.bids) {
+		return [];
+	}
+	return state.players.flatMap((p, seat) => (!p.dropped && auction.bids?.[seat] === undefined ? [seat] : []));
+}
+
+function moveFastBid(
+	state: GameState,
+	move: Move & { action: "bid" },
+	seat: number,
+	player: PlayerState,
+	auction: NonNullable<GameState["auction"]>
+): MoveInfo {
+	const bids = auction.bids;
+	if (!bids) {
+		err("not a sealed-bid auction");
+	}
+	if (bids[seat] !== undefined) {
+		err("this player has already bid");
+	}
+	// A stripped log masks other players' sealed bids as -1; replay stores the
+	// placeholder (the resolution comes from the recorded MoveInfo) and skips
+	// validation, which the server already did live.
+	if (!replayMode) {
+		if (!Number.isInteger(move.amount) || move.amount < UPGRADE_SPECS[auction.upgrade].price) {
+			err(`bid must be at least ${UPGRADE_SPECS[auction.upgrade].price}`);
+		}
+		assertCanPayBid(player, auction.upgrade, move.amount);
+	}
+	bids[seat] = move.amount;
+	return fastBidMaybeResolve(state, auction);
+}
+
+function moveFastBidPass(state: GameState, seat: number, auction: NonNullable<GameState["auction"]>): MoveInfo {
+	const bids = auction.bids;
+	if (!bids || bids[seat] !== undefined) {
+		err("not this player's turn to bid");
+	}
+	bids[seat] = 0;
+	return fastBidMaybeResolve(state, auction);
+}
+
+/** Resolve the auction once every active seat has a sealed bid in. */
+function fastBidMaybeResolve(state: GameState, auction: NonNullable<GameState["auction"]>): MoveInfo {
+	if (fastBidPending(state).length > 0) {
+		return { upgrade: auction.upgrade };
+	}
+	const bids = auction.bids ?? {};
+	let winningBid = 0;
+	let secondBid = 0;
+	for (const amount of Object.values(bids)) {
+		if (amount > winningBid) {
+			secondBid = winningBid;
+			winningBid = amount;
+		} else if (amount > secondBid) {
+			secondBid = amount;
+		}
+	}
+	// The winner is the highest bidder; ties go to the seat earliest in bidding
+	// order (purchase order starting from the auctioneer).
+	let winner: number;
+	if (replayMode && replayFastResolve) {
+		// A stripped log hides the other sealed bids, so the resolution cannot
+		// be recomputed: apply the recorded outcome verbatim.
+		winningBid = replayFastResolve.winningBid;
+		secondBid = replayFastResolve.secondBid;
+		winner = replayFastResolve.winner;
+	} else {
+		const tied = biddingOrder(state).filter((seat) => bids[seat] === winningBid && !state.players[seat]?.dropped);
+		winner = tied[0] ?? auction.auctioneer;
+	}
+	// Price: runner-up bid + 1, but never more than the winner's own bid (the
+	// "no more money" case). A sole bidder pays the list price (secondBid = 0).
+	const price = secondBid === 0 ? winningBid : Math.min(secondBid + 1, winningBid);
+	auction.highBid = price;
+	auction.highBidder = winner;
+	auction.activeBidder = winner;
+	state.phase = "auctionPayment";
+	return { upgrade: auction.upgrade, winningBid, secondBid, winner };
 }
 
 function movePay(state: GameState, move: Move & { action: "pay" }, seat: number, player: PlayerState): MoveInfo {
@@ -513,6 +629,15 @@ export function dropPlayer(state: GameState, seat: number): GameState {
 
 	const auction = state.auction;
 	if (auction && (state.phase === "auction" || state.phase === "auctionPayment")) {
+		if (state.phase === "auction" && auction.bids) {
+			// Fast auction: a pending bidder dropping passes (sealed bid of 0);
+			// a dropped winner simply isn't in the bidding order at resolution.
+			if (auction.bids[seat] === undefined) {
+				auction.bids[seat] = 0;
+				fastBidMaybeResolve(state, auction);
+			}
+			return state;
+		}
 		if (auction.highBidder === seat) {
 			// The would-be buyer is gone: cancel the auction, the card stays in the market.
 			state.phase = "actions";

@@ -15,7 +15,9 @@
 				: state.phase === "actions"
 					? "Actions"
 					: state.phase === "auction"
-						? "Auction"
+						? state.auction?.bids
+							? "Sealed bids"
+							: "Auction"
 						: "Auction payment"
 	);
 </script>

@@ -32,9 +32,9 @@
 		!state.ended &&
 			((state.phase === "actions" && state.activeSeat === index) ||
 				(state.phase === "discard" && player.mustDiscard) ||
-				((state.phase === "auction" || state.phase === "auctionPayment") &&
-					(state.auction?.activeBidder === index ||
-						(state.phase === "auctionPayment" && state.auction?.highBidder === index))))
+				(state.phase === "auction" &&
+					(state.auction?.bids ? state.auction.bids[index] === undefined : state.auction?.activeBidder === index)) ||
+				(state.phase === "auctionPayment" && state.auction?.highBidder === index))
 	);
 	const factories = $derived(
 		FACTORY_TYPES.map((type) => ({

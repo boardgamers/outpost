@@ -39,8 +39,13 @@
 			}
 			case "actions":
 				return `Waiting for ${name(s.activeSeat)} to take their turn…`;
-			case "auction":
+			case "auction": {
+				if (s.auction?.bids) {
+					const pending = s.players.flatMap((p, i) => (!p.dropped && s.auction?.bids?.[i] === undefined ? [i] : []));
+					return `Sealed bids: waiting for ${pending.map(name).join(", ")}…`;
+				}
 				return `Auction: waiting for ${name(s.auction?.activeBidder)} to bid…`;
+			}
 			case "auctionPayment":
 				return `Auction: waiting for ${name(s.auction?.highBidder)} to pay…`;
 			default:

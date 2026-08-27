@@ -249,9 +249,28 @@ export class ViewerStore {
 
 	get myBidTurn(): boolean {
 		const s = this.liveState;
-		return (
-			!!s && !s.ended && s.phase === "auction" && !this.replay.active && s.auction?.activeBidder === this.playerIndex
-		);
+		if (!s || s.ended || s.phase !== "auction" || this.replay.active || this.playerIndex === undefined) {
+			return false;
+		}
+		// fastBid: I owe a sealed bid while mine isn't in yet.
+		if (s.auction?.bids) {
+			return s.auction.bids[this.playerIndex] === undefined;
+		}
+		return s.auction?.activeBidder === this.playerIndex;
+	}
+
+	/** fastBid: everyone bids at once with sealed bids. */
+	get fastBid(): boolean {
+		return !!this.liveState?.auction?.bids;
+	}
+
+	/** Seats still expected to bid in a fast auction. */
+	get fastBidPending(): number[] {
+		const s = this.liveState;
+		if (!s?.auction?.bids) {
+			return [];
+		}
+		return s.players.flatMap((p, seat) => (!p.dropped && s.auction?.bids?.[seat] === undefined ? [seat] : []));
 	}
 
 	get myPayment(): boolean {
@@ -449,9 +468,11 @@ export class ViewerStore {
 
 	prepareBid(): void {
 		const s = this.liveState;
-		if (s?.auction) {
-			this.bidAmount = s.auction.highBid + 1;
+		if (!s?.auction) {
+			return;
 		}
+		// fastBid: the floor is the list price, not the (hidden) high bid.
+		this.bidAmount = s.auction.bids ? UPGRADE_SPECS[s.auction.upgrade].price : s.auction.highBid + 1;
 	}
 
 	confirmBid(): void {
@@ -460,7 +481,8 @@ export class ViewerStore {
 			return;
 		}
 		const amount = Math.floor(this.bidAmount);
-		if (!Number.isInteger(amount) || amount <= s.auction.highBid || amount > this.maxBid) {
+		const min = s.auction.bids ? UPGRADE_SPECS[s.auction.upgrade].price : s.auction.highBid + 1;
+		if (!Number.isInteger(amount) || amount < min || amount > this.maxBid) {
 			return;
 		}
 		this.send({ action: "bid", amount });

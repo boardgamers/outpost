@@ -83,6 +83,12 @@ export interface AuctionState {
 	passed: number[];
 	/** Seat currently asked to bid (only meaningful in phase "auction"). */
 	activeBidder: number;
+	/**
+	 * fastBid option: sealed bids by seat (0 = pass), present only in fast
+	 * auctions. Everyone bids at once; the auction resolves when every active
+	 * seat has bid. Other players' bids are hidden (-1) by stripSecret.
+	 */
+	bids?: Record<string, number>;
 }
 
 /**
@@ -129,6 +135,15 @@ export interface MoveInfo {
 	 * cannot be recomputed from a stripped log.
 	 */
 	autoPassed?: number[];
+	/**
+	 * fastBid: recorded on the move that resolves the auction — the winning bid,
+	 * the runner-up bid (0 for a sole bidder) and the winning seat. Replay
+	 * derives the price and winner from these: the other sealed bids are hidden
+	 * in a stripped log, so the resolution cannot be recomputed from them.
+	 */
+	winningBid?: number;
+	secondBid?: number;
+	winner?: number;
 }
 
 export interface GameState {
