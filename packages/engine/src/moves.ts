@@ -13,6 +13,7 @@ import {
 	mustAutoPassBid,
 	populationCost,
 	populationMax,
+	publicMaxBid,
 	robotMax,
 	scores,
 	setup,
@@ -487,10 +488,17 @@ function moveAuction(
 	const info: MoveInfo = kicker ? { kicker } : { upgrade: upgrade as Upgrade };
 	if (isFastBid(state)) {
 		// Sealed-bid auction: everyone bids at once, the auctioneer's opening
-		// bid is their sealed bid. No auto-pass — passing is itself a private
-		// bid of 0, so a weak hand is not revealed by skipping the player.
+		// bid is their sealed bid. Passing is itself a private bid of 0, so a
+		// weak hand is normally not revealed by skipping the player — but a seat
+		// whose PUBLIC max bid cannot even reach the list price is auto-passed:
+		// that bound uses only public card types, so it leaks nothing and simply
+		// skips bids the auction would never wait on.
 		state.auction.bids = { [seat]: bid };
-		return info;
+		const autoPassed = fastAutoPass(state, state.auction);
+		// Auto-passing may leave the auctioneer as the only bidder: resolve now.
+		const resolved = fastBidMaybeResolve(state, state.auction);
+		const out: MoveInfo = { ...info, ...resolved };
+		return autoPassed.length > 0 ? { ...out, autoPassed } : out;
 	}
 	const autoPassed: number[] = [];
 	advanceBidder(state, autoPassed);
@@ -622,6 +630,30 @@ function moveBidPass(state: GameState, _move: Move & { action: "bidPass" }, seat
 	advanceBidder(state, autoPassed);
 	const info = auctionInfo(auction);
 	return autoPassed.length > 0 ? { ...info, autoPassed } : info;
+}
+
+/**
+ * Auto-pass the seats that provably cannot reach a fast auction's list price:
+ * their public max bid (each card worth its deck max — public information) is
+ * below the price floor. This leaks nothing (the bound is computable from the
+ * public card types) and skips bids the auction would never wait on. Returns
+ * the seats passed; replay applies the recorded seats verbatim.
+ */
+function fastAutoPass(state: GameState, auction: NonNullable<GameState["auction"]>): number[] {
+	const bids = auction.bids;
+	if (!bids) {
+		return [];
+	}
+	const price = auctionPrice(auction);
+	const seats = replayMode
+		? replayAutoPassed
+		: state.players.flatMap((p, seat) =>
+				!p.dropped && bids[seat] === undefined && publicMaxBid(state, seat, auction.upgrade) < price ? [seat] : []
+			);
+	for (const seat of seats) {
+		bids[seat] = 0;
+	}
+	return seats;
 }
 
 /** Seats still expected to bid in a fast auction (everyone active who hasn't). */

@@ -122,13 +122,17 @@ test("fastBid: bid below list price is rejected", () => {
 	assert.throws(() => applyMove(state, { action: "bid", amount: 10 }, second));
 });
 
-test("fastBid: no auto-pass — a weak hand still gets to (secretly) pass", () => {
+test("fastBid: a hand that could reach the price but is actually weak is not auto-passed", () => {
 	const state = fastGame();
 	const opener = state.activeSeat;
 	const weak = seatAfter(state, opener);
-	(state.players[weak] as PlayerState).hand = [];
+	// Publicly this hand could reach the price (research max 17 each), but its
+	// true value is low — that weakness is hidden, so the seat is not skipped.
+	(state.players[weak] as PlayerState).hand = Array.from(
+		{ length: 6 },
+		() => ({ t: "research", v: 1 }) as ProductionCard
+	);
 	applyMove(state, { action: "auction", marketIndex: 0, bid: 25 }, opener);
-	// The weak player is not skipped: they are still expected to bid/pass.
 	const pending = currentPlayer(state);
 	assert.ok(Array.isArray(pending) && pending.includes(weak));
 	assert.ok(!state.auction?.passed.includes(weak));
@@ -183,11 +187,75 @@ test("fastBid: payment due uses the resolved price with discount", () => {
 		(state.players[s] as PlayerState).hand = [];
 	}
 	applyMove(state, { action: "auction", marketIndex: 0, bid: UPGRADE_SPECS.scientists.price }, opener);
-	for (const s of others) {
-		applyMove(state, { action: "bidPass" }, s);
-	}
+	// The empty-handed opponents are auto-passed (public max 0 < list price),
+	// leaving the opener as the sole bidder.
 	assert.equal(state.phase, "auctionPayment");
 	// List 40, sole bidder pays 40, discount 10 → due 30.
 	applyMove(state, { action: "pay", cards: [0] }, opener);
 	assert.equal(player.upgrades.scientists, 1);
+});
+
+test("fastBid: a seat that provably cannot reach the list price is auto-passed on open", () => {
+	const state = fastGame();
+	const opener = state.activeSeat;
+	const weak = seatAfter(state, opener);
+	const strong = seatAfter(state, weak);
+	// market[0] is Nodule (list 25). Two ore cards max out at 10 < 25: publicly
+	// unable to reach the price, so the seat is auto-passed (bid 0).
+	(state.players[weak] as PlayerState).hand = [
+		{ t: "ore", v: 4 },
+		{ t: "ore", v: 5 },
+	];
+	const info = applyMove(state, { action: "auction", marketIndex: 0, bid: 25 }, opener).log.at(-1);
+	assert.equal(state.auction?.bids?.[weak], 0);
+	// The auto-pass is recorded on the opening move for replay.
+	assert.ok(info?.type === "move" && info.info?.autoPassed?.includes(weak));
+	// The strong seat (research cards) is the only one still expected to bid.
+	assert.equal(currentPlayer(state), strong);
+});
+
+test("fastBid: auto-passing everyone else resolves the auction at list price", () => {
+	const state = fastGame();
+	const opener = state.activeSeat;
+	// Both opponents are publicly unable to reach the 25 list price.
+	for (const s of state.purchaseOrder.filter((x) => x !== opener)) {
+		(state.players[s] as PlayerState).hand = [{ t: "ore", v: 5 }];
+	}
+	applyMove(state, { action: "auction", marketIndex: 0, bid: 25 }, opener);
+	// Sole bidder left: the auction resolves immediately at the list price.
+	assert.equal(state.phase, "auctionPayment");
+	assert.equal(state.auction?.highBidder, opener);
+	assert.equal(state.auction?.highBid, 25);
+});
+
+test("fastBid: auto-pass replays identically from a stripped log", () => {
+	const state = fastGame();
+	const opener = state.activeSeat;
+	const weak = seatAfter(state, opener);
+	const strong = seatAfter(state, weak);
+	(state.players[weak] as PlayerState).hand = [
+		{ t: "ore", v: 4 },
+		{ t: "ore", v: 5 },
+	];
+	// Fix the produced hands so the round entry replays to the same hands.
+	const roundEntry = state.log.find((e) => e.type === "round");
+	assert.ok(roundEntry && roundEntry.type === "round");
+	for (const rec of roundEntry.produced) {
+		rec.cards =
+			rec.player === weak
+				? [
+						{ t: "ore", v: 4 },
+						{ t: "ore", v: 5 },
+					]
+				: Array.from({ length: 6 }, () => ({ t: "research", v: 10 }) as ProductionCard);
+	}
+	applyMove(state, { action: "auction", marketIndex: 0, bid: 25 }, opener);
+	applyMove(state, { action: "bid", amount: 30 }, strong);
+	assert.equal(state.phase, "auctionPayment");
+	// A spectator's stripped log replays to the same resolution: strong (30)
+	// beats the opener (25) and pays second+1 = 26.
+	const replayed = replay(stripSecret(state, weak));
+	assert.equal(replayed.phase, "auctionPayment");
+	assert.equal(replayed.auction?.highBidder, strong);
+	assert.equal(replayed.auction?.highBid, 26);
 });
