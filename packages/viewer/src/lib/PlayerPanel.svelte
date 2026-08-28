@@ -127,6 +127,18 @@
 		</span>
 		{#if isMe}
 			<span class="cash" title="total hand value in credits">◈ {store.myHandValue}</span>
+			{#if player.hand.length > 0}
+				{@const range = handValueRange(player)}
+				{#if range.min !== range.max}
+					<span
+						class="cash dim selfrange"
+						title="the hand-value range other players see for you: your card types are public, only the values are hidden (their best guess in parentheses)"
+					>
+						{range.min}–{range.max}
+						<span class="avg">(~{Math.round(handValueExpected(player))})</span>
+					</span>
+				{/if}
+			{/if}
 		{:else if player.hand.length > 0}
 			{@const range = handValueRange(player)}
 			<span
@@ -490,6 +502,13 @@
 	.stats .cash.dim {
 		color: color-mix(in srgb, var(--gold) 65%, var(--text-dim));
 		font-weight: 600;
+	}
+	/* Your own public range (what others see for you) sits next to your exact
+	   total, smaller and dimmer so it reads as secondary information. */
+	.stats .cash.selfrange {
+		font-size: 10.5px;
+		font-weight: 500;
+		opacity: 0.85;
 	}
 	.stats .avg {
 		opacity: 0.75;
