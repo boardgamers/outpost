@@ -228,6 +228,20 @@ test("fastBid: a seat that provably cannot reach the list price is auto-passed o
 	assert.equal(currentPlayer(state), strong);
 });
 
+test("fastBid: a mega card's printed value counts toward the public max (no false auto-pass)", () => {
+	const state = fastGame();
+	const opener = state.activeSeat;
+	const holder = seatAfter(state, opener);
+	// Nodule lists at 25. A Mega Titanium is publicly worth 44 (face-up), so the
+	// seat can reach the price even though the titanium deck max is only 13.
+	(state.players[holder] as PlayerState).hand = [{ t: "titanium", v: 44, m: true }];
+	applyMove(state, { action: "auction", marketIndex: 0, bid: 25 }, opener);
+	// Not auto-passed: the seat is still expected to bid.
+	assert.equal(state.auction?.bids?.[holder], undefined);
+	const pending = currentPlayer(state);
+	assert.ok(Array.isArray(pending) ? pending.includes(holder) : pending === holder);
+});
+
 test("fastBid: auto-passing everyone else resolves the auction at list price", () => {
 	const state = fastGame();
 	const opener = state.activeSeat;

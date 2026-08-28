@@ -574,7 +574,9 @@ export function publicMaxBid(state: GameState, seat: number, upgrade?: Upgrade):
 	}
 	let value = 0;
 	for (const card of player.hand) {
-		value += MAX_CARD_VALUE[card.t];
+		// A mega card is face-up with a fixed printed value that can exceed the
+		// deck max (Mega Titanium 44 vs deck max 13) — use it, not the deck max.
+		value += card.m ? card.v : MAX_CARD_VALUE[card.t];
 	}
 	return value + (upgrade ? upgradeDiscount(player, upgrade) : 0);
 }

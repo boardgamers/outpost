@@ -16,6 +16,15 @@ function playerName(state: GameState, seat: number): string {
 	return state.players[seat]?.name ?? `Player ${seat + 1}`;
 }
 
+/** Suffix naming the seats an auction auto-passed (they provably couldn't bid). */
+function autoPassSuffix(state: GameState, info: MoveInfo | undefined): string {
+	const seats = info?.autoPassed;
+	if (!seats || seats.length === 0) {
+		return "";
+	}
+	return ` — ${seats.map((s) => playerName(state, s)).join(", ")} auto-pass${seats.length === 1 ? "es" : ""} (can't reach the price)`;
+}
+
 export function describeLogEntry(state: GameState, entry: LogEntry): string {
 	switch (entry.type) {
 		case "init":
@@ -44,9 +53,12 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 				case "auction":
 					// fastBid: the opening bid is the auctioneer's sealed bid, masked to
 					// -1 for the other players — show no amount when it is hidden.
-					return move.bid < 0
-						? `${name} puts ${cardName(info, "an upgrade")} up for auction (sealed bid)`
-						: `${name} puts ${cardName(info, "an upgrade")} up for auction at ${move.bid}`;
+					return (
+						(move.bid < 0
+							? `${name} puts ${cardName(info, "an upgrade")} up for auction (sealed bid)`
+							: `${name} puts ${cardName(info, "an upgrade")} up for auction at ${move.bid}`) +
+						autoPassSuffix(state, info)
+					);
 				case "bid": {
 					// fastBid: the resolving move carries the outcome in its info.
 					if (info?.winningBid !== undefined) {
@@ -54,12 +66,12 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 						return `${name} bids (sealed) — ${won} wins at ${info.winningBid === info.secondBid ? info.winningBid : Math.min((info.secondBid ?? 0) + 1, info.winningBid)}`;
 					}
 					if (move.amount < 0) {
-						return `${name} bids (sealed)`;
+						return `${name} bids (sealed)` + autoPassSuffix(state, info);
 					}
-					return `${name} bids ${move.amount}`;
+					return `${name} bids ${move.amount}` + autoPassSuffix(state, info);
 				}
 				case "bidPass":
-					return `${name} passes on the auction`;
+					return `${name} passes on the auction` + autoPassSuffix(state, info);
 				case "pay":
 					return `${name} buys ${cardName(info, "the upgrade")} (paid ${info?.paid ?? 0})`;
 				case "exchange": {
