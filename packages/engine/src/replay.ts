@@ -6,7 +6,7 @@ import {
 	setReplayFastResolve,
 	setReplayMode,
 } from "./moves.js";
-import { setup } from "./state.js";
+import { megaGroupsFor, setup } from "./state.js";
 import type { GameState, LogEntry } from "./types.js";
 
 /**
@@ -68,8 +68,12 @@ function applyRoundEntry(state: GameState, entry: LogEntry & { type: "round" }):
 		const player = state.players[seat];
 		if (player) {
 			// Stage as pending draws; the following "mega" moves confirm the
-			// mega-vs-singles choice exactly as live.
+			// mega-vs-singles choice exactly as live. Eligibility (rule 12.1) is
+			// recorded on the round entry; older logs without it fall back to the
+			// factories manned this round.
 			player.pendingMega = cards.map((c) => ({ ...c }));
+			const recorded = entry.megaGroups?.find((m) => m.player === seat)?.groups;
+			player.megaGroups = recorded ? { ...recorded } : megaGroupsFor(player);
 		}
 	}
 	// The round entry was already recorded by the source log; keep the replayed

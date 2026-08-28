@@ -248,16 +248,14 @@
 	{/if}
 	{#if isMe && store.myMega && (player.pendingMega?.length ?? 0) > 0}
 		<div class="row hand pending">
-			<span class="pending-label" title="cards just produced — mark groups of 4 of a kind to take a Mega card">
+			<span
+				class="pending-label"
+				title="cards just produced — values hidden until you commit to Mega cards (rule 12.1)"
+			>
 				produced:
 			</span>
 			{#each player.pendingMega ?? [] as card, i (i)}
-				<ProductionCardView
-					{card}
-					selectable
-					selected={store.megaPick.includes(i)}
-					onclick={() => store.toggleMega(i)}
-				/>
+				<ProductionCardView {card} />
 			{/each}
 		</div>
 	{/if}

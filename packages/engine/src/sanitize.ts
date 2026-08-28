@@ -1,5 +1,6 @@
+import { MEGA_RESOURCES } from "./data.js";
 import { FACTORY_TYPES } from "./types.js";
-import type { FactoryType, Move, TurnBuy } from "./types.js";
+import type { FactoryType, Move, Resource, TurnBuy } from "./types.js";
 
 // Moves arrive as untrusted JSON from the network and are stored verbatim in
 // the game log. Rebuild every move as a fresh literal with exactly the
@@ -75,8 +76,17 @@ export function sanitizeMove(raw: unknown): Move {
 		fail("missing action");
 	}
 	switch (action) {
-		case "mega":
-			return { action, cards: intArray(move.cards, "cards") };
+		case "mega": {
+			// Blind mega election (rule 12.1): a record of mega resource -> count.
+			const rawTake = move.take === undefined ? {} : record(move.take);
+			const take: Partial<Record<Resource, number>> = {};
+			for (const resource of MEGA_RESOURCES) {
+				if (rawTake[resource] !== undefined) {
+					take[resource] = int(rawTake[resource], `take.${resource}`, 0, 100);
+				}
+			}
+			return { action, take };
+		}
 		case "discard":
 			return { action, cards: intArray(move.cards, "cards") };
 		case "auction":

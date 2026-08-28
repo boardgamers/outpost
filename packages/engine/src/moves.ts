@@ -89,9 +89,11 @@ export function beginRound(state: GameState): void {
 	refillKickers(state);
 
 	const produced: { player: number; cards: ProductionCard[] }[] = [];
+	const megaGroups: { player: number; groups: Partial<Record<Resource, number>> }[] = [];
 	for (const seat of state.purchaseOrder) {
 		const player = state.players[seat] as PlayerState;
 		produced.push({ player: seat, cards: producePlayer(state, player) });
+		megaGroups.push({ player: seat, groups: { ...(player.megaGroups ?? {}) } });
 	}
 
 	state.log.push({
@@ -102,6 +104,7 @@ export function beginRound(state: GameState): void {
 		supply: { ...state.supply },
 		kickerMarket: [...state.kickerMarket],
 		produced,
+		megaGroups,
 	});
 
 	enterMegaPhase(state);
@@ -375,42 +378,41 @@ function moveMega(state: GameState, move: Move & { action: "mega" }, seat: numbe
 	if (state.phase !== "mega" || (player.pendingMega?.length ?? 0) === 0) {
 		err("no production pending for this player");
 	}
+	// The election is blind (rule 12.1): the player commits to a number of Mega
+	// cards per resource before seeing the pending draw values. Each Mega card
+	// consumes 4 pending draws of its resource (a group of 4 operated factories).
+	const eligible = megaEligible(state, player);
+	const take = move.take ?? {};
+	for (const [resource, count] of Object.entries(take)) {
+		if (!Number.isInteger(count) || count < 0 || count > (eligible[resource as Resource] ?? 0)) {
+			err(`cannot take ${count} mega ${resource} card(s)`);
+		}
+	}
 	const pending = player.pendingMega ?? [];
-	const indices = sanitizeIndices(move.cards, pending.length, "mega");
-	// Group the selected draws by resource: each must form full groups of 4 of a
-	// mega resource with enough pool copies left.
-	const byResource = new Map<Resource, number>();
-	for (const i of indices) {
-		const resource = (pending[i] as ProductionCard).t;
-		byResource.set(resource, (byResource.get(resource) ?? 0) + 1);
-	}
-	const picked = new Set(indices);
-	const keep: ProductionCard[] = [];
 	const megas: ProductionCard[] = [];
-	for (const [resource, count] of byResource) {
-		const mega = MEGA_CARDS[resource];
-		if (!mega || count % 4 !== 0) {
-			err(`mega conversion needs groups of exactly 4 draws of the same mega resource (got ${count} of ${resource})`);
+	const consumed = new Set<number>();
+	for (const [resource, count] of Object.entries(take)) {
+		const mega = MEGA_CARDS[resource as Resource];
+		if (!mega || !count) {
+			continue;
 		}
-		const groups = count / 4;
-		if ((state.megaSupply[resource] ?? 0) < groups) {
-			err(`not enough mega ${resource} cards left in the pool`);
+		// A Mega card is taken instead of the group's 4 draws. Consume those
+		// pending draws; if the deck ran dry and fewer than 4 were produced, the
+		// Mega is still granted (the player forgoes draws they could not make).
+		const available = pending.flatMap((c, i) => (c.t === resource && !consumed.has(i) ? [i] : []));
+		for (let g = 0; g < Math.min(count * 4, available.length); g++) {
+			consumed.add(available[g] as number);
 		}
-		for (let g = 0; g < groups; g++) {
-			megas.push({ t: resource, v: mega.value, m: true });
+		state.megaSupply[resource as Resource] = (state.megaSupply[resource as Resource] ?? 0) - count;
+		for (let g = 0; g < count; g++) {
+			megas.push({ t: resource as Resource, v: mega.value, m: true });
 		}
 	}
-	// Everything validated; now mutate.
-	for (const [resource, count] of byResource) {
-		state.megaSupply[resource] = (state.megaSupply[resource] ?? 0) - count / 4;
-	}
-	pending.forEach((card, i) => {
-		if (!picked.has(i)) {
-			keep.push(card);
-		}
-	});
+	// Everything validated; now mutate. Unconverted draws are kept as singles.
+	const keep = pending.filter((_, i) => !consumed.has(i));
 	player.hand.push(...keep, ...megas);
 	player.pendingMega = [];
+	player.megaGroups = {};
 	return megas.length > 0 ? { mega: megas.length } : {};
 }
 

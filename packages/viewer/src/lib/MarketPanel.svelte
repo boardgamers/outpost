@@ -62,15 +62,21 @@
 								<input
 									type="number"
 									min={spec.price}
+									max={store.maxAuctionPickBid}
 									value={pick.bid}
 									oninput={(e) => store.setAuctionBid(Number(e.currentTarget.value))}
 								/>
-								<button onclick={() => store.bumpAuctionBid(1)}>+1</button>
-								<button onclick={() => store.bumpAuctionBid(5)}>+5</button>
+								<button onclick={() => store.bumpAuctionBid(1)} disabled={pick.bid >= store.maxAuctionPickBid}
+									>+1</button
+								>
+								<button onclick={() => store.bumpAuctionBid(5)} disabled={pick.bid >= store.maxAuctionPickBid}
+									>+5</button
+								>
 							</div>
 							<div class="bidrow">
 								<button class="confirm" onclick={() => store.confirmAuction()}>Auction at ◈ {pick.bid}</button>
 								<button class="cancel" onclick={() => store.cancel()}>Cancel</button>
+								<span class="maxhint">max ◈ {store.maxAuctionPickBid}</span>
 							</div>
 						</div>
 					{/if}
@@ -110,15 +116,21 @@
 								<input
 									type="number"
 									min={spec.price}
+									max={store.maxAuctionPickBid}
 									value={pick.bid}
 									oninput={(e) => store.setAuctionBid(Number(e.currentTarget.value))}
 								/>
-								<button onclick={() => store.bumpAuctionBid(1)}>+1</button>
-								<button onclick={() => store.bumpAuctionBid(5)}>+5</button>
+								<button onclick={() => store.bumpAuctionBid(1)} disabled={pick.bid >= store.maxAuctionPickBid}
+									>+1</button
+								>
+								<button onclick={() => store.bumpAuctionBid(5)} disabled={pick.bid >= store.maxAuctionPickBid}
+									>+5</button
+								>
 							</div>
 							<div class="bidrow">
 								<button class="confirm" onclick={() => store.confirmAuction()}>Auction at ◈ {pick.bid}</button>
 								<button class="cancel" onclick={() => store.cancel()}>Cancel</button>
+								<span class="maxhint">max ◈ {store.maxAuctionPickBid}</span>
 							</div>
 						</div>
 					{/if}
@@ -252,6 +264,11 @@
 		width: 62px;
 		padding: 3px 6px;
 		font-size: 12px;
+	}
+	.maxhint {
+		font-size: 11px;
+		color: var(--text-dim);
+		margin-left: 2px;
 	}
 	.confirm {
 		border-color: var(--gold);

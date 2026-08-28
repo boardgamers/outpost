@@ -40,13 +40,15 @@ physical decks differ in a few counts (e.g. only two "4" water cards).
   game seed; BGS supplies the seed, so replays and save/load are exact.
 - Random VP tie-breaks in purchase order are resolved by seat order (never relevant online).
 - Auction winners receive no change when overpaying, per the rules.
-- Mega production cards (expert rule 12.1) are implemented: with 4+ manned water/titanium/
-  new-chemicals factories you may take 1 Mega card per group of 4 draws instead (fixed
-  printed value — Mega Water 30, Mega Titanium 44, Mega New Chemicals 88 — that counts as
-  4 cards toward hand capacity). Mega cards are a separate face-up pool of 9 per type; a
-  spent or discarded mega returns to its pool. The pool size is the physical component
-  count — no rulebook text covers exhaustion, so an empty pool simply means you take the
-  4 normal draws instead (this is an inference, not a documented ruling).
+- Mega production cards (expert rule 12.1) are implemented: with 4+ operated water/titanium/
+  new-chemicals factories you may elect 1 Mega card per group of 4 (fixed printed value —
+  Mega Water 30, Mega Titanium 44, Mega New Chemicals 88 — that counts as 4 cards toward
+  hand capacity). The election is **blind**, made before any of that round's production
+  draws are revealed, and decided per group of 4; only operated factories count (never
+  upgrade freebies or Kicker bonuses). Mega cards are a separate face-up pool of 9 per
+  type; a spent or discarded mega returns to its pool. The pool size is the physical
+  component count — no rulebook text covers exhaustion, so an empty pool simply means you
+  take the normal draws instead (this is an inference, not a documented ruling).
 - Tom Lehmann's 1994 Expert Game v1.32 document lists Laboratory at 80 and Ecoplants at 30;
   this implementation follows the 20th Anniversary printing at 100 and 50. If a physical
   copy shows the lower values, it's a one-line change in `packages/engine/src/data.ts`.

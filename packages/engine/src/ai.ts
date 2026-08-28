@@ -59,29 +59,24 @@ export function chooseMove(state: GameState, seat: number): Move {
 }
 
 /**
- * Confirm the mega choice: convert a group of 4 pending draws when the fixed
- * mega value beats the expected value of those 4 draws (a conservative pick —
- * it ignores the hand-capacity pressure a mega relieves).
+ * Confirm the mega choice (rule 12.1, blind): take a Mega card for each group
+ * whose fixed value beats the expected value of 4 fresh draws of that resource
+ * (a conservative pick — it ignores the hand-capacity pressure a mega relieves).
  */
 function chooseMega(state: GameState, player: PlayerState): Move {
-	const pending = player.pendingMega ?? [];
 	const eligible = megaEligible(state, player);
-	const picked: number[] = [];
+	const take: Partial<Record<Resource, number>> = {};
 	for (const [resource, groups] of Object.entries(eligible)) {
 		const mega = MEGA_CARDS[resource as Resource];
 		if (!mega) {
 			continue;
 		}
-		const idx = pending.flatMap((c, i) => (c.t === resource ? [i] : []));
-		for (let g = 0; g < (groups as number); g++) {
-			const group = idx.slice(g * 4, g * 4 + 4);
-			const expected = group.reduce((sum, i) => sum + (pending[i]?.v ?? 0), 0);
-			if (mega.value >= expected) {
-				picked.push(...group);
-			}
+		const expected = 4 * PRODUCTION_DECKS[resource as Resource].average;
+		if (mega.value >= expected) {
+			take[resource as Resource] = groups as number;
 		}
 	}
-	return { action: "mega", cards: picked };
+	return { action: "mega", take };
 }
 
 /**

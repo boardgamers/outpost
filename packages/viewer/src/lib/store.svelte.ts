@@ -123,8 +123,8 @@ export class ViewerStore {
 	lastMoveAt = $state<number>(0);
 
 	cardPick = $state<number[]>([]);
-	/** Indices into me.pendingMega selected for mega conversion (groups of 4). */
-	megaPick = $state<number[]>([]);
+	/** Mega cards to take per resource (rule 12.1 blind election). */
+	megaTake = $state<Partial<Record<string, number>>>({});
 	pending = $state<PendingKind | null>(null);
 	auctionPick = $state<{ marketIndex: number; bid: number; kicker?: boolean } | null>(null);
 	bidAmount = $state(0);
@@ -430,6 +430,21 @@ export class ViewerStore {
 		return handValue(me) + (auction.upgrade ? upgradeDiscount(me, auction.upgrade) : 0);
 	}
 
+	/** Max opening bid for the staged auction pick (hand value + that card's discount; Kicker cards have none). */
+	get maxAuctionPickBid(): number {
+		const me = this.me;
+		const s = this.liveState;
+		const pick = this.auctionPick;
+		if (!me || !s || !pick) {
+			return 0;
+		}
+		if (pick.kicker) {
+			return handValue(me);
+		}
+		const upgrade = s.market[pick.marketIndex] as Upgrade;
+		return handValue(me) + upgradeDiscount(me, upgrade);
+	}
+
 	get finalRankings(): number[] {
 		const s = this.liveState;
 		return s && s.ended ? rankings(s) : [];
@@ -575,7 +590,8 @@ export class ViewerStore {
 			return;
 		}
 		const min = this.auctionPickMin(pick);
-		this.auctionPick = { ...pick, bid: Math.max(min, pick.bid + delta) };
+		const max = this.maxAuctionPickBid;
+		this.auctionPick = { ...pick, bid: Math.min(max, Math.max(min, pick.bid + delta)) };
 	}
 
 	setAuctionBid(value: number): void {
@@ -584,7 +600,8 @@ export class ViewerStore {
 			return;
 		}
 		const min = this.auctionPickMin(pick);
-		this.auctionPick = { ...pick, bid: Math.max(min, Math.floor(value)) };
+		const max = this.maxAuctionPickBid;
+		this.auctionPick = { ...pick, bid: Math.min(max, Math.max(min, Math.floor(value))) };
 	}
 
 	confirmAuction(): void {
@@ -592,10 +609,12 @@ export class ViewerStore {
 		if (!pick) {
 			return;
 		}
+		// Never send an unaffordable opening bid (the engine would reject it).
+		const bid = Math.min(this.maxAuctionPickBid, Math.max(this.auctionPickMin(pick), Math.floor(pick.bid)));
 		this.send({
 			action: "auction",
 			marketIndex: pick.marketIndex,
-			bid: pick.bid,
+			bid,
 			...(pick.kicker ? { kicker: true } : {}),
 		});
 	}
@@ -607,6 +626,16 @@ export class ViewerStore {
 		}
 		// fastBid: the floor is the list price, not the (hidden) high bid.
 		this.bidAmount = s.auction.bids ? auctionCard(s.auction).price : s.auction.highBid + 1;
+	}
+
+	/** Clamp a typed bid into [min, maxBid] so the input never holds an unaffordable/illegal value. */
+	setBidAmount(value: number): void {
+		const s = this.liveState;
+		if (!s?.auction || !Number.isFinite(value)) {
+			return;
+		}
+		const min = s.auction.bids ? auctionCard(s.auction).price : s.auction.highBid + 1;
+		this.bidAmount = Math.min(this.maxBid, Math.max(min, Math.floor(value)));
 	}
 
 	confirmBid(): void {
@@ -760,43 +789,26 @@ export class ViewerStore {
 		this.send({ action: "discard", cards: this.cardPick });
 	}
 
-	/** Toggle a staged draw's mega selection; only whole groups of 4 of one resource can be formed. */
-	toggleMega(index: number): void {
+	/** Set how many Mega cards of a resource to take (0..eligible groups), blind. */
+	setMegaTake(resource: string, count: number): void {
 		if (!this.myMega) {
 			return;
 		}
-		this.megaPick = this.megaPick.includes(index)
-			? this.megaPick.filter((i) => i !== index)
-			: [...this.megaPick, index];
+		const max = this.megaEligible[resource] ?? 0;
+		const clamped = Math.max(0, Math.min(max, Math.round(count)));
+		this.megaTake = { ...this.megaTake, [resource]: clamped };
 	}
 
-	/** Selected draws form valid mega groups: each resource contributes a multiple of 4. */
-	get megaPickValid(): boolean {
-		const me = this.me;
-		if (!me?.pendingMega) {
-			return false;
-		}
-		const counts = new Map<string, number>();
-		for (const i of this.megaPick) {
-			const t = me.pendingMega[i]?.t;
-			if (t === undefined) {
-				return false;
-			}
-			counts.set(t, (counts.get(t) ?? 0) + 1);
-		}
-		for (const count of counts.values()) {
-			if (count % 4 !== 0) {
-				return false;
-			}
-		}
-		return true;
+	/** Total Mega cards currently elected. */
+	get megaTakeCount(): number {
+		return Object.values(this.megaTake).reduce<number>((sum, n) => sum + (n ?? 0), 0);
 	}
 
 	confirmMega(): void {
-		if (!this.myMega || !this.megaPickValid) {
+		if (!this.myMega) {
 			return;
 		}
-		this.send({ action: "mega", cards: this.megaPick });
+		this.send({ action: "mega", take: this.megaTake });
 	}
 
 	startManning(): void {
@@ -848,7 +860,7 @@ export class ViewerStore {
 
 	cancel(): void {
 		this.cardPick = [];
-		this.megaPick = [];
+		this.megaTake = {};
 		this.pending = null;
 		this.auctionPick = null;
 		this.manning = false;

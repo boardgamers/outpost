@@ -79,7 +79,20 @@ export function logLength(data: GameState): number {
 	return data.log.length;
 }
 
-function hideProduced(entry: LogEntry, viewer: number | undefined, fastBid: boolean): LogEntry {
+/** Rule 12.1: the viewer's own production draws stay hidden while their mega election is pending. */
+function hideOwnProduction(data: GameState, viewer: number | undefined): boolean {
+	if (data.phase !== "mega" || viewer === undefined) {
+		return false;
+	}
+	return (data.players[viewer]?.pendingMega?.length ?? 0) > 0;
+}
+
+function hideProduced(
+	entry: LogEntry,
+	viewer: number | undefined,
+	fastBid: boolean,
+	hideOwnProduction = false
+): LogEntry {
 	if (entry.type === "init") {
 		// The seed derives every deck order; it must never reach a client.
 		return { ...entry, seed: "" };
@@ -108,7 +121,9 @@ function hideProduced(entry: LogEntry, viewer: number | undefined, fastBid: bool
 		...entry,
 		produced: entry.produced.map(({ player, cards }) => ({
 			player,
-			cards: player === viewer ? cards : cards.map((c): ProductionCard => ({ t: c.t, v: -1 })),
+			// hideOwnProduction: the viewer's own draws stay hidden while their
+			// mega election is pending (rule 12.1 — the choice is blind).
+			cards: player === viewer && !hideOwnProduction ? cards : cards.map((c): ProductionCard => ({ t: c.t, v: -1 })),
 		})),
 	};
 }
@@ -154,22 +169,30 @@ export function stripSecret(data: GameState, player?: number): GameState {
 			2: data.kickerPiles[2].map(() => "launchFacility" as const),
 			3: data.kickerPiles[3].map(() => "biosphere" as const),
 		},
-		players: data.players.map((p, i) =>
-			i === viewer
-				? p
-				: {
-						...p,
-						hand: p.hand.map((c): ProductionCard => ({ t: c.t, v: c.m ? c.v : -1, ...(c.m ? { m: true } : {}) })),
-						pendingMega: p.pendingMega?.map(
-							(c): ProductionCard => ({
-								t: c.t,
-								v: c.m ? c.v : -1,
-								...(c.m ? { m: true } : {}),
-							})
-						),
-					}
+		players: data.players.map((p, i) => {
+			if (i === viewer) {
+				// Rule 12.1: the mega election is blind — the player's own pending
+				// draw values stay hidden until they commit (mega phase only).
+				if (data.phase === "mega" && (p.pendingMega?.length ?? 0) > 0) {
+					return { ...p, pendingMega: p.pendingMega?.map((c): ProductionCard => ({ t: c.t, v: -1 })) };
+				}
+				return p;
+			}
+			return {
+				...p,
+				hand: p.hand.map((c): ProductionCard => ({ t: c.t, v: c.m ? c.v : -1, ...(c.m ? { m: true } : {}) })),
+				pendingMega: p.pendingMega?.map(
+					(c): ProductionCard => ({
+						t: c.t,
+						v: c.m ? c.v : -1,
+						...(c.m ? { m: true } : {}),
+					})
+				),
+			};
+		}),
+		log: data.log.map((entry) =>
+			hideProduced(entry, viewer, data.options.fastBid === true, hideOwnProduction(data, viewer))
 		),
-		log: data.log.map((entry) => hideProduced(entry, viewer, data.options.fastBid === true)),
 		messages: [...data.messages],
 	};
 }
@@ -196,7 +219,7 @@ export function logSlice(data: GameState, options?: LogSliceOptions): LogSliceRe
 	// in the game list, and our structured entries otherwise stringify to noise.
 	// describeLogEntry never reveals hidden values (sealed bids, exchange takes).
 	const log = data.log.slice(start, end).map((entry) => {
-		const masked = hideProduced(entry, viewer, data.options.fastBid === true);
+		const masked = hideProduced(entry, viewer, data.options.fastBid === true, hideOwnProduction(data, viewer));
 		return { ...masked, simple: describeLogEntry(data, masked) };
 	});
 	const result: LogSliceResult = { log };

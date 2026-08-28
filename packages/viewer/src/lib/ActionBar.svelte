@@ -1,5 +1,13 @@
 <script lang="ts">
-	import { FACTORIES, FACTORY_TYPES, MAX_CARD_VALUE, MIN_CARD_VALUE, UPGRADE_SPECS, auctionCard } from "outpost-engine";
+	import {
+		FACTORIES,
+		FACTORY_TYPES,
+		MAX_CARD_VALUE,
+		MEGA_CARDS,
+		MIN_CARD_VALUE,
+		UPGRADE_SPECS,
+		auctionCard,
+	} from "outpost-engine";
 	import ResourceIcon from "./ResourceIcon.svelte";
 	import { RESOURCE_LABELS, type ViewerStore } from "./store.svelte";
 
@@ -23,11 +31,6 @@
 	);
 	const total = $derived(store.pickTotal());
 	const pickCount = $derived(store.cardPick.length);
-	const megaSummary = $derived(
-		Object.entries(store.megaEligible)
-			.map(([resource, groups]) => `${groups}× Mega ${RESOURCE_LABELS[resource] ?? resource}`)
-			.join(", ")
-	);
 	const auctionName = $derived(state?.auction ? auctionCard(state.auction).name : "");
 	const needsResearch = $derived(pending?.kind === "factory" && FACTORIES[pending.factory].needsResearchCard === true);
 	const hasResearch = $derived(!!me && store.cardPick.some((i) => me.hand[i]?.t === "research"));
@@ -97,13 +100,34 @@
 {#if state && !state.ended && !store.replay.active}
 	<div class="actionbar">
 		{#if store.myMega && me}
-			<div class="flow">
+			<div class="flow mega-flow">
 				<span class="hint gold-hint">
-					Production: click cards in your panel to mark groups of <strong>4 of a kind</strong> for a Mega card{#if megaSummary}
-						({megaSummary}){/if}; the rest are kept as singles.
+					Production: choose Mega cards <strong>before</strong> seeing your draws (rule 12.1). Each costs a group of 4 operated
+					factories; the rest of your draws are kept as singles.
 				</span>
-				<button class="confirm" disabled={!store.megaPickValid} onclick={() => store.confirmMega()}>
-					{store.megaPick.length > 0 ? `Take ${store.megaPick.length / 4} mega` : "Take all as singles"}
+				{#each Object.entries(store.megaEligible) as [resource, groups] (resource)}
+					{@const mega = MEGA_CARDS[resource as keyof typeof MEGA_CARDS]}
+					{@const taking = store.megaTake[resource] ?? 0}
+					<div class="mega-row">
+						<span class="mega-name">
+							Mega {RESOURCE_LABELS[resource] ?? resource}{#if mega}
+								<em>(◈ {mega.value})</em>{/if}
+						</span>
+						<span class="mega-stepper">
+							<button class="step" disabled={taking <= 0} onclick={() => store.setMegaTake(resource, taking - 1)}
+								>−</button
+							>
+							<span class="count">{taking}/{groups}</span>
+							<button
+								class="step"
+								disabled={taking >= (groups ?? 0)}
+								onclick={() => store.setMegaTake(resource, taking + 1)}>+</button
+							>
+						</span>
+					</div>
+				{/each}
+				<button class="confirm" onclick={() => store.confirmMega()}>
+					{store.megaTakeCount > 0 ? `Take ${store.megaTakeCount} mega` : "Take all as singles"}
 				</button>
 			</div>
 		{:else if store.iMustDiscard && me}
@@ -312,6 +336,45 @@
 	.confirm {
 		border-color: var(--gold);
 		font-weight: 700;
+	}
+	.mega-flow {
+		row-gap: 6px;
+	}
+	.mega-row {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 3px 8px;
+		border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent);
+		border-radius: 6px;
+	}
+	.mega-name {
+		font-size: 12.5px;
+		font-weight: 600;
+		color: var(--text);
+	}
+	.mega-name em {
+		font-style: normal;
+		color: var(--gold);
+	}
+	.mega-stepper {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+	}
+	.mega-stepper .step {
+		min-width: 24px;
+		padding: 1px 6px;
+		font-size: 13px;
+		font-weight: 700;
+		line-height: 1.4;
+	}
+	.mega-stepper .count {
+		min-width: 34px;
+		text-align: center;
+		font-size: 12.5px;
+		font-weight: 700;
+		color: var(--gold);
 	}
 	.cancel {
 		color: var(--text-dim);

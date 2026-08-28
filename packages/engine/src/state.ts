@@ -10,6 +10,7 @@ import {
 	MAX_CARD_VALUE,
 	MAX_PLAYERS,
 	MEGA_CARDS,
+	MEGA_RESOURCES,
 	MIN_CARD_VALUE,
 	MIN_PLAYERS,
 	POPULATION_COST,
@@ -213,17 +214,37 @@ export function handValue(player: PlayerState): number {
 }
 
 /**
- * Mega production eligibility (rule 12.1): the mega conversions a player may
- * take from their pending draws — the number of full groups of 4 pending draws
- * of each mega resource whose pool isn't empty.
+ * Mega production eligibility (rule 12.1): the Mega cards a player may elect to
+ * take this round — full groups of 4 operated factories per mega resource whose
+ * pool isn't empty. Only factory draws count (never upgrade freebies or Kicker
+ * bonuses), and the election is blind: made before the draw values are seen.
  */
 export function megaEligible(state: GameState, player: PlayerState): Partial<Record<Resource, number>> {
-	const pending = player.pendingMega ?? [];
 	const result: Partial<Record<Resource, number>> = {};
-	for (const resource of Object.keys(MEGA_CARDS) as Resource[]) {
-		const draws = pending.filter((c) => c.t === resource).length;
-		const groups = Math.floor(draws / 4);
-		if (groups > 0 && (state.megaSupply[resource] ?? 0) > 0) {
+	for (const [resource, groups] of Object.entries(player.megaGroups ?? {})) {
+		if ((groups ?? 0) > 0 && (state.megaSupply[resource as Resource] ?? 0) > 0) {
+			result[resource as Resource] = groups;
+		}
+	}
+	return result;
+}
+
+/**
+ * Mega-eligible groups from a player's operated factories (rule 12.1): full
+ * groups of 4 manned factories per mega resource. Computed at production time
+ * and on replay (which re-derives it from the factories manned this round).
+ */
+export function megaGroupsFor(player: PlayerState): Partial<Record<Resource, number>> {
+	const factoryDraws: Partial<Record<Resource, number>> = {};
+	for (const factory of player.factories) {
+		if (factory.manned) {
+			factoryDraws[factory.type] = (factoryDraws[factory.type] ?? 0) + 1;
+		}
+	}
+	const result: Partial<Record<Resource, number>> = {};
+	for (const resource of MEGA_RESOURCES) {
+		const groups = Math.floor((factoryDraws[resource] ?? 0) / 4);
+		if (groups > 0) {
 			result[resource] = groups;
 		}
 	}

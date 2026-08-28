@@ -1,5 +1,5 @@
 import { UPGRADE_SPECS } from "./data.js";
-import { drawCard } from "./state.js";
+import { drawCard, megaGroupsFor } from "./state.js";
 import { UPGRADES } from "./types.js";
 import type { GameState, PlayerState, ProductionCard } from "./types.js";
 
@@ -11,6 +11,10 @@ import type { GameState, PlayerState, ProductionCard } from "./types.js";
  */
 export function producePlayer(state: GameState, player: PlayerState): ProductionCard[] {
 	const produced: ProductionCard[] = [];
+	// Mega eligibility (rule 12.1) counts only operated factories, never upgrade
+	// freebies or Kicker bonuses — record the groups so the election can be made
+	// blind, before the draw values are revealed.
+	player.megaGroups = megaGroupsFor(player);
 	for (const factory of player.factories) {
 		if (factory.manned) {
 			const value = drawCard(state, factory.type);

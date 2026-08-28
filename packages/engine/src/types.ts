@@ -82,6 +82,12 @@ export interface PlayerState {
 	mustDiscard: boolean;
 	/** Draws just produced, awaiting the mega-vs-singles choice (mega phase). */
 	pendingMega?: ProductionCard[];
+	/**
+	 * Mega-eligible groups this round (rule 12.1): full groups of 4 operated
+	 * factories per mega resource, computed at production time. The election is
+	 * blind — made before the pendingMega values are revealed to the player.
+	 */
+	megaGroups?: Partial<Record<Resource, number>>;
 	dropped: boolean;
 	/** Per-player gameplay settings (set via setPlayerSettings). */
 	settings: PlayerSettings;
@@ -151,7 +157,9 @@ export type TurnBuy =
 // platform grants time per persisted move, so splitting a turn into many moves
 // would farm extra time. Auctions stay separate moves (they interleave seats).
 export type Move =
-	| { action: "mega"; cards: number[] }
+	// Mega election (rule 12.1): how many Mega cards to take per resource, blind
+	// (before the pending draw values are revealed). The rest are kept as draws.
+	| { action: "mega"; take: Partial<Record<Resource, number>> }
 	| { action: "discard"; cards: number[] }
 	| { action: "auction"; marketIndex: number; bid: number; kicker?: boolean }
 	| { action: "bid"; amount: number }
@@ -174,6 +182,8 @@ export type LogEntry =
 			/** Kicker expansion: the Kicker slots after this round's refill. */
 			kickerMarket?: Kicker[];
 			produced: { player: number; cards: ProductionCard[] }[];
+			/** Mega-eligible groups per player this round (rule 12.1), for exact replay. */
+			megaGroups?: { player: number; groups: Partial<Record<Resource, number>> }[];
 	  }
 	| { type: "move"; player: number; move: Move; info?: MoveInfo }
 	| { type: "end"; scores: number[] };

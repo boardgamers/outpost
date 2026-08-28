@@ -65,7 +65,13 @@
 								onclick={() => (store.bidAmount = Math.max(minBid, store.bidAmount - 1))}
 								disabled={store.bidAmount <= minBid}>−1</button
 							>
-							<input type="number" min={minBid} max={maxBid} bind:value={store.bidAmount} />
+							<input
+								type="number"
+								min={minBid}
+								max={maxBid}
+								bind:value={store.bidAmount}
+								onchange={() => store.setBidAmount(store.bidAmount)}
+							/>
 							<button
 								onclick={() => (store.bidAmount = Math.min(maxBid, store.bidAmount + 1))}
 								disabled={store.bidAmount >= maxBid}>+1</button
@@ -82,9 +88,13 @@
 							<button class="pass" onclick={() => store.passBid()}>Pass</button>
 						</div>
 						<div class="hint">
-							You hold ◈ {store.myHandValue}{#if discount > 0}
-								and get a −{discount} discount on this upgrade{/if}. Max bid ◈ {maxBid}. Highest bid wins at
-							second-highest + 1; ties go to the earliest in turn order.
+							<span class="maxline">
+								You hold ◈ {store.myHandValue}{#if discount > 0}
+									<span class="plusdisc" title="your discount on this upgrade">+{discount}</span>
+								{/if}
+								<span class="maxeq">= max bid <strong>◈ {maxBid}</strong></span>
+							</span>
+							Highest bid wins at second-highest + 1; ties go to the earliest in turn order.
 						</div>
 					{/if}
 				{:else}
@@ -115,7 +125,13 @@
 								onclick={() => (store.bidAmount = Math.max(minBid, store.bidAmount - 1))}
 								disabled={store.bidAmount <= minBid}>−1</button
 							>
-							<input type="number" min={minBid} max={maxBid} bind:value={store.bidAmount} />
+							<input
+								type="number"
+								min={minBid}
+								max={maxBid}
+								bind:value={store.bidAmount}
+								onchange={() => store.setBidAmount(store.bidAmount)}
+							/>
 							<button
 								onclick={() => (store.bidAmount = Math.min(maxBid, store.bidAmount + 1))}
 								disabled={store.bidAmount >= maxBid}>+1</button
@@ -132,8 +148,12 @@
 							<button class="pass" onclick={() => store.passBid()}>Pass</button>
 						</div>
 						<div class="hint">
-							You hold ◈ {store.myHandValue}{#if discount > 0}
-								and get a −{discount} discount on this upgrade{/if}. Max bid ◈ {maxBid}.
+							<span class="maxline">
+								You hold ◈ {store.myHandValue}{#if discount > 0}
+									<span class="plusdisc" title="your discount on this upgrade">+{discount}</span>
+								{/if}
+								<span class="maxeq">= max bid <strong>◈ {maxBid}</strong></span>
+							</span>
 							{#if store.bidAmount >= minBid && store.bidAmount <= maxBid}
 								Winning at {store.bidAmount} would cost you ◈ {Math.max(0, store.bidAmount - discount)} in cards.
 							{/if}
@@ -232,5 +252,24 @@
 	.hint {
 		font-size: 11.5px;
 		color: var(--text-dim);
+	}
+	.maxline {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		margin-right: 4px;
+	}
+	.plusdisc {
+		font-weight: 800;
+		color: var(--microbiotics);
+		background: color-mix(in srgb, var(--microbiotics) 16%, transparent);
+		border-radius: 4px;
+		padding: 0 4px;
+	}
+	.maxeq {
+		color: var(--text-mid);
+	}
+	.maxeq strong {
+		color: var(--gold);
 	}
 </style>
