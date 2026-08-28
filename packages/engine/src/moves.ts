@@ -466,7 +466,9 @@ function moveAuction(
 	const kicker = forKicker ? (card as Kicker) : undefined;
 	const upgrade = forKicker ? undefined : (card as Upgrade);
 	const price = kicker ? KICKER_SPECS[kicker].price : UPGRADE_SPECS[upgrade as Upgrade].price;
-	if (!Number.isInteger(bid) || bid < price) {
+	// A stripped fastBid log masks the auctioneer's sealed opening bid as -1;
+	// replay skips the floor check (the server validated it live).
+	if (!replayMode && (!Number.isInteger(bid) || bid < price)) {
 		err(`opening bid must be at least ${price}`);
 	}
 	// Kicker cards have no discounts; upgrades use the buyer's discount.

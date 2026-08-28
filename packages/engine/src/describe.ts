@@ -42,7 +42,11 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 				case "discard":
 					return `${name} discards ${info?.discarded ?? move.cards.length} card(s)`;
 				case "auction":
-					return `${name} puts ${cardName(info, "an upgrade")} up for auction at ${move.bid}`;
+					// fastBid: the opening bid is the auctioneer's sealed bid, masked to
+					// -1 for the other players — show no amount when it is hidden.
+					return move.bid < 0
+						? `${name} puts ${cardName(info, "an upgrade")} up for auction (sealed bid)`
+						: `${name} puts ${cardName(info, "an upgrade")} up for auction at ${move.bid}`;
 				case "bid": {
 					// fastBid: the resolving move carries the outcome in its info.
 					if (info?.winningBid !== undefined) {

@@ -1,4 +1,5 @@
 import { moveAI as moveAICore } from "./src/ai.js";
+import { describeLogEntry } from "./src/describe.js";
 import { applyMove, dropPlayer as dropPlayerCore, initGame } from "./src/moves.js";
 import { rankings as computeRankings } from "./src/rankings.js";
 import { replay as replayCore } from "./src/replay.js";
@@ -78,7 +79,7 @@ export function logLength(data: GameState): number {
 	return data.log.length;
 }
 
-function hideProduced(entry: LogEntry, viewer?: number): LogEntry {
+function hideProduced(entry: LogEntry, viewer: number | undefined, fastBid: boolean): LogEntry {
 	if (entry.type === "init") {
 		// The seed derives every deck order; it must never reach a client.
 		return { ...entry, seed: "" };
@@ -88,6 +89,12 @@ function hideProduced(entry: LogEntry, viewer?: number): LogEntry {
 		// sequential bid too is harmless — the amount is already public via
 		// auction.highBid for the seats it concerns.
 		return { ...entry, move: { action: "bid", amount: -1 } };
+	}
+	if (fastBid && entry.type === "move" && entry.move.action === "auction" && entry.player !== viewer) {
+		// fastBid: the auctioneer's opening bid is their sealed bid — it stays
+		// hidden from the other players like any sealed bid. In a sequential
+		// auction the opening bid is the public high bid, so it is not masked.
+		return { ...entry, move: { ...entry.move, bid: -1 } };
 	}
 	if (entry.type === "move" && entry.move.action === "exchange" && entry.player !== viewer && entry.info) {
 		// The value of the card taken from the target stays hidden from everyone
@@ -162,7 +169,7 @@ export function stripSecret(data: GameState, player?: number): GameState {
 						),
 					}
 		),
-		log: data.log.map((entry) => hideProduced(entry, viewer)),
+		log: data.log.map((entry) => hideProduced(entry, viewer, data.options.fastBid === true)),
 		messages: [...data.messages],
 	};
 }
@@ -174,7 +181,9 @@ export interface LogSliceOptions {
 }
 
 export interface LogSliceResult {
-	log: LogEntry[];
+	// Entries carry an extra plain-text `simple` line for the game-server's
+	// last-move summary (its logEntryText probes for simple/message/text).
+	log: (LogEntry & { simple?: string })[];
 	availableMoves?: string[];
 }
 
@@ -182,7 +191,14 @@ export function logSlice(data: GameState, options?: LogSliceOptions): LogSliceRe
 	const viewer = options?.player !== undefined && options.player >= 0 ? options.player : undefined;
 	const start = Math.max(0, options?.start ?? 0);
 	const end = options?.end ?? data.log.length;
-	const log = data.log.slice(start, end).map((entry) => hideProduced(entry, viewer));
+	// Each entry also carries a plain-text `simple` line: the game-server's
+	// lastMoveText probes entries for simple/message/text to show the last move
+	// in the game list, and our structured entries otherwise stringify to noise.
+	// describeLogEntry never reveals hidden values (sealed bids, exchange takes).
+	const log = data.log.slice(start, end).map((entry) => {
+		const masked = hideProduced(entry, viewer, data.options.fastBid === true);
+		return { ...masked, simple: describeLogEntry(data, masked) };
+	});
 	const result: LogSliceResult = { log };
 	if (options?.end === undefined) {
 		result.availableMoves = availableMoves(data, viewer);

@@ -83,7 +83,9 @@ export function sanitizeMove(raw: unknown): Move {
 			return {
 				action,
 				marketIndex: int(move.marketIndex, "marketIndex", 0),
-				bid: int(move.bid, "bid", 0),
+				// -1 is the masked value of the auctioneer's sealed opening bid in
+				// a stripped fastBid log; the live game never sends it, replay does.
+				bid: int(move.bid, "bid", -1),
 				...(move.kicker === true ? { kicker: true } : {}),
 			};
 		case "bid":
