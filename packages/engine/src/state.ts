@@ -318,13 +318,15 @@ function solvePayment(cards: { v: number; index: number }[], due: number): { tot
  * between its deck's minimum and maximum. Known values count exactly, so for
  * the viewer's own hand this collapses to the true value.
  */
-export function handValueRange(player: PlayerState): { min: number; max: number } {
+export function handValueRange(player: PlayerState, asSeenByOthers = false): { min: number; max: number } {
 	let min = 0;
 	let max = 0;
 	for (const card of [...player.hand, ...(player.pendingMega ?? [])]) {
-		if (card.v >= 0 || card.m) {
-			// A mega card's value is printed on it, so it stays public even when
-			// the rest of the hand is hidden.
+		// A mega card's value is printed on it, so it stays public even when
+		// the rest of the hand is hidden. asSeenByOthers treats every non-mega
+		// card as hidden (the owner's own values are known to them, but their
+		// opponents only see the card types).
+		if (card.m || (card.v >= 0 && !asSeenByOthers)) {
 			min += card.v;
 			max += card.v;
 		} else {
@@ -336,10 +338,10 @@ export function handValueRange(player: PlayerState): { min: number; max: number 
 }
 
 /** Expected hand value from public information: known cards exact, hidden cards at their deck average. */
-export function handValueExpected(player: PlayerState): number {
+export function handValueExpected(player: PlayerState, asSeenByOthers = false): number {
 	let total = 0;
 	for (const card of [...player.hand, ...(player.pendingMega ?? [])]) {
-		total += card.v >= 0 || card.m ? card.v : PRODUCTION_DECKS[card.t].average;
+		total += card.m || (card.v >= 0 && !asSeenByOthers) ? card.v : PRODUCTION_DECKS[card.t].average;
 	}
 	return total;
 }

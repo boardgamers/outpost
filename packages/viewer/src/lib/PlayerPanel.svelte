@@ -128,14 +128,14 @@
 		{#if isMe}
 			<span class="cash" title="total hand value in credits">◈ {store.myHandValue}</span>
 			{#if player.hand.length > 0}
-				{@const range = handValueRange(player)}
+				{@const range = handValueRange(player, true)}
 				{#if range.min !== range.max}
 					<span
 						class="cash dim selfrange"
 						title="the hand-value range other players see for you: your card types are public, only the values are hidden (their best guess in parentheses)"
 					>
 						{range.min}–{range.max}
-						<span class="avg">(~{Math.round(handValueExpected(player))})</span>
+						<span class="avg">(~{Math.round(handValueExpected(player, true))})</span>
 					</span>
 				{/if}
 			{/if}
