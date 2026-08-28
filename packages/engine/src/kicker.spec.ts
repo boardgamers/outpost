@@ -54,7 +54,7 @@ test("kicker: no kicker state when the option is off", () => {
 test("kicker: buying a Kicker card adds it, pays, and frees the slot", () => {
 	const state = kickerGame(4);
 	const seat = rich(state, "smelter");
-	applyMove(state, { action: "auction", marketIndex: 0, bid: 10, kicker: true }, seat);
+	applyMove(state, { action: "auction", marketIndex: 0, bid: 30, kicker: true }, seat);
 	for (let guard = 0; guard < 5 && state.phase === "auction"; guard++) {
 		applyMove(state, { action: "bidPass" }, state.auction?.activeBidder as number);
 	}
@@ -162,7 +162,7 @@ test("kicker: the face-down piles are hidden by stripSecret, the slots stay publ
 test("kicker: a purchase replays identically from the log", () => {
 	const state = kickerGame(4);
 	const seat = rich(state, "smelter");
-	applyMove(state, { action: "auction", marketIndex: 0, bid: 10, kicker: true }, seat);
+	applyMove(state, { action: "auction", marketIndex: 0, bid: 30, kicker: true }, seat);
 	for (let guard = 0; guard < 5 && state.phase === "auction"; guard++) {
 		applyMove(state, { action: "bidPass" }, state.auction?.activeBidder as number);
 	}

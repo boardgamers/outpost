@@ -122,20 +122,23 @@ export interface KickerSpec {
 }
 
 /**
- * Kicker expansion cards. Prices/VPs: Biosphere (250/25), NCF Prototype (60/0),
- * and the 1 VP of the Era I cards are confirmed from the rulebook/BGG; the
- * remaining values are inferences (Era I ~10/1, Era II ~40/2) pending the
- * printed card values — see README "Data notes / deviations".
+ * Kicker expansion cards. Confirmed from the 2011 rulebook and BGG sources:
+ * Ice Prospector 10/1, Robot Prototype 10/0, Smelter 30/1, Wily Trader 10/1,
+ * Launch Facility 75/2, Merchant House 60/1, NCF Prototype 60/0, Biosphere
+ * 250/25. Refinery's printed cost/VP are not documented (the rulebook has a
+ * production error — its card image is missing); as the Era II analog of the
+ * 10/1 Ice Prospector (mirroring Wily Trader 10/1 → Merchant House 60/1) it is
+ * provisionally 60/1 — see README "Data notes".
  */
 export const KICKER_SPECS: Record<Kicker, KickerSpec> = {
 	iceProspector: { name: "Ice Prospector", era: 1, price: 10, vp: 1 },
-	robotPrototype: { name: "Robot Prototype", era: 1, price: 10, vp: 1, freeRobot: true },
-	smelter: { name: "Smelter", era: 1, price: 10, vp: 1 },
+	robotPrototype: { name: "Robot Prototype", era: 1, price: 10, vp: 0, freeRobot: true },
+	smelter: { name: "Smelter", era: 1, price: 30, vp: 1 },
 	wilyTrader: { name: "Wily Trader", era: 1, price: 10, vp: 1 },
-	launchFacility: { name: "Launch Facility", era: 2, price: 40, vp: 2 },
-	merchantHouse: { name: "Merchant House", era: 2, price: 40, vp: 2 },
+	launchFacility: { name: "Launch Facility", era: 2, price: 75, vp: 2 },
+	merchantHouse: { name: "Merchant House", era: 2, price: 60, vp: 1 },
 	ncfPrototype: { name: "New Chemicals Factory Prototype", era: 2, price: 60, vp: 0, freeFactory: "newChemicals" },
-	refinery: { name: "Refinery", era: 2, price: 40, vp: 2 },
+	refinery: { name: "Refinery", era: 2, price: 60, vp: 1 },
 	biosphere: { name: "Biosphere", era: 3, price: 250, vp: 25, populationBonus: 5 },
 };
 

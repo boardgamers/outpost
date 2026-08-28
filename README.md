@@ -59,10 +59,12 @@ are auctioned like colony upgrades. All nine types are implemented except the in
 forced exchange of **Wily Trader** and **Merchant House**, which is deferred (the cards
 still score their VP); their exchange ability is not yet wired up.
 
-- Confirmed card data: Biosphere 250/25 VP, New Chemicals Factory Prototype 60/0 VP, and
-  1 VP for each Era I card. The remaining prices/VPs are **inferences** (Era I ~10/1,
-  Era II ~40/2) pending the printed card values — each is a one-line change in
-  `packages/engine/src/data.ts` (`KICKER_SPECS`).
+- Confirmed card data (2011 rulebook + BGG): Ice Prospector 10/1, Robot Prototype 10/0,
+  Smelter 30/1, Wily Trader 10/1, Launch Facility 75/2, Merchant House 60/1, New Chemicals
+  Factory Prototype 60/0, Biosphere 250/25. **Refinery's printed cost/VP are not
+  documented** — the rulebook has a production error (its card image is missing). As the
+  Era II analog of Ice Prospector (mirroring Wily Trader 10/1 → Merchant House 60/1) it is
+  provisionally 60/1, a one-line change in `packages/engine/src/data.ts` (`KICKER_SPECS`).
 - Ice Prospector / Refinery draw the extra card and discard the cheapest of the just-drawn
   cards of that type automatically (the obvious choice; no interactive pick).
 - The Era III pile holds only Biosphere (the single Era III type), per the rules.
