@@ -117,6 +117,21 @@ test("mega: rejects converting more groups than the pool holds", () => {
 	assert.throws(() => applyMove(state, { action: "mega", take: { water: 1 } }, 0));
 });
 
+test("mega: the draws a Mega card replaces return to the deck (they never happen)", () => {
+	const state = megaGame();
+	const player = state.players[0] as PlayerState;
+	const deckBefore = state.decks.water.length;
+	const discardBefore = state.discards.water.length;
+	applyMove(state, { action: "mega", take: { water: 1 } }, 0);
+	// The Mega card is taken INSTEAD of 4 draws: those 4 staged cards go back
+	// onto the water deck (conserving it), never into a hand or the discard.
+	assert.equal(state.decks.water.length, deckBefore + 4);
+	assert.equal(state.discards.water.length, discardBefore);
+	// Only the 1 unconverted water draw + the ore stay as singles.
+	assert.equal(player.hand.filter((c) => !c.m).length, 2);
+	assert.equal(player.hand.filter((c) => c.m).length, 1);
+});
+
 test("mega: spending a mega card returns it to the pool", () => {
 	const state = megaGame();
 	const player = state.players[0] as PlayerState;

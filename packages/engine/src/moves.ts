@@ -416,7 +416,14 @@ function moveMega(state: GameState, move: Move & { action: "mega" }, seat: numbe
 		}
 	}
 	// Everything validated; now mutate. Unconverted draws are kept as singles.
+	// A Mega card is taken INSTEAD of the group's 4 draws — those draws never
+	// happen, so the staged cards go back onto their deck (face-down) rather
+	// than into a hand or the discard. This keeps the deck count conserved.
 	const keep = pending.filter((_, i) => !consumed.has(i));
+	for (const i of consumed) {
+		const card = pending[i] as ProductionCard;
+		state.decks[card.t].push(card.v);
+	}
 	player.hand.push(...keep, ...megas);
 	player.pendingMega = [];
 	player.megaGroups = {};
