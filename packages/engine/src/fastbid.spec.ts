@@ -115,6 +115,20 @@ test("fastBid: a sole bidder pays the list price", () => {
 	assert.equal(state.auction?.highBid, 25);
 });
 
+test("fastBid: overbidding the opening still pays only the list price when everyone passes", () => {
+	const state = fastGame();
+	// Open at 35 on a 25-list card; both opponents pass (sealed bid 0). The
+	// list price is the effective second price, so the winner pays 25, not 35.
+	const opener = open(state, 35);
+	const second = seatAfter(state, opener);
+	const third = seatAfter(state, second);
+	applyMove(state, { action: "bidPass" }, second);
+	applyMove(state, { action: "bidPass" }, third);
+	assert.equal(state.phase, "auctionPayment");
+	assert.equal(state.auction?.highBidder, opener);
+	assert.equal(state.auction?.highBid, 25);
+});
+
 test("fastBid: bid below list price is rejected", () => {
 	const state = fastGame();
 	open(state, 25);

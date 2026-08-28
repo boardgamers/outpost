@@ -732,9 +732,10 @@ function fastBidMaybeResolve(state: GameState, auction: NonNullable<GameState["a
 		const tied = biddingOrder(state).filter((seat) => bids[seat] === winningBid && !state.players[seat]?.dropped);
 		winner = tied[0] ?? auction.auctioneer;
 	}
-	// Price: runner-up bid + 1, but never more than the winner's own bid (the
-	// "no more money" case). A sole bidder pays the list price (secondBid = 0).
-	const price = secondBid === 0 ? winningBid : Math.min(secondBid + 1, winningBid);
+	// Second-price sealed auction: the winner pays the runner-up bid + 1, but
+	// never below the list price (the reserve — when everyone else passes, the
+	// list price is the effective second price) and never above their own bid.
+	const price = Math.min(winningBid, Math.max(auctionPrice(auction), secondBid + 1));
 	auction.highBid = price;
 	auction.highBidder = winner;
 	auction.activeBidder = winner;
