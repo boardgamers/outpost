@@ -64,6 +64,20 @@ test("era: the Era III fallback needs two rounds with upgrades 1-10 gone", () =>
 	assert.equal(colonyEra(state), 3);
 });
 
+test("era: states saved before the streak fields existed are treated as 0", () => {
+	const state = game(3);
+	delete state.eraStreak4;
+	delete state.eraStreak10;
+	for (const u of UPGRADE_BY_ROLL.slice(0, 4)) {
+		state.supply[u] = 0;
+	}
+	updateEraStreaks(state);
+	assert.equal(state.eraStreak4, 1); // not NaN
+	updateEraStreaks(state);
+	assert.equal(state.eraStreak4, 2);
+	assert.equal(colonyEra(state), 2);
+});
+
 test("market: a roll with no matching card cascades to the next lower upgrade", () => {
 	const state = game(4);
 	// Era I (d4 → upgrades 1-4). Exhaust Nodule (#4) so a roll of 4 cascades down.

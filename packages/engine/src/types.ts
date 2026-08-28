@@ -248,10 +248,11 @@ export interface GameState {
 	/**
 	 * Consecutive round-begins with every upgrade 1-4 (eraStreak4) or 1-10
 	 * (eraStreak10) already purchased — the "very rare" era-advance fallback:
-	 * at 2 the era steps up even with no player at the VP threshold.
+	 * at 2 the era steps up even with no player at the VP threshold. Optional:
+	 * states saved before the fields existed lack them (treated as 0).
 	 */
-	eraStreak4: number;
-	eraStreak10: number;
+	eraStreak4?: number;
+	eraStreak10?: number;
 	/** Kicker expansion: Kicker cards currently in the Kicker slots. */
 	kickerMarket: Kicker[];
 	/** Kicker expansion: remaining Kicker piles by era (shuffled, face-down). */

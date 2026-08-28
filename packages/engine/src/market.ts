@@ -11,10 +11,10 @@ import type { GameState, Kicker, Upgrade } from "./types.js";
  */
 export function colonyEra(state: GameState): 1 | 2 | 3 {
 	const best = Math.max(0, ...scores(state));
-	if (best >= bigThreshold(state) || state.eraStreak10 >= 2) {
+	if (best >= bigThreshold(state) || (state.eraStreak10 ?? 0) >= 2) {
 		return 3;
 	}
-	if (best >= MID_THRESHOLD || state.eraStreak4 >= 2) {
+	if (best >= MID_THRESHOLD || (state.eraStreak4 ?? 0) >= 2) {
 		return 2;
 	}
 	return 1;
@@ -44,8 +44,9 @@ export function marketTypeCap(state: GameState): number {
  */
 export function updateEraStreaks(state: GameState): void {
 	const supplyEmpty = (count: number) => UPGRADE_BY_ROLL.slice(0, count).every((u) => state.supply[u] <= 0);
-	state.eraStreak4 = supplyEmpty(4) ? state.eraStreak4 + 1 : 0;
-	state.eraStreak10 = supplyEmpty(10) ? state.eraStreak10 + 1 : 0;
+	// `?? 0`: states saved before the streak fields existed lack them.
+	state.eraStreak4 = supplyEmpty(4) ? (state.eraStreak4 ?? 0) + 1 : 0;
+	state.eraStreak10 = supplyEmpty(10) ? (state.eraStreak10 ?? 0) + 1 : 0;
 }
 
 function marketCount(state: GameState, upgrade: Upgrade): number {
