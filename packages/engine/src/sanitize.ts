@@ -94,6 +94,10 @@ export function sanitizeMove(raw: unknown): Move {
 			return { action };
 		case "pay":
 			return { action, cards: intArray(move.cards, "cards") };
+		case "exchange":
+			return { action, card: int(move.card, "card", 0), target: int(move.target, "target", 0, 100) };
+		case "exchangePass":
+			return { action };
 		case "endTurn":
 			return { action, buys: buyArray(move.buys), manned: intArray(move.manned, "manned") };
 		default:

@@ -5,8 +5,10 @@ import {
 	canBuyFactory,
 	computePurchaseOrder,
 	countingHandSize,
+	exchangeResources,
 	handCapacity,
 	handValue,
+	hasExchange,
 	megaEligible,
 	mustAutoPassBid,
 	populationCost,
@@ -58,6 +60,15 @@ let replayFastResolve: { winningBid: number; secondBid: number; winner: number }
 
 export function setReplayFastResolve(winningBid: number, secondBid: number, winner: number): void {
 	replayFastResolve = { winningBid, secondBid, winner };
+}
+
+// The exchange resolution recorded on the replayed move (index into the
+// target's hand of the returned card, -1 for "gave the card back"). A stripped
+// log hides the target's card values, so the return cannot be recomputed.
+let replayExchangeTake = -1;
+
+export function setReplayExchangeTake(take: number): void {
+	replayExchangeTake = take;
 }
 
 export function isFastBid(state: GameState): boolean {
@@ -133,8 +144,53 @@ export function enterDiscardPhase(state: GameState): void {
 	if (anyDiscard) {
 		state.phase = "discard";
 	} else {
-		startActions(state);
+		enterExchangePhase(state);
 	}
+}
+
+/**
+ * Kicker expansion: the Wily Trader / Merchant House exchange step runs just
+ * before the discard phase ends, after all excess cards are discarded. Owners
+ * act in player order; seats with no legal exchange are skipped. With no
+ * Wily Trader / Merchant House in play at all, go straight to actions.
+ */
+export function enterExchangePhase(state: GameState): void {
+	state.exchange = null;
+	const next = state.purchaseOrder.find((seat) => hasExchange(state, seat));
+	if (next === undefined) {
+		startActions(state);
+		return;
+	}
+	state.phase = "exchange";
+	state.exchange = { seat: next, acted: [], parked: [] };
+}
+
+/** Advance to the next owner with a legal exchange, or end the exchange step. */
+function advanceExchange(state: GameState): void {
+	const exchange = state.exchange;
+	if (!exchange) {
+		err("no exchange in progress");
+	}
+	// Mark the seat that just acted so it is not asked again this phase (an
+	// owner keeps a tradable hand after trading, so without this they would be
+	// re-selected forever).
+	exchange.acted.push(exchange.seat);
+	const order = state.purchaseOrder;
+	const from = order.indexOf(exchange.seat);
+	for (let step = 1; step <= order.length; step++) {
+		const seat = order[(from + step) % order.length] as number;
+		if (!exchange.acted.includes(seat) && hasExchange(state, seat)) {
+			exchange.seat = seat;
+			return;
+		}
+	}
+	// No more exchanges: the step is over. Return every card parked on a Wily
+	// Trader / Merchant House to its owner's hand now that the phase has ended.
+	for (const { seat, card } of exchange.parked) {
+		(state.players[seat] as PlayerState).hand.push(card);
+	}
+	state.exchange = null;
+	startActions(state);
 }
 
 function startActions(state: GameState): void {
@@ -275,6 +331,12 @@ export function applyMove(state: GameState, rawMove: Move | unknown, seat: numbe
 		case "pay":
 			info = movePay(state, move, seat, player);
 			break;
+		case "exchange":
+			info = moveExchange(state, move, seat, player);
+			break;
+		case "exchangePass":
+			info = moveExchangePass(state, seat);
+			break;
 		case "endTurn":
 			info = moveEndTurn(state, move, seat, player);
 			break;
@@ -295,7 +357,7 @@ function postMove(state: GameState, move: Move): void {
 		return;
 	}
 	if (state.phase === "discard" && !state.players.some((p) => p.mustDiscard)) {
-		startActions(state);
+		enterExchangePhase(state);
 		return;
 	}
 	if (move.action === "endTurn") {
@@ -694,6 +756,109 @@ function movePay(state: GameState, move: Move & { action: "pay" }, seat: number,
 	return info;
 }
 
+function requireExchangeTurn(state: GameState, seat: number): NonNullable<GameState["exchange"]> {
+	const exchange = state.exchange;
+	if (state.phase !== "exchange" || !exchange) {
+		err("not in the exchange step");
+	}
+	if (exchange.seat !== seat) {
+		err("not this player's exchange turn");
+	}
+	return exchange;
+}
+
+/**
+ * Wily Trader / Merchant House: hand one of your own non-Mega cards to a
+ * target who holds a non-Mega card of the same type. The target must hand
+ * back a higher-valued card of that type if they have one (the lowest such,
+ * the obvious choice for them), otherwise they return the given card. A card
+ * taken this way is parked face-down on the Wily Trader / Merchant House
+ * until the phase ends, so it cannot be taken again this phase.
+ */
+function moveExchange(
+	state: GameState,
+	move: Move & { action: "exchange" },
+	seat: number,
+	player: PlayerState
+): MoveInfo {
+	const exchange = requireExchangeTurn(state, seat);
+	const tradable = exchangeResources(player);
+	if (!Number.isInteger(move.card) || move.card < 0 || move.card >= player.hand.length) {
+		err("invalid card index");
+	}
+	const given = player.hand[move.card] as ProductionCard;
+	if (given.m || !tradable.includes(given.t)) {
+		err(`cannot offer a ${given.m ? "mega " : ""}${given.t} card in an exchange`);
+	}
+	if (!Number.isInteger(move.target) || move.target === seat) {
+		err("invalid target");
+	}
+	const target = getPlayer(state, move.target);
+	// The target must hold a non-Mega card of the offered type.
+	const candidates: number[] = [];
+	target.hand.forEach((c, i) => {
+		if (!c.m && c.t === given.t) {
+			candidates.push(i);
+		}
+	});
+	if (candidates.length === 0) {
+		err(`${target.name} has no ${given.t} card to exchange`);
+	}
+
+	// Resolve the target's return: the lowest higher-valued card of the type,
+	// or the given card back when nothing is higher. Replay applies the
+	// recorded index verbatim (the target's values are hidden in a stripped
+	// log, so the choice cannot be recomputed).
+	let takeIndex = -1;
+	if (replayMode) {
+		takeIndex = replayExchangeTake;
+		if (
+			takeIndex >= 0 &&
+			(takeIndex >= target.hand.length || (target.hand[takeIndex] as ProductionCard).t !== given.t)
+		) {
+			err("recorded exchange does not match the target's hand");
+		}
+	} else {
+		let best = -1;
+		for (const i of candidates) {
+			const v = (target.hand[i] as ProductionCard).v;
+			if (v > given.v && (best === -1 || v < (target.hand[best] as ProductionCard).v)) {
+				best = i;
+			}
+		}
+		takeIndex = best;
+	}
+
+	// Everything validated; now mutate. The given card leaves the giver's hand.
+	player.hand.splice(move.card, 1);
+	let taken: ProductionCard;
+	if (takeIndex >= 0) {
+		taken = target.hand.splice(takeIndex, 1)[0] as ProductionCard;
+	} else {
+		// No higher card: the target returns the given card.
+		taken = given;
+	}
+	// The giver's taken card is parked on the Wily Trader / Merchant House
+	// until the phase ends; the target keeps the given card (unless it bounced).
+	if (taken !== given) {
+		target.hand.push(given);
+	}
+	exchange.parked.push({ seat, card: taken });
+	state.messages.push(
+		taken === given
+			? `${player.name} offered a ${given.t} card to ${target.name}, who had nothing higher`
+			: `${player.name} trades a ${given.t} card to ${target.name} for a higher one`
+	);
+	advanceExchange(state);
+	return { exchangeTake: takeIndex, exchangeValue: taken.v };
+}
+
+function moveExchangePass(state: GameState, seat: number): MoveInfo {
+	requireExchangeTurn(state, seat);
+	advanceExchange(state);
+	return {};
+}
+
 /** Apply one purchase step of a turn. Validates against the current state and mutates it; returns the amount paid. */
 export function applyTurnBuy(state: GameState, player: PlayerState, buy: TurnBuy): number {
 	switch (buy.buy) {
@@ -825,7 +990,16 @@ export function dropPlayer(state: GameState, seat: number): GameState {
 		return state;
 	}
 	if (state.phase === "discard" && !state.players.some((p) => p.mustDiscard)) {
-		startActions(state);
+		enterExchangePhase(state);
+		return state;
+	}
+	if (state.phase === "exchange" && state.exchange) {
+		if (state.exchange.seat === seat) {
+			// The seat due to exchange is gone: skip them (their parked cards
+			// were returned to their hand by advanceExchange, which then skips
+			// dropped seats via hasExchange).
+			advanceExchange(state);
+		}
 		return state;
 	}
 	if (state.phase === "actions" && state.activeSeat === seat) {

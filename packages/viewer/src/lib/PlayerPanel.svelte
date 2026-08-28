@@ -60,6 +60,10 @@
 		return [...counts.entries()];
 	});
 	const manning = $derived(store.manning && isMe);
+	// Wily Trader / Merchant House: this panel is a valid exchange target when I
+	// have picked a card to offer and this player holds a matching card.
+	const exchangeTargetable = $derived(store.myExchange && !isMe && store.exchangeTargets.includes(index));
+	const exchangeTargeted = $derived(exchangeTargetable && store.exchangeTarget === index);
 	const operators = $derived(player.population + player.robots);
 	const pickTotal = $derived(isMe ? store.pickTotal() : 0);
 	const pickRequired = $derived(isMe ? store.pickRequired : null);
@@ -72,8 +76,18 @@
 	class:active={isActive}
 	class:dropped={player.dropped}
 	class:me={isMe}
+	class:targetable={exchangeTargetable}
+	class:targeted={exchangeTargeted}
 	style="--pc: {playerColor(index)}"
 >
+	{#if exchangeTargetable}
+		<button
+			class="targethit"
+			aria-label="trade with {player.name}"
+			title="trade here: they must hand back a higher-valued card of the offered type"
+			onclick={() => store.pickExchangeTarget(index)}
+		></button>
+	{/if}
 	<div class="head">
 		<button class="identity" onclick={() => onNameClick?.(index)} title={player.name}>
 			{#if orderPos > 0}
@@ -95,6 +109,11 @@
 			{/if}
 			<span class="name">{player.name}</span>
 		</button>
+		{#if exchangeTargetable}
+			<span class="tradetarget" title="trade target: they must hand back a higher-valued card of the offered type">
+				{exchangeTargeted ? "✓ trading" : "trade"}
+			</span>
+		{/if}
 		<span class="vp" title="victory points">{store.vpOf(index)}<span class="unit">VP</span></span>
 	</div>
 
@@ -233,12 +252,21 @@
 	<div class="row hand">
 		{#if isMe}
 			{#each player.hand as card, i (i)}
-				<ProductionCardView
-					{card}
-					selectable={store.interactive && !store.myMega}
-					selected={store.cardPick.includes(i)}
-					onclick={() => store.toggleCard(i)}
-				/>
+				{#if store.myExchange}
+					<ProductionCardView
+						{card}
+						selectable={store.canOfferInExchange(i)}
+						selected={store.exchangeCard === i}
+						onclick={() => store.pickExchangeCard(i)}
+					/>
+				{:else}
+					<ProductionCardView
+						{card}
+						selectable={store.interactive && !store.myMega}
+						selected={store.cardPick.includes(i)}
+						onclick={() => store.toggleCard(i)}
+					/>
+				{/if}
 			{/each}
 			{#if player.hand.length === 0}
 				<span class="none">no cards</span>
@@ -259,6 +287,7 @@
 
 <style>
 	.panel {
+		position: relative;
 		background: var(--bg-panel);
 		border: 1px solid var(--line);
 		border-left: 4px solid var(--pc);
@@ -272,6 +301,20 @@
 			box-shadow 0.2s ease,
 			border-color 0.2s ease;
 	}
+	/* Full-panel click target for the Wily Trader / Merchant House exchange. */
+	.targethit {
+		position: absolute;
+		inset: 0;
+		border: none;
+		border-radius: var(--radius);
+		background: transparent;
+		cursor: pointer;
+		padding: 0;
+		z-index: 2;
+	}
+	.targethit:hover {
+		background: color-mix(in srgb, var(--gold) 8%, transparent);
+	}
 	.panel.active {
 		border-color: var(--pc);
 		box-shadow:
@@ -280,6 +323,32 @@
 	}
 	.panel.me {
 		background: var(--bg-elevated);
+	}
+	.panel.targetable {
+		cursor: pointer;
+		border-color: var(--gold);
+		box-shadow: 0 0 8px color-mix(in srgb, var(--gold) 35%, transparent);
+	}
+	.panel.targetable:hover {
+		box-shadow:
+			0 0 0 1px var(--gold),
+			0 0 14px color-mix(in srgb, var(--gold) 50%, transparent);
+	}
+	.panel.targeted {
+		border-color: var(--gold);
+		box-shadow:
+			0 0 0 1.5px var(--gold),
+			0 0 16px color-mix(in srgb, var(--gold) 60%, transparent);
+	}
+	.tradetarget {
+		font-size: 10px;
+		font-weight: 800;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--gold);
+		border: 1px solid var(--gold);
+		border-radius: 4px;
+		padding: 1px 6px;
 	}
 	.panel.dropped {
 		opacity: 0.45;

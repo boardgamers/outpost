@@ -92,7 +92,28 @@ export interface PlayerSettings {
 	autoPassBids?: boolean;
 }
 
-export type Phase = "mega" | "discard" | "actions" | "auction" | "auctionPayment" | "ended";
+export type Phase = "mega" | "discard" | "exchange" | "actions" | "auction" | "auctionPayment" | "ended";
+
+/**
+ * Kicker expansion: state of the Wily Trader / Merchant House exchange step
+ * (end of the discard phase). Owners act in player order; `seat` is whose
+ * exchange action is pending. `parked` holds the cards taken this phase that
+ * sit face-down on a Wily Trader / Merchant House card until the phase ends —
+ * they cannot be taken again by another exchange this phase.
+ */
+export interface ExchangeState {
+	/** Seat currently asked to exchange (or pass). */
+	seat: number;
+	/** Seats that have already taken their exchange action this phase. */
+	acted: number[];
+	/**
+	 * Cards taken by exchanges this phase, parked face-down on the Wily Trader
+	 * / Merchant House that took them until the phase ends (so they cannot be
+	 * taken again by another exchange this phase). Each returns to its owner's
+	 * hand when the phase ends.
+	 */
+	parked: { seat: number; card: ProductionCard }[];
+}
 
 export interface AuctionState {
 	/** Index into state.market (or state.kickerMarket when kicker is set). */
@@ -136,6 +157,10 @@ export type Move =
 	| { action: "bid"; amount: number }
 	| { action: "bidPass" }
 	| { action: "pay"; cards: number[] }
+	// Wily Trader / Merchant House: hand one of your own cards (index into the
+	// hand) to `target`, who must return a higher-valued card of the same type.
+	| { action: "exchange"; card: number; target: number }
+	| { action: "exchangePass" }
 	| { action: "endTurn"; buys: TurnBuy[]; manned: number[] };
 
 export type LogEntry =
@@ -177,6 +202,16 @@ export interface MoveInfo {
 	winningBid?: number;
 	secondBid?: number;
 	winner?: number;
+	/**
+	 * Wily Trader / Merchant House exchange resolution, recorded so a stripped
+	 * log replays verbatim (the target's card values are hidden, so which card
+	 * they hand back cannot be recomputed). `exchangeTake` is the index into
+	 * the target's hand of the card they returned, or -1 when they had nothing
+	 * higher and returned the given card. `exchangeValue` is the returned
+	 * card's value (for the log description; -1 keeps it hidden).
+	 */
+	exchangeTake?: number;
+	exchangeValue?: number;
 }
 
 export interface GameState {
@@ -188,6 +223,8 @@ export interface GameState {
 	/** Seat whose action turn it is (phase "actions"). */
 	activeSeat: number;
 	auction: AuctionState | null;
+	/** Kicker expansion: Wily Trader / Merchant House exchange step (phase "exchange"). */
+	exchange: ExchangeState | null;
 	/** Upgrades currently up for auction. */
 	market: Upgrade[];
 	/** Remaining copies of each upgrade in the supply. */

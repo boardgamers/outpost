@@ -35,6 +35,7 @@ export function setup(players: number, options: Record<string, unknown>, seed: s
 		purchaseOrder: [],
 		activeSeat: 0,
 		auction: null,
+		exchange: null,
 		market: [],
 		supply: createSupply(players),
 		decks: emptyPiles(),
@@ -408,6 +409,50 @@ export function auctionDiscount(player: PlayerState, auction: { upgrade?: Upgrad
 	return auction.upgrade ? upgradeDiscount(player, auction.upgrade) : 0;
 }
 
+/** Resource types a Wily Trader owner may offer in an exchange. */
+export const WILY_TRADER_RESOURCES: readonly Resource[] = ["ore", "water", "titanium"];
+/** Resource types a Merchant House owner may offer in an exchange. */
+export const MERCHANT_HOUSE_RESOURCES: readonly Resource[] = ["research", "microbiotics", "newChemicals"];
+
+/**
+ * The resource types a player may offer in a Wily Trader / Merchant House
+ * exchange, from the Kicker cards they own (owning both covers all six).
+ */
+export function exchangeResources(player: PlayerState): Resource[] {
+	const resources: Resource[] = [];
+	if (player.kickers.wilyTrader > 0) {
+		resources.push(...WILY_TRADER_RESOURCES);
+	}
+	if (player.kickers.merchantHouse > 0) {
+		resources.push(...MERCHANT_HOUSE_RESOURCES);
+	}
+	return resources;
+}
+
+/**
+ * Whether the seat has any legal exchange this phase: owns a Wily Trader /
+ * Merchant House, holds a non-Mega card of a tradable type, and some other
+ * active player holds a non-Mega card of the same type. Card values are
+ * irrelevant here (they only decide what the target hands back).
+ */
+export function hasExchange(state: GameState, seat: number): boolean {
+	const player = state.players[seat];
+	if (!player || player.dropped) {
+		return false;
+	}
+	const tradable = exchangeResources(player);
+	if (tradable.length === 0) {
+		return false;
+	}
+	const offered = new Set(player.hand.filter((c) => !c.m && tradable.includes(c.t)).map((c) => c.t));
+	if (offered.size === 0) {
+		return false;
+	}
+	return state.players.some(
+		(other, otherSeat) => otherSeat !== seat && !other.dropped && other.hand.some((c) => !c.m && offered.has(c.t))
+	);
+}
+
 /** Per-buyer discount on an upgrade's auction price. */
 export function upgradeDiscount(player: PlayerState, upgrade: Upgrade): number {
 	let discount = 0;
@@ -553,6 +598,8 @@ export function availableMoves(state: GameState, player?: number): string[] {
 			return (p.pendingMega?.length ?? 0) > 0 ? ["mega"] : [];
 		case "discard":
 			return p.mustDiscard ? ["discard"] : [];
+		case "exchange":
+			return state.exchange?.seat === player ? ["exchange", "exchangePass"] : [];
 		case "auction":
 			return state.auction?.activeBidder === player && !mustAutoPassBid(state, player) ? ["bid", "bidPass"] : [];
 		case "auctionPayment":

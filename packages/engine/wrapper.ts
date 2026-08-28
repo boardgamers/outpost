@@ -53,6 +53,8 @@ export function currentPlayer(data: GameState): number | number[] | undefined {
 			const waiting = data.players.flatMap((p, seat) => (p.mustDiscard && !p.dropped ? [seat] : []));
 			return waiting.length === 1 ? waiting[0] : waiting;
 		}
+		case "exchange":
+			return data.exchange?.seat;
 		case "auction": {
 			// fastBid: everyone who hasn't bid yet is on the clock at once.
 			if (data.auction?.bids) {
@@ -87,6 +89,11 @@ function hideProduced(entry: LogEntry, viewer?: number): LogEntry {
 		// auction.highBid for the seats it concerns.
 		return { ...entry, move: { action: "bid", amount: -1 } };
 	}
+	if (entry.type === "move" && entry.move.action === "exchange" && entry.player !== viewer && entry.info) {
+		// The value of the card taken from the target stays hidden from everyone
+		// but the giver (it joins the giver's hand once the phase ends).
+		return { ...entry, info: { ...entry.info, exchangeValue: -1 } };
+	}
 	if (entry.type !== "round") {
 		return entry;
 	}
@@ -112,11 +119,25 @@ export function stripSecret(data: GameState, player?: number): GameState {
 					),
 				}
 			: auction;
+	// The cards parked on a Wily Trader / Merchant House this phase were taken
+	// from other players' hands; their values stay hidden from everyone but the
+	// seat that parked them (it is about to get them back).
+	const exchange = data.exchange;
+	const maskedExchange = exchange
+		? {
+				...exchange,
+				parked: exchange.parked.map(({ seat, card }) => ({
+					seat,
+					card: { t: card.t, v: seat === viewer || card.m ? card.v : -1, ...(card.m ? { m: true as const } : {}) },
+				})),
+			}
+		: exchange;
 	return {
 		...data,
 		// The seed derives every deck order; hiding it is what keeps hands secret.
 		seed: "",
 		auction: maskedAuction,
+		exchange: maskedExchange,
 		decks: Object.fromEntries(
 			Object.entries(data.decks).map(([resource, deck]) => [resource, deck.map(() => -1)])
 		) as GameState["decks"],

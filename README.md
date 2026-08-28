@@ -55,9 +55,7 @@ physical decks differ in a few counts (e.g. only two "4" water cards).
 
 The `kicker` game option enables the Kicker expansion: a separate set of Kicker slots
 (1/2/3 by player count for 2-4/5-7/8-9) filled from era piles (I → II → III). Kicker cards
-are auctioned like colony upgrades. All nine types are implemented except the interactive
-forced exchange of **Wily Trader** and **Merchant House**, which is deferred (the cards
-still score their VP); their exchange ability is not yet wired up.
+are auctioned like colony upgrades. All nine types are implemented.
 
 - Confirmed card data (2011 rulebook + BGG): Ice Prospector 10/1, Robot Prototype 10/0,
   Smelter 30/1, Wily Trader 10/1, Launch Facility 75/2, Merchant House 60/1, New Chemicals
@@ -68,6 +66,16 @@ still score their VP); their exchange ability is not yet wired up.
 - Ice Prospector / Refinery draw the extra card and discard the cheapest of the just-drawn
   cards of that type automatically (the obvious choice; no interactive pick).
 - The Era III pile holds only Biosphere (the single Era III type), per the rules.
+- **Wily Trader / Merchant House** run an exchange step at the end of the discard phase
+  (after all excess cards are discarded), in player order. Each owner may hand one
+  Ore/Water/Titanium (Wily Trader) or Research/Microbiotics/New Chemicals (Merchant House)
+  card to another player holding a non-Mega card of the same type; that player must hand
+  back a higher-valued card of the type if they have one, else they return the given card.
+  The target's return is resolved automatically (their lowest higher-valued card — the
+  obvious choice — so the target makes no decision). A card taken this way is parked
+  face-down on the Kicker card until the phase ends, so it cannot be taken again by another
+  exchange that phase. Mega cards cannot be offered or taken. Each owner exchanges at most
+  once per round (per the "one card" wording).
 
 ## Development
 

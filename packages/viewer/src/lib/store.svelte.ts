@@ -13,6 +13,7 @@ import {
 	countingHandSize,
 	describeLog,
 	describeLogEntry,
+	exchangeResources,
 	handCapacity,
 	handValue,
 	megaEligible as megaEligibleEngine,
@@ -129,6 +130,9 @@ export class ViewerStore {
 	bidAmount = $state(0);
 	manning = $state(false);
 	manningPick = $state<number[]>([]);
+	/** Wily Trader / Merchant House: the hand card offered and the target seat. */
+	exchangeCard = $state<number | null>(null);
+	exchangeTarget = $state<number | null>(null);
 	/** One auto card-suggestion per context (payment due, discard); reset by cancel(). */
 	autoSuggested = $state(false);
 
@@ -322,12 +326,89 @@ export class ViewerStore {
 		);
 	}
 
+	/** Wily Trader / Merchant House: it is my exchange action this phase. */
+	get myExchange(): boolean {
+		const s = this.liveState;
+		return (
+			!!s &&
+			!s.ended &&
+			s.phase === "exchange" &&
+			!this.replay.active &&
+			this.playerIndex !== undefined &&
+			s.exchange?.seat === this.playerIndex
+		);
+	}
+
+	/** Resource types I may offer, from the Wily Trader / Merchant House I own. */
+	get exchangeOfferTypes(): string[] {
+		const me = this.me;
+		return me ? exchangeResources(me) : [];
+	}
+
+	/** Whether a hand card of mine can be offered in the exchange (non-Mega, tradable type). */
+	canOfferInExchange(index: number): boolean {
+		const me = this.me;
+		const card = me?.hand[index];
+		return !!card && !card.m && this.exchangeOfferTypes.includes(card.t);
+	}
+
+	/**
+	 * Seats I can target with the currently picked card: any other active
+	 * player holding a non-Mega card of the same type (their card values are
+	 * hidden, but types are public knowledge).
+	 */
+	get exchangeTargets(): number[] {
+		const s = this.liveState;
+		const me = this.me;
+		if (!s || !me || this.exchangeCard === null || this.playerIndex === undefined) {
+			return [];
+		}
+		const type = me.hand[this.exchangeCard]?.t;
+		if (type === undefined) {
+			return [];
+		}
+		return s.players.flatMap((p, seat) =>
+			seat !== this.playerIndex && !p.dropped && p.hand.some((c) => !c.m && c.t === type) ? [seat] : []
+		);
+	}
+
+	pickExchangeCard(index: number): void {
+		if (!this.myExchange || !this.canOfferInExchange(index)) {
+			return;
+		}
+		this.exchangeCard = this.exchangeCard === index ? null : index;
+		this.exchangeTarget = null;
+	}
+
+	pickExchangeTarget(seat: number): void {
+		if (!this.myExchange || !this.exchangeTargets.includes(seat)) {
+			return;
+		}
+		this.exchangeTarget = this.exchangeTarget === seat ? null : seat;
+	}
+
+	confirmExchange(): void {
+		if (!this.myExchange || this.exchangeCard === null || this.exchangeTarget === null) {
+			return;
+		}
+		if (!this.exchangeTargets.includes(this.exchangeTarget)) {
+			return;
+		}
+		this.send({ action: "exchange", card: this.exchangeCard, target: this.exchangeTarget });
+	}
+
+	passExchange(): void {
+		if (this.myExchange) {
+			this.send({ action: "exchangePass" });
+		}
+	}
+
 	get myPaymentDue(): number {
 		return this.myPayment ? this.auctionDue() : 0;
 	}
 
 	get interactive(): boolean {
-		return this.iMustDiscard || this.myMega || this.myActionTurn || this.myBidTurn || this.myPayment;
+		return this.iMustDiscard || this.myMega || this.myActionTurn || this.myBidTurn || this.myPayment || this.myExchange;
 	}
 
 	get discardExcess(): number {
@@ -772,6 +853,8 @@ export class ViewerStore {
 		this.auctionPick = null;
 		this.manning = false;
 		this.manningPick = [];
+		this.exchangeCard = null;
+		this.exchangeTarget = null;
 		this.autoSuggested = false;
 	}
 

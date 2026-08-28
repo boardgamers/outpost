@@ -58,6 +58,14 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 					return `${name} passes on the auction`;
 				case "pay":
 					return `${name} buys ${cardName(info, "the upgrade")} (paid ${info?.paid ?? 0})`;
+				case "exchange": {
+					const target = playerName(state, move.target);
+					return info?.exchangeTake === -1
+						? `${name} offers a card to ${target}, who has nothing higher to trade back`
+						: `${name} trades a card with ${target} for a higher one`;
+				}
+				case "exchangePass":
+					return `${name} passes on the exchange`;
 				case "endTurn": {
 					const buys = (move.buys ?? []).map((buy) => {
 						switch (buy.buy) {

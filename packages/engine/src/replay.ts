@@ -1,4 +1,11 @@
-import { applyMove, enterMegaPhase, setReplayAutoPassed, setReplayFastResolve, setReplayMode } from "./moves.js";
+import {
+	applyMove,
+	enterMegaPhase,
+	setReplayAutoPassed,
+	setReplayExchangeTake,
+	setReplayFastResolve,
+	setReplayMode,
+} from "./moves.js";
 import { setup } from "./state.js";
 import type { GameState, LogEntry } from "./types.js";
 
@@ -34,6 +41,7 @@ export function replay(state: GameState, options?: { to?: number }): GameState {
 				if (entry.info?.winningBid !== undefined) {
 					setReplayFastResolve(entry.info.winningBid, entry.info.secondBid ?? 0, entry.info.winner ?? entry.player);
 				}
+				setReplayExchangeTake(entry.info?.exchangeTake ?? -1);
 				applyMove(replayed, entry.move, entry.player);
 			}
 		}
@@ -41,6 +49,7 @@ export function replay(state: GameState, options?: { to?: number }): GameState {
 		setReplayMode(false);
 		setReplayAutoPassed([]);
 		setReplayFastResolve(0, 0, -1);
+		setReplayExchangeTake(-1);
 	}
 	return replayed;
 }

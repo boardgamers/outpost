@@ -47,6 +47,8 @@
 				const seats = s.players.flatMap((p, i) => (p.mustDiscard ? [i] : []));
 				return `Waiting for ${seats.map(name).join(", ")} to discard…`;
 			}
+			case "exchange":
+				return `Wily Trader / Merchant House: waiting for ${name(s.exchange?.seat)} to trade…`;
 			case "actions":
 				return `Waiting for ${name(s.activeSeat)} to take their turn…`;
 			case "auction": {
@@ -123,6 +125,23 @@
 				<button class="confirm" disabled={!store.paymentValid()} onclick={() => store.confirmPayment()}>
 					Pay ◈ {store.myPaymentDue}
 				</button>
+			</div>
+		{:else if store.myExchange && me}
+			<div class="flow">
+				<span class="hint gold-hint">
+					Wily Trader / Merchant House: click one of your
+					<strong>{store.exchangeOfferTypes.map((t) => RESOURCE_LABELS[t] ?? t).join("/")}</strong>
+					cards to offer, then a player to trade with. They must hand back a higher-valued card of the same type if they have
+					one.
+				</span>
+				<button
+					class="confirm"
+					disabled={store.exchangeCard === null || store.exchangeTarget === null}
+					onclick={() => store.confirmExchange()}
+				>
+					Trade
+				</button>
+				<button class="cancel" onclick={() => store.passExchange()}>Pass</button>
 			</div>
 		{:else if store.myActionTurn && me}
 			{#if store.manning}

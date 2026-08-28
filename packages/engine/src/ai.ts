@@ -4,6 +4,7 @@ import {
 	auctionCard,
 	bestPayment,
 	canBuyFactory,
+	exchangeResources,
 	handCapacity,
 	handValue,
 	megaEligible,
@@ -28,6 +29,8 @@ export function chooseMove(state: GameState, seat: number): Move {
 			return chooseMega(state, player);
 		case "discard":
 			return chooseDiscard(player);
+		case "exchange":
+			return chooseExchange(state, seat, player);
 		case "auction": {
 			const auction = state.auction;
 			// fastBid: bid the max affordable when the list price is reachable,
@@ -79,6 +82,45 @@ function chooseMega(state: GameState, player: PlayerState): Move {
 		}
 	}
 	return { action: "mega", cards: picked };
+}
+
+/**
+ * Wily Trader / Merchant House: make the most lopsided exchange available —
+ * offer the cheapest tradable card to the target holding the highest card of
+ * the same type (the target must hand back their lowest higher one). Pass when
+ * no opponent can beat any card we could offer.
+ */
+function chooseExchange(state: GameState, seat: number, player: PlayerState): Move {
+	const tradable = exchangeResources(player);
+	let best: { card: number; target: number; gain: number } | null = null;
+	player.hand.forEach((given, cardIndex) => {
+		if (given.m || !tradable.includes(given.t)) {
+			return;
+		}
+		state.players.forEach((target, targetSeat) => {
+			if (targetSeat === seat || target.dropped) {
+				return;
+			}
+			// The target hands back their lowest higher-valued card of the type.
+			let returned = -1;
+			target.hand.forEach((c, i) => {
+				if (!c.m && c.t === given.t && c.v > given.v && (returned === -1 || c.v < (target.hand[returned]?.v ?? 0))) {
+					returned = i;
+				}
+			});
+			if (returned >= 0) {
+				const gain = (target.hand[returned]?.v ?? 0) - given.v;
+				if (!best || gain > best.gain) {
+					best = { card: cardIndex, target: targetSeat, gain };
+				}
+			}
+		});
+	});
+	if (best) {
+		const pick: { card: number; target: number } = best;
+		return { action: "exchange", card: pick.card, target: pick.target };
+	}
+	return { action: "exchangePass" };
 }
 
 function chooseDiscard(player: PlayerState): Move {
