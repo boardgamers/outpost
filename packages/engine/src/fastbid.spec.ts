@@ -8,8 +8,10 @@ import type { GameState, PlayerState, ProductionCard } from "./types.js";
 
 function fastGame(): GameState {
 	const state = initGame(3, { fastBid: true }, "fastbid-spec");
+	// Research cards: a fixed 60-credit hand that is not mega-eligible, so the
+	// round entry replays to singles and matches the live hand exactly.
 	for (const p of state.players) {
-		p.hand = Array.from({ length: 6 }, () => ({ t: "water", v: 10 }) as ProductionCard);
+		p.hand = Array.from({ length: 6 }, () => ({ t: "research", v: 10 }) as ProductionCard);
 	}
 	return state;
 }
@@ -137,8 +139,10 @@ test("fastBid: full flow replays identically, including from a stripped log", ()
 	// The replayed round entry must produce the same fixed hands.
 	const roundEntry = state.log.find((e) => e.type === "round");
 	assert.ok(roundEntry && roundEntry.type === "round");
+	// A fixed hand of research cards (not a mega resource), so the round entry
+	// auto-confirms to singles — there is no "mega" move in the log to replay.
 	for (const rec of roundEntry.produced) {
-		rec.cards = Array.from({ length: 6 }, () => ({ t: "water", v: 10 }) as ProductionCard);
+		rec.cards = Array.from({ length: 6 }, () => ({ t: "research", v: 10 }) as ProductionCard);
 	}
 	const upgrade = state.market[0]!;
 	const opener = open(state, 25);

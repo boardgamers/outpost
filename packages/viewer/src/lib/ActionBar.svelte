@@ -23,6 +23,11 @@
 	);
 	const total = $derived(store.pickTotal());
 	const pickCount = $derived(store.cardPick.length);
+	const megaSummary = $derived(
+		Object.entries(store.megaEligible)
+			.map(([resource, groups]) => `${groups}× Mega ${RESOURCE_LABELS[resource] ?? resource}`)
+			.join(", ")
+	);
 	const needsResearch = $derived(pending?.kind === "factory" && FACTORIES[pending.factory].needsResearchCard === true);
 	const hasResearch = $derived(!!me && store.cardPick.some((i) => me.hand[i]?.t === "research"));
 	const waitingOn = $derived.by((): string => {
@@ -33,6 +38,10 @@
 		const name = (seat: number | undefined) =>
 			seat === undefined ? "…" : (s.players[seat]?.name ?? `Player ${seat + 1}`);
 		switch (s.phase) {
+			case "mega": {
+				const seats = s.players.flatMap((p, i) => ((p.pendingMega?.length ?? 0) > 0 ? [i] : []));
+				return `Waiting for ${seats.map(name).join(", ")} to take production…`;
+			}
 			case "discard": {
 				const seats = s.players.flatMap((p, i) => (p.mustDiscard ? [i] : []));
 				return `Waiting for ${seats.map(name).join(", ")} to discard…`;
@@ -84,7 +93,17 @@
 
 {#if state && !state.ended && !store.replay.active}
 	<div class="actionbar">
-		{#if store.iMustDiscard && me}
+		{#if store.myMega && me}
+			<div class="flow">
+				<span class="hint gold-hint">
+					Production: click cards in your panel to mark groups of <strong>4 of a kind</strong> for a Mega card{#if megaSummary}
+						({megaSummary}){/if}; the rest are kept as singles.
+				</span>
+				<button class="confirm" disabled={!store.megaPickValid} onclick={() => store.confirmMega()}>
+					{store.megaPick.length > 0 ? `Take ${store.megaPick.length / 4} mega` : "Take all as singles"}
+				</button>
+			</div>
+		{:else if store.iMustDiscard && me}
 			<div class="flow">
 				<span class="hint warn">
 					Over hand capacity: discard {store.discardExcess} more card{store.discardExcess === 1 ? "" : "s"}

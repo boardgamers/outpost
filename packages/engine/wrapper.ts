@@ -45,6 +45,10 @@ export function currentPlayer(data: GameState): number | number[] | undefined {
 		return undefined;
 	}
 	switch (data.phase) {
+		case "mega": {
+			const waiting = data.players.flatMap((p, seat) => ((p.pendingMega?.length ?? 0) > 0 && !p.dropped ? [seat] : []));
+			return waiting.length === 1 ? waiting[0] : waiting;
+		}
 		case "discard": {
 			const waiting = data.players.flatMap((p, seat) => (p.mustDiscard && !p.dropped ? [seat] : []));
 			return waiting.length === 1 ? waiting[0] : waiting;
@@ -121,7 +125,14 @@ export function stripSecret(data: GameState, player?: number): GameState {
 				? p
 				: {
 						...p,
-						hand: p.hand.map((c): ProductionCard => ({ t: c.t, v: -1 })),
+						hand: p.hand.map((c): ProductionCard => ({ t: c.t, v: c.m ? c.v : -1, ...(c.m ? { m: true } : {}) })),
+						pendingMega: p.pendingMega?.map(
+							(c): ProductionCard => ({
+								t: c.t,
+								v: c.m ? c.v : -1,
+								...(c.m ? { m: true } : {}),
+							})
+						),
 					}
 		),
 		log: data.log.map((entry) => hideProduced(entry, viewer)),

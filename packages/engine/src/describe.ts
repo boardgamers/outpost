@@ -22,6 +22,12 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 			const move = entry.move;
 			const info = entry.info;
 			switch (move.action) {
+				case "mega": {
+					const count = info?.mega ?? 0;
+					return count > 0
+						? `${name} takes ${count} mega production card${count === 1 ? "" : "s"}`
+						: `${name} takes their production as single cards`;
+				}
 				case "discard":
 					return `${name} discards ${info?.discarded ?? move.cards.length} card(s)`;
 				case "auction":

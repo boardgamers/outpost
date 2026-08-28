@@ -10,15 +10,17 @@
 	const phaseLabel = $derived(
 		state.ended
 			? "Game over"
-			: state.phase === "discard"
-				? "Discard"
-				: state.phase === "actions"
-					? "Actions"
-					: state.phase === "auction"
-						? state.auction?.bids
-							? "Sealed bids"
-							: "Auction"
-						: "Auction payment"
+			: state.phase === "mega"
+				? "Production"
+				: state.phase === "discard"
+					? "Discard"
+					: state.phase === "actions"
+						? "Actions"
+						: state.phase === "auction"
+							? state.auction?.bids
+								? "Sealed bids"
+								: "Auction"
+							: "Auction payment"
 	);
 </script>
 

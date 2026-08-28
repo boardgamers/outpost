@@ -24,13 +24,16 @@
 	class:selected
 	class:selectable
 	class:hidden
+	class:mega={card.m === true}
 	disabled={!selectable}
-	title="{RESOURCE_LABELS[card.t]}{hidden ? '' : `: ${card.v} credits`}"
+	title="{card.m ? 'Mega ' : ''}{RESOURCE_LABELS[card.t]}{hidden ? '' : `: ${card.v} credits`}{card.m
+		? ' (counts as 4 cards toward hand capacity)'
+		: ''}"
 	{onclick}
 >
 	<span class="icon"><ResourceIcon resource={card.t} size={13} /></span>
 	<span class="value">{hidden ? "?" : card.v}</span>
-	<span class="label">{label}</span>
+	<span class="label">{card.m ? `Mega ${label}` : label}</span>
 </button>
 
 <style>
@@ -96,5 +99,15 @@
 		background: linear-gradient(160deg, #3a4152, #262b38 65%, #1b1f29);
 		border-color: #454e63;
 		color: #8f9ab0;
+	}
+	.pcard.mega {
+		border-width: 2px;
+		border-color: var(--gold);
+		box-shadow:
+			0 0 0 1px color-mix(in srgb, var(--gold) 55%, transparent),
+			0 2px 6px rgba(0, 0, 0, 0.4);
+	}
+	.pcard.mega .value {
+		font-size: 18px;
 	}
 </style>

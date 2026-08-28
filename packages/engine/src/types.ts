@@ -39,6 +39,8 @@ export interface ProductionCard {
 	t: Resource;
 	/** Credit value. -1 when hidden by stripSecret. */
 	v: number;
+	/** Mega production card (rule 12.1): fixed value, counts as 4 cards toward hand capacity. */
+	m?: true;
 }
 
 export interface Factory {
@@ -59,6 +61,8 @@ export interface PlayerState {
 	done: boolean;
 	/** Must still discard down to hand capacity this round. */
 	mustDiscard: boolean;
+	/** Draws just produced, awaiting the mega-vs-singles choice (mega phase). */
+	pendingMega?: ProductionCard[];
 	dropped: boolean;
 	/** Per-player gameplay settings (set via setPlayerSettings). */
 	settings: PlayerSettings;
@@ -69,7 +73,7 @@ export interface PlayerSettings {
 	autoPassBids?: boolean;
 }
 
-export type Phase = "discard" | "actions" | "auction" | "auctionPayment" | "ended";
+export type Phase = "mega" | "discard" | "actions" | "auction" | "auctionPayment" | "ended";
 
 export interface AuctionState {
 	/** Index into state.market of the upgrade under auction. */
@@ -104,6 +108,7 @@ export type TurnBuy =
 // platform grants time per persisted move, so splitting a turn into many moves
 // would farm extra time. Auctions stay separate moves (they interleave seats).
 export type Move =
+	| { action: "mega"; cards: number[] }
 	| { action: "discard"; cards: number[] }
 	| { action: "auction"; marketIndex: number; bid: number }
 	| { action: "bid"; amount: number }
@@ -129,6 +134,8 @@ export interface MoveInfo {
 	paid?: number;
 	upgrade?: Upgrade;
 	discarded?: number;
+	/** Mega cards taken with this "mega" move (for the log description). */
+	mega?: number;
 	/**
 	 * Seats auto-passed out of the auction by this move (public bound or the
 	 * autoPassBids setting). Replay applies these verbatim: the true-value check
@@ -163,6 +170,8 @@ export interface GameState {
 	decks: Record<Resource, number[]>;
 	/** Spent cards, face-up. */
 	discards: Record<Resource, number[]>;
+	/** Remaining mega production cards per resource (separate face-up pool). */
+	megaSupply: Partial<Record<Resource, number>>;
 	seed: string;
 	/** Number of PRNG draws consumed so far (determinism across save/load). */
 	rngCounter: number;

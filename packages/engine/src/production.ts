@@ -3,7 +3,12 @@ import { drawCard } from "./state.js";
 import { UPGRADES } from "./types.js";
 import type { GameState, PlayerState, ProductionCard } from "./types.js";
 
-/** Draw production for one player: one card per manned factory plus upgrade freebies. */
+/**
+ * Draw production for one player: one card per manned factory plus upgrade
+ * freebies. The draws are staged in `pendingMega` (not yet in the hand) so the
+ * player can exchange full groups of 4 draws of a mega resource for a fixed
+ * Mega card (rule 12.1) via the "mega" move.
+ */
 export function producePlayer(state: GameState, player: PlayerState): ProductionCard[] {
 	const produced: ProductionCard[] = [];
 	for (const factory of player.factories) {
@@ -26,6 +31,6 @@ export function producePlayer(state: GameState, player: PlayerState): Production
 			}
 		}
 	}
-	player.hand.push(...produced);
+	player.pendingMega = produced;
 	return produced;
 }

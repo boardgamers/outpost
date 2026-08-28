@@ -46,9 +46,13 @@
 	);
 	const upgrades = $derived(UPGRADES.map((u) => ({ u, n: player.upgrades[u] })).filter((x) => x.n > 0));
 	const hiddenCounts = $derived.by(() => {
+		// Mega cards are public and shown as actual cards; only the hidden
+		// singles are grouped into per-resource counts.
 		const counts = new Map<Resource, number>();
 		for (const card of player.hand) {
-			counts.set(card.t, (counts.get(card.t) ?? 0) + 1);
+			if (!card.m) {
+				counts.set(card.t, (counts.get(card.t) ?? 0) + 1);
+			}
 		}
 		return [...counts.entries()];
 	});
@@ -193,12 +197,27 @@
 			{/if}
 		</div>
 	{/if}
+	{#if isMe && store.myMega && (player.pendingMega?.length ?? 0) > 0}
+		<div class="row hand pending">
+			<span class="pending-label" title="cards just produced — mark groups of 4 of a kind to take a Mega card">
+				produced:
+			</span>
+			{#each player.pendingMega ?? [] as card, i (i)}
+				<ProductionCardView
+					{card}
+					selectable
+					selected={store.megaPick.includes(i)}
+					onclick={() => store.toggleMega(i)}
+				/>
+			{/each}
+		</div>
+	{/if}
 	<div class="row hand">
 		{#if isMe}
 			{#each player.hand as card, i (i)}
 				<ProductionCardView
 					{card}
-					selectable={store.interactive}
+					selectable={store.interactive && !store.myMega}
 					selected={store.cardPick.includes(i)}
 					onclick={() => store.toggleCard(i)}
 				/>
@@ -207,6 +226,9 @@
 				<span class="none">no cards</span>
 			{/if}
 		{:else}
+			{#each player.hand.filter((c) => c.m) as card, i (i)}
+				<ProductionCardView {card} />
+			{/each}
 			{#each hiddenCounts as [res, n] (res)}
 				<span class="hcount res-{res}" title="{n} {RESOURCE_LABELS[res]} card{n === 1 ? '' : 's'}">{n}</span>
 			{/each}
@@ -419,6 +441,21 @@
 	}
 	.hand {
 		gap: 4px;
+	}
+	.hand.pending {
+		background: color-mix(in srgb, var(--gold) 8%, var(--bg-elevated));
+		border: 1px dashed color-mix(in srgb, var(--gold) 45%, transparent);
+		border-radius: 6px;
+		padding: 4px 6px;
+		align-items: center;
+	}
+	.pending-label {
+		font-size: 10px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--gold);
+		margin-right: 2px;
 	}
 	.hcount {
 		display: inline-flex;

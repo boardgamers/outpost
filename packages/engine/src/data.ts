@@ -44,6 +44,25 @@ export const MIN_CARD_VALUE: Record<Resource, number> = Object.fromEntries(
 /** Resources that do not count against hand capacity. */
 export const CAP_EXEMPT: readonly Resource[] = ["research", "microbiotics"];
 
+/**
+ * Mega production cards (expert rule 12.1, standard in the 20th Anniversary
+ * edition): a player with 4+ manned factories of one of these resources may
+ * take 1 Mega card per group of 4 draws instead — a fixed printed value that
+ * counts as 4 cards toward hand capacity. Mega cards are a separate face-up
+ * pool (the shuffled decks are unaffected and reshuffle normally); a spent or
+ * discarded mega returns to its pool. The pool size is the physical component
+ * count — no rulebook text covers exhaustion, so an empty pool just means the
+ * player takes the 4 normal draws instead.
+ */
+export const MEGA_CARDS: Partial<Record<Resource, { value: number; copies: number }>> = {
+	water: { value: 30, copies: 9 },
+	titanium: { value: 44, copies: 9 },
+	newChemicals: { value: 88, copies: 9 },
+};
+
+/** Resources eligible for mega production (one mega per 4 manned factories). */
+export const MEGA_RESOURCES = Object.keys(MEGA_CARDS) as Resource[];
+
 export interface FactorySpec {
 	cost: number;
 	vp: number;

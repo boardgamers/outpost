@@ -13,6 +13,7 @@ import {
 	describeLogEntry,
 	handCapacity,
 	handValue,
+	megaEligible as megaEligibleEngine,
 	populationCost,
 	populationMax,
 	rankings,
@@ -102,6 +103,8 @@ export class ViewerStore {
 	lastMoveAt = $state<number>(0);
 
 	cardPick = $state<number[]>([]);
+	/** Indices into me.pendingMega selected for mega conversion (groups of 4). */
+	megaPick = $state<number[]>([]);
 	pending = $state<PendingKind | null>(null);
 	auctionPick = $state<{ marketIndex: number; bid: number } | null>(null);
 	bidAmount = $state(0);
@@ -234,6 +237,22 @@ export class ViewerStore {
 		return !!s && !s.ended && s.phase === "discard" && !this.replay.active && (this.me?.mustDiscard ?? false);
 	}
 
+	/** Mega phase: I have staged production draws awaiting the mega-vs-singles choice. */
+	get myMega(): boolean {
+		const s = this.liveState;
+		return !!s && !s.ended && s.phase === "mega" && !this.replay.active && (this.me?.pendingMega?.length ?? 0) > 0;
+	}
+
+	/** Mega conversions available from my staged draws (resource -> groups of 4). */
+	get megaEligible(): Partial<Record<string, number>> {
+		const s = this.liveState;
+		const me = this.me;
+		if (!s || !me) {
+			return {};
+		}
+		return megaEligibleEngine(s, me);
+	}
+
 	get myActionTurn(): boolean {
 		const s = this.liveState;
 		return (
@@ -289,7 +308,7 @@ export class ViewerStore {
 	}
 
 	get interactive(): boolean {
-		return this.iMustDiscard || this.myActionTurn || this.myBidTurn || this.myPayment;
+		return this.iMustDiscard || this.myMega || this.myActionTurn || this.myBidTurn || this.myPayment;
 	}
 
 	get discardExcess(): number {
@@ -626,6 +645,45 @@ export class ViewerStore {
 		this.send({ action: "discard", cards: this.cardPick });
 	}
 
+	/** Toggle a staged draw's mega selection; only whole groups of 4 of one resource can be formed. */
+	toggleMega(index: number): void {
+		if (!this.myMega) {
+			return;
+		}
+		this.megaPick = this.megaPick.includes(index)
+			? this.megaPick.filter((i) => i !== index)
+			: [...this.megaPick, index];
+	}
+
+	/** Selected draws form valid mega groups: each resource contributes a multiple of 4. */
+	get megaPickValid(): boolean {
+		const me = this.me;
+		if (!me?.pendingMega) {
+			return false;
+		}
+		const counts = new Map<string, number>();
+		for (const i of this.megaPick) {
+			const t = me.pendingMega[i]?.t;
+			if (t === undefined) {
+				return false;
+			}
+			counts.set(t, (counts.get(t) ?? 0) + 1);
+		}
+		for (const count of counts.values()) {
+			if (count % 4 !== 0) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	confirmMega(): void {
+		if (!this.myMega || !this.megaPickValid) {
+			return;
+		}
+		this.send({ action: "mega", cards: this.megaPick });
+	}
+
 	startManning(): void {
 		const me = this.me;
 		if (!this.myActionTurn || !me) {
@@ -675,6 +733,7 @@ export class ViewerStore {
 
 	cancel(): void {
 		this.cardPick = [];
+		this.megaPick = [];
 		this.pending = null;
 		this.auctionPick = null;
 		this.manning = false;

@@ -1,4 +1,4 @@
-import { FACTORIES, ROBOT_COST, UPGRADE_SPECS, VICTORY_VP } from "./data.js";
+import { FACTORIES, MEGA_CARDS, ROBOT_COST, UPGRADE_SPECS, VICTORY_VP } from "./data.js";
 import { refillMarket } from "./market.js";
 import { producePlayer } from "./production.js";
 import {
@@ -7,6 +7,7 @@ import {
 	countingHandSize,
 	handCapacity,
 	handValue,
+	megaEligible,
 	mustAutoPassBid,
 	populationCost,
 	populationMax,
@@ -16,7 +17,7 @@ import {
 	upgradeDiscount,
 } from "./state.js";
 import { sanitizeMove } from "./sanitize.js";
-import type { GameState, Move, MoveInfo, PlayerState, ProductionCard, TurnBuy, Upgrade } from "./types.js";
+import type { GameState, Move, MoveInfo, PlayerState, ProductionCard, Resource, TurnBuy, Upgrade } from "./types.js";
 
 /** Safety valve: no sane game lasts anywhere near this long. */
 export const MAX_ROUNDS = 200;
@@ -79,7 +80,35 @@ export function beginRound(state: GameState): void {
 		produced,
 	});
 
-	enterDiscardPhase(state);
+	enterMegaPhase(state);
+}
+
+/**
+ * Production is staged in pendingMega. Players with no mega option take their
+ * draws as singles immediately; only those who could convert a group of 4 stay
+ * in the mega phase to choose.
+ */
+export function enterMegaPhase(state: GameState): void {
+	let anyPending = false;
+	for (const player of state.players) {
+		player.done = false;
+		player.mustDiscard = false;
+		if (player.dropped) {
+			player.pendingMega = [];
+			continue;
+		}
+		if (Object.keys(megaEligible(state, player)).length === 0) {
+			player.hand.push(...(player.pendingMega ?? []));
+			player.pendingMega = [];
+		} else {
+			anyPending = true;
+		}
+	}
+	if (anyPending) {
+		state.phase = "mega";
+	} else {
+		enterDiscardPhase(state);
+	}
 }
 
 export function enterDiscardPhase(state: GameState): void {
@@ -192,7 +221,13 @@ function removeCards(state: GameState, player: PlayerState, indices: number[]): 
 	const sorted = [...indices].sort((a, b) => b - a);
 	for (const i of sorted) {
 		const card = player.hand.splice(i, 1)[0] as ProductionCard;
-		state.discards[card.t].push(card.v);
+		if (card.m) {
+			// A spent/discarded mega returns to its face-up pool (it was never
+			// part of the shuffled deck).
+			state.megaSupply[card.t] = (state.megaSupply[card.t] ?? 0) + 1;
+		} else {
+			state.discards[card.t].push(card.v);
+		}
 	}
 }
 
@@ -210,6 +245,9 @@ export function applyMove(state: GameState, rawMove: Move | unknown, seat: numbe
 	let info: MoveInfo | undefined;
 
 	switch (move.action) {
+		case "mega":
+			info = moveMega(state, move, seat, player);
+			break;
 		case "discard":
 			info = moveDiscard(state, move, seat, player);
 			break;
@@ -240,6 +278,10 @@ export function applyMove(state: GameState, rawMove: Move | unknown, seat: numbe
 
 /** Phase transitions that must happen after the move is logged (may end the round/game). */
 function postMove(state: GameState, move: Move): void {
+	if (state.phase === "mega" && !state.players.some((p) => (p.pendingMega?.length ?? 0) > 0)) {
+		enterDiscardPhase(state);
+		return;
+	}
 	if (state.phase === "discard" && !state.players.some((p) => p.mustDiscard)) {
 		startActions(state);
 		return;
@@ -247,6 +289,54 @@ function postMove(state: GameState, move: Move): void {
 	if (move.action === "endTurn") {
 		startActions(state);
 	}
+}
+
+/**
+ * Confirm the mega-vs-singles choice for the staged production draws. Any full
+ * group of 4 pending draws of a mega resource may be exchanged for one fixed
+ * Mega card (while the pool lasts); the rest joins the hand as singles.
+ */
+function moveMega(state: GameState, move: Move & { action: "mega" }, seat: number, player: PlayerState): MoveInfo {
+	if (state.phase !== "mega" || (player.pendingMega?.length ?? 0) === 0) {
+		err("no production pending for this player");
+	}
+	const pending = player.pendingMega ?? [];
+	const indices = sanitizeIndices(move.cards, pending.length, "mega");
+	// Group the selected draws by resource: each must form full groups of 4 of a
+	// mega resource with enough pool copies left.
+	const byResource = new Map<Resource, number>();
+	for (const i of indices) {
+		const resource = (pending[i] as ProductionCard).t;
+		byResource.set(resource, (byResource.get(resource) ?? 0) + 1);
+	}
+	const picked = new Set(indices);
+	const keep: ProductionCard[] = [];
+	const megas: ProductionCard[] = [];
+	for (const [resource, count] of byResource) {
+		const mega = MEGA_CARDS[resource];
+		if (!mega || count % 4 !== 0) {
+			err(`mega conversion needs groups of exactly 4 draws of the same mega resource (got ${count} of ${resource})`);
+		}
+		const groups = count / 4;
+		if ((state.megaSupply[resource] ?? 0) < groups) {
+			err(`not enough mega ${resource} cards left in the pool`);
+		}
+		for (let g = 0; g < groups; g++) {
+			megas.push({ t: resource, v: mega.value, m: true });
+		}
+	}
+	// Everything validated; now mutate.
+	for (const [resource, count] of byResource) {
+		state.megaSupply[resource] = (state.megaSupply[resource] ?? 0) - count / 4;
+	}
+	pending.forEach((card, i) => {
+		if (!picked.has(i)) {
+			keep.push(card);
+		}
+	});
+	player.hand.push(...keep, ...megas);
+	player.pendingMega = [];
+	return megas.length > 0 ? { mega: megas.length } : {};
 }
 
 function moveDiscard(
@@ -260,7 +350,10 @@ function moveDiscard(
 	}
 	const indices = sanitizeIndices(move.cards, player.hand.length, "discard");
 	const remaining = player.hand.filter((_, i) => !indices.includes(i));
-	const counting = remaining.filter((c) => c.t !== "research" && c.t !== "microbiotics").length;
+	const counting = remaining.reduce(
+		(sum, c) => sum + (c.t === "research" || c.t === "microbiotics" ? 0 : c.m ? 4 : 1),
+		0
+	);
 	if (counting > handCapacity(player)) {
 		err(`still ${counting} cards over the hand capacity of ${handCapacity(player)}`);
 	}
@@ -614,6 +707,7 @@ export function dropPlayer(state: GameState, seat: number): GameState {
 	player.dropped = true;
 	player.mustDiscard = false;
 	player.done = true;
+	player.pendingMega = [];
 	for (const factory of player.factories) {
 		factory.manned = false;
 	}
@@ -624,6 +718,11 @@ export function dropPlayer(state: GameState, seat: number): GameState {
 	}
 	if (activePlayers(state) <= 1) {
 		finishGame(state);
+		return state;
+	}
+
+	if (state.phase === "mega" && !state.players.some((p) => (p.pendingMega?.length ?? 0) > 0)) {
+		enterDiscardPhase(state);
 		return state;
 	}
 

@@ -1,15 +1,16 @@
-import { FACTORIES, PRODUCTION_DECKS, UPGRADE_SPECS } from "./data.js";
+import { FACTORIES, MEGA_CARDS, PRODUCTION_DECKS, UPGRADE_SPECS } from "./data.js";
 import { applyMove } from "./moves.js";
 import {
 	bestPayment,
 	canBuyFactory,
 	handCapacity,
 	handValue,
+	megaEligible,
 	populationCost,
 	populationMax,
 	upgradeDiscount,
 } from "./state.js";
-import type { GameState, Move, PlayerState, TurnBuy, Upgrade } from "./types.js";
+import type { GameState, Move, PlayerState, Resource, TurnBuy, Upgrade } from "./types.js";
 
 /** Pick a legal (and mildly sensible) move for the player, then apply it. */
 export function moveAI(state: GameState, seat: number): GameState {
@@ -22,6 +23,8 @@ export function chooseMove(state: GameState, seat: number): Move {
 		throw new Error(`no move expected from player ${seat}`);
 	}
 	switch (state.phase) {
+		case "mega":
+			return chooseMega(state, player);
 		case "discard":
 			return chooseDiscard(player);
 		case "auction": {
@@ -51,14 +54,50 @@ export function chooseMove(state: GameState, seat: number): Move {
 	}
 }
 
+/**
+ * Confirm the mega choice: convert a group of 4 pending draws when the fixed
+ * mega value beats the expected value of those 4 draws (a conservative pick —
+ * it ignores the hand-capacity pressure a mega relieves).
+ */
+function chooseMega(state: GameState, player: PlayerState): Move {
+	const pending = player.pendingMega ?? [];
+	const eligible = megaEligible(state, player);
+	const picked: number[] = [];
+	for (const [resource, groups] of Object.entries(eligible)) {
+		const mega = MEGA_CARDS[resource as Resource];
+		if (!mega) {
+			continue;
+		}
+		const idx = pending.flatMap((c, i) => (c.t === resource ? [i] : []));
+		for (let g = 0; g < (groups as number); g++) {
+			const group = idx.slice(g * 4, g * 4 + 4);
+			const expected = group.reduce((sum, i) => sum + (pending[i]?.v ?? 0), 0);
+			if (mega.value >= expected) {
+				picked.push(...group);
+			}
+		}
+	}
+	return { action: "mega", cards: picked };
+}
+
 function chooseDiscard(player: PlayerState): Move {
 	const cap = handCapacity(player);
+	// Discard the cheapest counting cards until under the cap. A mega card
+	// counts as 4, so it is only discarded when nothing smaller suffices.
 	const counting = player.hand
-		.map((card, index) => ({ card, index }))
+		.map((card, index) => ({ card, index, weight: card.m ? 4 : 1 }))
 		.filter(({ card }) => card.t !== "research" && card.t !== "microbiotics")
 		.sort((a, b) => a.card.v - b.card.v);
-	const excess = Math.max(0, counting.length - cap);
-	return { action: "discard", cards: counting.slice(0, excess).map((e) => e.index) };
+	let size = counting.reduce((sum, e) => sum + e.weight, 0);
+	const picked: number[] = [];
+	for (const e of counting) {
+		if (size <= cap) {
+			break;
+		}
+		picked.push(e.index);
+		size -= e.weight;
+	}
+	return { action: "discard", cards: picked };
 }
 
 function chooseAction(state: GameState, player: PlayerState): Move {

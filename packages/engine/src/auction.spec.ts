@@ -186,9 +186,10 @@ test("auction: true-value auto-passes are logged and replay identically (strippe
 	const opener = state.activeSeat;
 	const order = state.purchaseOrder;
 	const weak = order[(order.indexOf(opener) + 1) % order.length] as number;
-	// Stay within hand capacity (10): the replayed round entry must not trigger a discard phase.
-	const richHand = (): ProductionCard[] => Array.from({ length: 10 }, () => ({ t: "water", v: 10 }));
-	const weakHand = (): ProductionCard[] => Array.from({ length: 8 }, () => ({ t: "water", v: 1 }));
+	// Research cards: not mega-eligible and exempt from hand capacity, so the
+	// replayed round entry auto-confirms to singles without a mega/discard phase.
+	const richHand = (): ProductionCard[] => Array.from({ length: 10 }, () => ({ t: "research", v: 10 }));
+	const weakHand = (): ProductionCard[] => Array.from({ length: 8 }, () => ({ t: "research", v: 1 }));
 	// Hands must come from the round entry too, so the replayed game sees them.
 	const roundEntry = state.log.find((e) => e.type === "round");
 	assert.ok(roundEntry && roundEntry.type === "round");

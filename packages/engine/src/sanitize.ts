@@ -75,6 +75,8 @@ export function sanitizeMove(raw: unknown): Move {
 		fail("missing action");
 	}
 	switch (action) {
+		case "mega":
+			return { action, cards: intArray(move.cards, "cards") };
 		case "discard":
 			return { action, cards: intArray(move.cards, "cards") };
 		case "auction":

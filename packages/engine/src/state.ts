@@ -7,6 +7,7 @@ import {
 	LAST_THREE,
 	MAX_CARD_VALUE,
 	MAX_PLAYERS,
+	MEGA_CARDS,
 	MIN_CARD_VALUE,
 	MIN_PLAYERS,
 	POPULATION_COST,
@@ -35,6 +36,7 @@ export function setup(players: number, options: Record<string, unknown>, seed: s
 		supply: createSupply(players),
 		decks: emptyPiles(),
 		discards: emptyPiles(),
+		megaSupply: Object.fromEntries(Object.entries(MEGA_CARDS).map(([r, m]) => [r, m.copies])),
 		seed,
 		rngCounter: 0,
 		options: options ?? {},
@@ -74,6 +76,7 @@ function createPlayer(index: number): PlayerState {
 		spent: 0,
 		done: false,
 		mustDiscard: false,
+		pendingMega: [],
 		dropped: false,
 		settings: {},
 	};
@@ -157,13 +160,37 @@ export function operators(player: PlayerState): number {
 	return player.population + player.robots;
 }
 
-/** Number of hand cards that count against hand capacity. */
+/** Number of hand cards that count against hand capacity (a mega card counts as 4). */
 export function countingHandSize(player: PlayerState): number {
-	return player.hand.filter((c) => !CAP_EXEMPT.includes(c.t)).length;
+	let size = 0;
+	for (const card of player.hand) {
+		if (!CAP_EXEMPT.includes(card.t)) {
+			size += card.m ? 4 : 1;
+		}
+	}
+	return size;
 }
 
 export function handValue(player: PlayerState): number {
-	return player.hand.reduce((sum, c) => sum + c.v, 0);
+	return player.hand.reduce((sum, c) => sum + c.v, 0) + (player.pendingMega ?? []).reduce((sum, c) => sum + c.v, 0);
+}
+
+/**
+ * Mega production eligibility (rule 12.1): the mega conversions a player may
+ * take from their pending draws — the number of full groups of 4 pending draws
+ * of each mega resource whose pool isn't empty.
+ */
+export function megaEligible(state: GameState, player: PlayerState): Partial<Record<Resource, number>> {
+	const pending = player.pendingMega ?? [];
+	const result: Partial<Record<Resource, number>> = {};
+	for (const resource of Object.keys(MEGA_CARDS) as Resource[]) {
+		const draws = pending.filter((c) => c.t === resource).length;
+		const groups = Math.floor(draws / 4);
+		if (groups > 0 && (state.megaSupply[resource] ?? 0) > 0) {
+			result[resource] = groups;
+		}
+	}
+	return result;
 }
 
 /**
@@ -257,8 +284,10 @@ function solvePayment(cards: { v: number; index: number }[], due: number): { tot
 export function handValueRange(player: PlayerState): { min: number; max: number } {
 	let min = 0;
 	let max = 0;
-	for (const card of player.hand) {
-		if (card.v >= 0) {
+	for (const card of [...player.hand, ...(player.pendingMega ?? [])]) {
+		if (card.v >= 0 || card.m) {
+			// A mega card's value is printed on it, so it stays public even when
+			// the rest of the hand is hidden.
 			min += card.v;
 			max += card.v;
 		} else {
@@ -272,8 +301,8 @@ export function handValueRange(player: PlayerState): { min: number; max: number 
 /** Expected hand value from public information: known cards exact, hidden cards at their deck average. */
 export function handValueExpected(player: PlayerState): number {
 	let total = 0;
-	for (const card of player.hand) {
-		total += card.v >= 0 ? card.v : PRODUCTION_DECKS[card.t].average;
+	for (const card of [...player.hand, ...(player.pendingMega ?? [])]) {
+		total += card.v >= 0 || card.m ? card.v : PRODUCTION_DECKS[card.t].average;
 	}
 	return total;
 }
@@ -303,6 +332,17 @@ export function productionRange(player: PlayerState): { min: number; max: number
 			for (let i = 0; i < player.upgrades[u]; i++) {
 				add(resource);
 			}
+		}
+	}
+	// Mega production (4 manned factories of a mega resource): the best case is
+	// the fixed mega value per group of 4, singles at deck max for the rest.
+	for (const [resource, mega] of Object.entries(MEGA_CARDS)) {
+		const r = resource as Resource;
+		const draws = player.factories.filter((f) => f.type === r && f.manned).length;
+		if (draws >= 4) {
+			const megaMax = Math.floor(draws / 4) * mega.value + (draws % 4) * MAX_CARD_VALUE[r];
+			const singleMax = draws * MAX_CARD_VALUE[r];
+			max += Math.max(megaMax, singleMax) - singleMax;
 		}
 	}
 	return { min, max, avg };
@@ -442,6 +482,8 @@ export function availableMoves(state: GameState, player?: number): string[] {
 		return [];
 	}
 	switch (state.phase) {
+		case "mega":
+			return (p.pendingMega?.length ?? 0) > 0 ? ["mega"] : [];
 		case "discard":
 			return p.mustDiscard ? ["discard"] : [];
 		case "auction":

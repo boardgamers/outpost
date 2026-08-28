@@ -1,4 +1,4 @@
-import { applyMove, enterDiscardPhase, setReplayAutoPassed, setReplayFastResolve, setReplayMode } from "./moves.js";
+import { applyMove, enterMegaPhase, setReplayAutoPassed, setReplayFastResolve, setReplayMode } from "./moves.js";
 import { setup } from "./state.js";
 import type { GameState, LogEntry } from "./types.js";
 
@@ -53,10 +53,15 @@ function applyRoundEntry(state: GameState, entry: LogEntry & { type: "round" }):
 	state.market = [...entry.market];
 	state.supply = { ...entry.supply };
 	for (const { player: seat, cards } of entry.produced) {
-		state.players[seat]?.hand.push(...cards.map((c) => ({ ...c })));
+		const player = state.players[seat];
+		if (player) {
+			// Stage as pending draws; the following "mega" moves confirm the
+			// mega-vs-singles choice exactly as live.
+			player.pendingMega = cards.map((c) => ({ ...c }));
+		}
 	}
 	// The round entry was already recorded by the source log; keep the replayed
 	// log aligned so log indexes match between original and replay.
 	state.log.push(entry);
-	enterDiscardPhase(state);
+	enterMegaPhase(state);
 }
