@@ -39,6 +39,8 @@ export function setup(players: number, options: Record<string, unknown>, seed: s
 		exchange: null,
 		market: [],
 		supply: createSupply(players),
+		eraStreak4: 0,
+		eraStreak10: 0,
 		decks: emptyPiles(),
 		discards: emptyPiles(),
 		megaSupply: Object.fromEntries(Object.entries(MEGA_CARDS).map(([r, m]) => [r, m.copies])),

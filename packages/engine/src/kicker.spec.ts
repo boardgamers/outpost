@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { KICKER_SPECS, kickerSetup } from "./data.js";
-import { applyMove, initGame } from "./moves.js";
+import { refillKickers } from "./market.js";
+import { applyMove, beginRound, initGame } from "./moves.js";
 import { producePlayer } from "./production.js";
 import { replay } from "./replay.js";
 import { populationMax, robotMax, upgradeDiscount, victoryPoints } from "./state.js";
@@ -43,6 +44,43 @@ test("kicker: era I slots are filled at setup, era piles hold the rest", () => {
 	assert.equal(state.kickerEra, 1);
 	// The slot card is an era I Kicker.
 	assert.equal(KICKER_SPECS[state.kickerMarket[0]!].era, 1);
+});
+
+test("kicker: the era follows the game era (leader VP), discarding the ended era's cards", () => {
+	const state = kickerGame(4);
+	// Era I: 1 slot card + 3 in the pile. Leave an era I card unsold in the slot.
+	assert.equal(state.kickerEra, 1);
+	const slotCard = state.kickerMarket[0]!;
+	assert.equal(KICKER_SPECS[slotCard].era, 1);
+	// Push the leader past the Era II threshold (10 VP): 4 Orbital Labs (3 VP each).
+	const leader = state.players[0] as PlayerState;
+	leader.upgrades.orbitalLab = 4;
+	assert.ok(victoryPoints(leader) >= 10);
+	// Refill (as at the start of a round): the era advances to II, the unsold
+	// era I slot card and the era I pile are returned to the box, and the slot
+	// refills from era II.
+	refillKickers(state);
+	assert.equal(state.kickerEra, 2);
+	assert.equal(state.kickerPiles[1].length, 0);
+	assert.equal(state.kickerMarket.length, 1);
+	assert.equal(KICKER_SPECS[state.kickerMarket[0]!].era, 2);
+});
+
+test("kicker: an era advance replays identically from a stripped log", () => {
+	const state = kickerGame(4);
+	// Cross the Era II threshold and start a new round so the round entry
+	// records the advanced era, piles and slots.
+	(state.players[0] as PlayerState).upgrades.orbitalLab = 4;
+	beginRound(state);
+	assert.equal(state.kickerEra, 2);
+	const replayed = replay(stripSecret(state, 1));
+	assert.equal(replayed.kickerEra, 2);
+	assert.deepEqual(replayed.kickerMarket, state.kickerMarket);
+	// The stripped pile keeps only its size (draw order hidden), so the replayed
+	// pile lengths match even though the placeholder contents differ.
+	for (const era of [1, 2, 3] as const) {
+		assert.equal(replayed.kickerPiles[era].length, state.kickerPiles[era].length);
+	}
 });
 
 test("kicker: no kicker state when the option is off", () => {

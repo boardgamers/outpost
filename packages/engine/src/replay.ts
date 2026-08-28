@@ -64,6 +64,18 @@ function applyRoundEntry(state: GameState, entry: LogEntry & { type: "round" }):
 	if (entry.kickerMarket) {
 		state.kickerMarket = [...entry.kickerMarket];
 	}
+	if (entry.kickerEra !== undefined) {
+		state.kickerEra = entry.kickerEra;
+	}
+	if (entry.kickerPiles) {
+		state.kickerPiles = { 1: [...entry.kickerPiles[1]], 2: [...entry.kickerPiles[2]], 3: [...entry.kickerPiles[3]] };
+	}
+	if (entry.eraStreak4 !== undefined) {
+		state.eraStreak4 = entry.eraStreak4;
+	}
+	if (entry.eraStreak10 !== undefined) {
+		state.eraStreak10 = entry.eraStreak10;
+	}
 	for (const { player: seat, cards } of entry.produced) {
 		const player = state.players[seat];
 		if (player) {

@@ -1,5 +1,5 @@
 import { FACTORIES, KICKER_SPECS, MEGA_CARDS, ROBOT_COST, UPGRADE_SPECS, VICTORY_VP } from "./data.js";
-import { refillKickers, refillMarket } from "./market.js";
+import { refillKickers, refillMarket, updateEraStreaks } from "./market.js";
 import { producePlayer } from "./production.js";
 import {
 	canBuyFactory,
@@ -85,6 +85,9 @@ export function initGame(players: number, options: Record<string, unknown>, seed
 export function beginRound(state: GameState): void {
 	state.round += 1;
 	state.purchaseOrder = computePurchaseOrder(state);
+	// The "very rare" era fallback is evaluated as the round begins, before the
+	// refill draws down the supply.
+	updateEraStreaks(state);
 	refillMarket(state);
 	refillKickers(state);
 
@@ -103,6 +106,10 @@ export function beginRound(state: GameState): void {
 		market: [...state.market],
 		supply: { ...state.supply },
 		kickerMarket: [...state.kickerMarket],
+		kickerEra: state.kickerEra,
+		kickerPiles: { 1: [...state.kickerPiles[1]], 2: [...state.kickerPiles[2]], 3: [...state.kickerPiles[3]] },
+		eraStreak4: state.eraStreak4,
+		eraStreak10: state.eraStreak10,
 		produced,
 		megaGroups,
 	});
@@ -481,8 +488,10 @@ function moveAuction(
 	state.phase = "auction";
 	state.auction = {
 		marketIndex,
-		upgrade,
-		kicker,
+		// Exactly one of upgrade/kicker is set; omitting the other keeps the
+		// state JSON-round-trippable (JSON drops undefined-valued keys).
+		...(upgrade !== undefined ? { upgrade } : {}),
+		...(kicker !== undefined ? { kicker } : {}),
 		auctioneer: seat,
 		highBid: bid,
 		highBidder: seat,

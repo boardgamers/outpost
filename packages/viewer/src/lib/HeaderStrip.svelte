@@ -1,11 +1,13 @@
 <script lang="ts">
-	import { VICTORY_VP, type GameState } from "outpost-engine";
+	import { VICTORY_VP, colonyEra, type GameState } from "outpost-engine";
 
 	interface Props {
 		state: GameState;
 	}
 
 	let { state }: Props = $props();
+
+	const era = $derived(state.ended ? null : colonyEra(state));
 
 	const phaseLabel = $derived(
 		state.ended
@@ -33,6 +35,11 @@
 		OUTPOST
 	</span>
 	<span class="item">Round <strong>{state.round}</strong></span>
+	{#if era !== null}
+		<span class="item era" title="Game era (leader VP): sets which colony upgrades and Kicker cards are available">
+			Era {["", "I", "II", "III"][era]}
+		</span>
+	{/if}
 	<span class="item phase">{phaseLabel}</span>
 	<span class="item dim">First to {VICTORY_VP} VP wins</span>
 </div>
@@ -79,6 +86,16 @@
 		letter-spacing: 0.08em;
 		background: color-mix(in srgb, var(--gold) 18%, transparent);
 		color: var(--gold);
+		border-radius: 5px;
+		padding: 2px 8px;
+	}
+	.era {
+		font-weight: 700;
+		font-size: 11px;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		background: color-mix(in srgb, var(--research) 20%, transparent);
+		color: var(--research);
 		border-radius: 5px;
 		padding: 2px 8px;
 	}

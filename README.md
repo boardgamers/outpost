@@ -25,7 +25,10 @@ version Stronghold Games adopted as the base rules:
   (Robots upgrades × population)
 - Victory: 75 VP (manned factories + upgrades); ties on VP in purchase order are broken
   by total credits spent
-- Market refill via d4 / d10 / d12+1 depending on the leading VP, per the v1.32 setup chart
+- Market refill via d4 / d10 / d12+1 by game era (leader VP, per the v1.32 setup chart),
+  including the "very rare" fallback (a second consecutive round beginning with every
+  upgrade 1-4 / 1-10 already purchased advances the era) and the next-lower-numbered-card
+  cascade when a rolled type is exhausted. The Kicker era follows the same game era.
 
 ### Data notes / deviations
 

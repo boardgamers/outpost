@@ -119,6 +119,16 @@ function hideProduced(
 	}
 	return {
 		...entry,
+		// The face-down Kicker piles' draw order is secret; only sizes are public.
+		...(entry.kickerPiles
+			? {
+					kickerPiles: {
+						1: entry.kickerPiles[1].map(() => "iceProspector" as const),
+						2: entry.kickerPiles[2].map(() => "launchFacility" as const),
+						3: entry.kickerPiles[3].map(() => "biosphere" as const),
+					},
+				}
+			: {}),
 		produced: entry.produced.map(({ player, cards }) => ({
 			player,
 			// hideOwnProduction: the viewer's own draws stay hidden while their

@@ -181,6 +181,12 @@ export type LogEntry =
 			supply: Record<Upgrade, number>;
 			/** Kicker expansion: the Kicker slots after this round's refill. */
 			kickerMarket?: Kicker[];
+			/** Kicker expansion: era and remaining piles after this round's refill (for exact replay). */
+			kickerEra?: 1 | 2 | 3;
+			kickerPiles?: Record<1 | 2 | 3, Kicker[]>;
+			/** Era-fallback streaks as this round began (for exact replay). */
+			eraStreak4?: number;
+			eraStreak10?: number;
 			produced: { player: number; cards: ProductionCard[] }[];
 			/** Mega-eligible groups per player this round (rule 12.1), for exact replay. */
 			megaGroups?: { player: number; groups: Partial<Record<Resource, number>> }[];
@@ -239,6 +245,13 @@ export interface GameState {
 	market: Upgrade[];
 	/** Remaining copies of each upgrade in the supply. */
 	supply: Record<Upgrade, number>;
+	/**
+	 * Consecutive round-begins with every upgrade 1-4 (eraStreak4) or 1-10
+	 * (eraStreak10) already purchased — the "very rare" era-advance fallback:
+	 * at 2 the era steps up even with no player at the VP threshold.
+	 */
+	eraStreak4: number;
+	eraStreak10: number;
 	/** Kicker expansion: Kicker cards currently in the Kicker slots. */
 	kickerMarket: Kicker[];
 	/** Kicker expansion: remaining Kicker piles by era (shuffled, face-down). */
