@@ -179,7 +179,9 @@
 				result.push({ ...b, x, y });
 			}
 		}
-		return result;
+		// SVG paints in document order: sort by y so lower (closer) buildings
+		// render on top of higher ones.
+		return result.sort((a, b) => a.y - b.y);
 	});
 
 	let cometEl = $state<HTMLDivElement | null>(null);
