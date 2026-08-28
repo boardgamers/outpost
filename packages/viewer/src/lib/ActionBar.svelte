@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { FACTORIES, FACTORY_TYPES, MAX_CARD_VALUE, MIN_CARD_VALUE, UPGRADE_SPECS } from "outpost-engine";
+	import { FACTORIES, FACTORY_TYPES, MAX_CARD_VALUE, MIN_CARD_VALUE, UPGRADE_SPECS, auctionCard } from "outpost-engine";
 	import ResourceIcon from "./ResourceIcon.svelte";
 	import { RESOURCE_LABELS, type ViewerStore } from "./store.svelte";
 
@@ -28,6 +28,7 @@
 			.map(([resource, groups]) => `${groups}× Mega ${RESOURCE_LABELS[resource] ?? resource}`)
 			.join(", ")
 	);
+	const auctionName = $derived(state?.auction ? auctionCard(state.auction).name : "");
 	const needsResearch = $derived(pending?.kind === "factory" && FACTORIES[pending.factory].needsResearchCard === true);
 	const hasResearch = $derived(!!me && store.cardPick.some((i) => me.hand[i]?.t === "research"));
 	const waitingOn = $derived.by((): string => {
@@ -116,8 +117,8 @@
 		{:else if store.myPayment && me}
 			<div class="flow">
 				<span class="hint gold-hint">
-					You won <strong>{UPGRADE_SPECS[state.auction?.upgrade ?? "dataLibrary"].name}</strong>: select hand cards
-					worth at least ◈ {store.myPaymentDue} (selected <strong>◈ {total}</strong>).
+					You won <strong>{auctionName}</strong>: select hand cards worth at least ◈ {store.myPaymentDue}
+					(selected <strong>◈ {total}</strong>).
 				</span>
 				<button class="confirm" disabled={!store.paymentValid()} onclick={() => store.confirmPayment()}>
 					Pay ◈ {store.myPaymentDue}

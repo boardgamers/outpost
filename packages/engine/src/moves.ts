@@ -1,5 +1,5 @@
-import { FACTORIES, MEGA_CARDS, ROBOT_COST, UPGRADE_SPECS, VICTORY_VP } from "./data.js";
-import { refillMarket } from "./market.js";
+import { FACTORIES, KICKER_SPECS, MEGA_CARDS, ROBOT_COST, UPGRADE_SPECS, VICTORY_VP } from "./data.js";
+import { refillKickers, refillMarket } from "./market.js";
 import { producePlayer } from "./production.js";
 import {
 	canBuyFactory,
@@ -17,7 +17,17 @@ import {
 	upgradeDiscount,
 } from "./state.js";
 import { sanitizeMove } from "./sanitize.js";
-import type { GameState, Move, MoveInfo, PlayerState, ProductionCard, Resource, TurnBuy, Upgrade } from "./types.js";
+import type {
+	GameState,
+	Kicker,
+	Move,
+	MoveInfo,
+	PlayerState,
+	ProductionCard,
+	Resource,
+	TurnBuy,
+	Upgrade,
+} from "./types.js";
 
 /** Safety valve: no sane game lasts anywhere near this long. */
 export const MAX_ROUNDS = 200;
@@ -64,6 +74,7 @@ export function beginRound(state: GameState): void {
 	state.round += 1;
 	state.purchaseOrder = computePurchaseOrder(state);
 	refillMarket(state);
+	refillKickers(state);
 
 	const produced: { player: number; cards: ProductionCard[] }[] = [];
 	for (const seat of state.purchaseOrder) {
@@ -77,6 +88,7 @@ export function beginRound(state: GameState): void {
 		purchaseOrder: [...state.purchaseOrder],
 		market: [...state.market],
 		supply: { ...state.supply },
+		kickerMarket: [...state.kickerMarket],
 		produced,
 	});
 
@@ -382,34 +394,45 @@ function moveAuction(
 ): MoveInfo {
 	requireActionTurn(state, seat, player);
 	const { marketIndex, bid } = move;
-	if (!Number.isInteger(marketIndex) || marketIndex < 0 || marketIndex >= state.market.length) {
+	const forKicker = move.kicker === true;
+	const pool: (Upgrade | Kicker)[] = forKicker ? state.kickerMarket : state.market;
+	if (!Number.isInteger(marketIndex) || marketIndex < 0 || marketIndex >= pool.length) {
 		err("invalid market index");
 	}
-	const upgrade = state.market[marketIndex] as Upgrade;
-	if (!Number.isInteger(bid) || bid < UPGRADE_SPECS[upgrade].price) {
-		err(`opening bid must be at least ${UPGRADE_SPECS[upgrade].price}`);
+	const card = pool[marketIndex] as Upgrade | Kicker;
+	const kicker = forKicker ? (card as Kicker) : undefined;
+	const upgrade = forKicker ? undefined : (card as Upgrade);
+	const price = kicker ? KICKER_SPECS[kicker].price : UPGRADE_SPECS[upgrade as Upgrade].price;
+	if (!Number.isInteger(bid) || bid < price) {
+		err(`opening bid must be at least ${price}`);
 	}
-	assertCanPayBid(player, upgrade, bid);
+	// Kicker cards have no discounts; upgrades use the buyer's discount.
+	const discount = upgrade ? upgradeDiscount(player, upgrade) : 0;
+	if (!replayMode && handValue(player) < Math.max(0, bid - discount)) {
+		err(`cannot afford a bid of ${bid} (needs ${Math.max(0, bid - discount)}, holds ${handValue(player)})`);
+	}
 	state.phase = "auction";
 	state.auction = {
 		marketIndex,
 		upgrade,
+		kicker,
 		auctioneer: seat,
 		highBid: bid,
 		highBidder: seat,
 		passed: [],
 		activeBidder: seat,
 	};
+	const info: MoveInfo = kicker ? { kicker } : { upgrade: upgrade as Upgrade };
 	if (isFastBid(state)) {
 		// Sealed-bid auction: everyone bids at once, the auctioneer's opening
 		// bid is their sealed bid. No auto-pass — passing is itself a private
 		// bid of 0, so a weak hand is not revealed by skipping the player.
 		state.auction.bids = { [seat]: bid };
-		return { upgrade };
+		return info;
 	}
 	const autoPassed: number[] = [];
 	advanceBidder(state, autoPassed);
-	return autoPassed.length > 0 ? { upgrade, autoPassed } : { upgrade };
+	return autoPassed.length > 0 ? { ...info, autoPassed } : info;
 }
 
 function assertCanPayBid(player: PlayerState, upgrade: Upgrade, bid: number): void {
@@ -420,6 +443,34 @@ function assertCanPayBid(player: PlayerState, upgrade: Upgrade, bid: number): vo
 	if (handValue(player) < due) {
 		err(`cannot afford a bid of ${bid} (needs ${due}, holds ${handValue(player)})`);
 	}
+}
+
+/** The log info identifying the card under auction (a colony upgrade or a Kicker card). */
+function auctionInfo(auction: NonNullable<GameState["auction"]>): MoveInfo {
+	return auction.kicker ? { kicker: auction.kicker } : { upgrade: auction.upgrade };
+}
+
+/** Kicker-aware affordability check for a bid on the card under auction. */
+function assertCanPayBidFor(player: PlayerState, auction: NonNullable<GameState["auction"]>, bid: number): void {
+	if (replayMode) {
+		return;
+	}
+	const discount = auction.upgrade ? upgradeDiscount(player, auction.upgrade) : 0;
+	const due = Math.max(0, bid - discount);
+	if (handValue(player) < due) {
+		err(`cannot afford a bid of ${bid} (needs ${due}, holds ${handValue(player)})`);
+	}
+}
+
+/** List price of the card under auction. */
+function auctionPrice(auction: NonNullable<GameState["auction"]>): number {
+	return auction.kicker ? KICKER_SPECS[auction.kicker].price : UPGRADE_SPECS[auction.upgrade as Upgrade].price;
+}
+
+/** The winner's discount on the card under auction (Kicker cards have none). */
+function auctionDue(state: GameState, auction: NonNullable<GameState["auction"]>, player: PlayerState): number {
+	const discount = auction.upgrade ? upgradeDiscount(player, auction.upgrade) : 0;
+	return Math.max(0, auction.highBid - discount);
 }
 
 function biddingOrder(state: GameState): number[] {
@@ -484,12 +535,13 @@ function moveBid(state: GameState, move: Move & { action: "bid" }, seat: number,
 	if (!Number.isInteger(move.amount) || move.amount <= auction.highBid) {
 		err(`bid must be higher than ${auction.highBid}`);
 	}
-	assertCanPayBid(player, auction.upgrade, move.amount);
+	assertCanPayBidFor(player, auction, move.amount);
 	auction.highBid = move.amount;
 	auction.highBidder = seat;
 	const autoPassed: number[] = [];
 	advanceBidder(state, autoPassed);
-	return autoPassed.length > 0 ? { upgrade: auction.upgrade, autoPassed } : { upgrade: auction.upgrade };
+	const info = auctionInfo(auction);
+	return autoPassed.length > 0 ? { ...info, autoPassed } : info;
 }
 
 function moveBidPass(state: GameState, _move: Move & { action: "bidPass" }, seat: number): MoveInfo {
@@ -506,7 +558,8 @@ function moveBidPass(state: GameState, _move: Move & { action: "bidPass" }, seat
 	auction.passed.push(seat);
 	const autoPassed: number[] = [];
 	advanceBidder(state, autoPassed);
-	return autoPassed.length > 0 ? { upgrade: auction.upgrade, autoPassed } : { upgrade: auction.upgrade };
+	const info = auctionInfo(auction);
+	return autoPassed.length > 0 ? { ...info, autoPassed } : info;
 }
 
 /** Seats still expected to bid in a fast auction (everyone active who hasn't). */
@@ -536,10 +589,10 @@ function moveFastBid(
 	// placeholder (the resolution comes from the recorded MoveInfo) and skips
 	// validation, which the server already did live.
 	if (!replayMode) {
-		if (!Number.isInteger(move.amount) || move.amount < UPGRADE_SPECS[auction.upgrade].price) {
-			err(`bid must be at least ${UPGRADE_SPECS[auction.upgrade].price}`);
+		if (!Number.isInteger(move.amount) || move.amount < auctionPrice(auction)) {
+			err(`bid must be at least ${auctionPrice(auction)}`);
 		}
-		assertCanPayBid(player, auction.upgrade, move.amount);
+		assertCanPayBidFor(player, auction, move.amount);
 	}
 	bids[seat] = move.amount;
 	return fastBidMaybeResolve(state, auction);
@@ -557,7 +610,7 @@ function moveFastBidPass(state: GameState, seat: number, auction: NonNullable<Ga
 /** Resolve the auction once every active seat has a sealed bid in. */
 function fastBidMaybeResolve(state: GameState, auction: NonNullable<GameState["auction"]>): MoveInfo {
 	if (fastBidPending(state).length > 0) {
-		return { upgrade: auction.upgrade };
+		return auctionInfo(auction);
 	}
 	const bids = auction.bids ?? {};
 	let winningBid = 0;
@@ -590,7 +643,7 @@ function fastBidMaybeResolve(state: GameState, auction: NonNullable<GameState["a
 	auction.highBidder = winner;
 	auction.activeBidder = winner;
 	state.phase = "auctionPayment";
-	return { upgrade: auction.upgrade, winningBid, secondBid, winner };
+	return { ...auctionInfo(auction), winningBid, secondBid, winner };
 }
 
 function movePay(state: GameState, move: Move & { action: "pay" }, seat: number, player: PlayerState): MoveInfo {
@@ -598,19 +651,38 @@ function movePay(state: GameState, move: Move & { action: "pay" }, seat: number,
 	if (state.phase !== "auctionPayment" || !auction || auction.highBidder !== seat) {
 		err("no payment expected from this player");
 	}
-	const due = Math.max(0, auction.highBid - upgradeDiscount(player, auction.upgrade));
+	const due = auctionDue(state, auction, player);
 	const indices = sanitizeIndices(move.cards, player.hand.length, "pay");
 	const paid = spendCards(state, player, indices, due);
 
-	const upgrade = auction.upgrade;
-	state.market.splice(auction.marketIndex, 1);
-	player.upgrades[upgrade] += 1;
-	const freeFactory = UPGRADE_SPECS[upgrade].freeFactory;
-	if (freeFactory) {
-		player.factories.push({ type: freeFactory, manned: false });
+	let name: string;
+	let info: MoveInfo;
+	if (auction.kicker) {
+		const kicker = auction.kicker;
+		const spec = KICKER_SPECS[kicker];
+		state.kickerMarket.splice(auction.marketIndex, 1);
+		player.kickers[kicker] += 1;
+		if (spec.freeRobot) {
+			player.robots += 1;
+		}
+		if (spec.freeFactory) {
+			player.factories.push({ type: spec.freeFactory, manned: false });
+		}
+		name = spec.name;
+		info = { kicker, paid };
+	} else {
+		const upgrade = auction.upgrade as Upgrade;
+		state.market.splice(auction.marketIndex, 1);
+		player.upgrades[upgrade] += 1;
+		const freeFactory = UPGRADE_SPECS[upgrade].freeFactory;
+		if (freeFactory) {
+			player.factories.push({ type: freeFactory, manned: false });
+		}
+		name = UPGRADE_SPECS[upgrade].name;
+		info = { upgrade, paid };
 	}
 
-	state.messages.push(`${player.name} won ${UPGRADE_SPECS[upgrade].name} for ${auction.highBid}`);
+	state.messages.push(`${player.name} won ${name} for ${auction.highBid}`);
 	state.phase = "actions";
 	state.activeSeat = auction.auctioneer;
 	state.auction = null;
@@ -619,7 +691,7 @@ function movePay(state: GameState, move: Move & { action: "pay" }, seat: number,
 	if (!auctioneer || auctioneer.dropped || auctioneer.done) {
 		startActions(state);
 	}
-	return { upgrade, paid };
+	return info;
 }
 
 /** Apply one purchase step of a turn. Validates against the current state and mutates it; returns the amount paid. */

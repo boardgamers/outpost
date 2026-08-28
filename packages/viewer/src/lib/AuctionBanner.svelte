@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { UPGRADE_SPECS, type GameState } from "outpost-engine";
+	import { KICKER_SPECS, UPGRADE_SPECS, type GameState } from "outpost-engine";
 	import UpgradeBadges from "./UpgradeBadges.svelte";
-	import { UPGRADE_EFFECTS, type ViewerStore } from "./store.svelte";
+	import { KICKER_EFFECTS, UPGRADE_EFFECTS, type ViewerStore } from "./store.svelte";
 
 	interface Props {
 		state: GameState;
@@ -11,10 +11,17 @@
 	let { state, store }: Props = $props();
 
 	const auction = $derived(state.auction);
-	const spec = $derived(auction ? UPGRADE_SPECS[auction.upgrade] : null);
+	const spec = $derived(
+		auction ? (auction.kicker ? KICKER_SPECS[auction.kicker] : UPGRADE_SPECS[auction.upgrade!]) : null
+	);
+	const effectText = $derived(
+		auction ? (auction.kicker ? KICKER_EFFECTS[auction.kicker] : UPGRADE_EFFECTS[auction.upgrade!]) : ""
+	);
 	const nameOf = (seat: number) => state.players[seat]?.name ?? `Player ${seat + 1}`;
 	const meIndex = $derived(store.playerIndex);
-	const discount = $derived(auction && meIndex !== undefined ? store.discountOf(meIndex, auction.upgrade) : 0);
+	const discount = $derived(
+		auction && auction.upgrade && meIndex !== undefined ? store.discountOf(meIndex, auction.upgrade) : 0
+	);
 	const due = $derived(store.auctionDue());
 	const fast = $derived(store.fastBid);
 	const minBid = $derived(fast ? (spec?.price ?? 0) : (auction?.highBid ?? 0) + 1);
@@ -34,8 +41,10 @@
 			<span class="label">On the block</span>
 			<span class="uname">{spec.name}</span>
 			<span class="uvp">{spec.vp} VP · list ◈ {spec.price}</span>
-			<UpgradeBadges upgrade={auction.upgrade} />
-			<span class="ueffect">{UPGRADE_EFFECTS[auction.upgrade]}</span>
+			{#if auction.upgrade}
+				<UpgradeBadges upgrade={auction.upgrade} />
+			{/if}
+			<span class="ueffect">{effectText}</span>
 		</div>
 		<div class="status">
 			{#if fast && state.phase === "auction"}

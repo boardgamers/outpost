@@ -1,7 +1,7 @@
-import { MID_THRESHOLD, UPGRADE_BY_ROLL } from "./data.js";
+import { KICKER_SPECS, MID_THRESHOLD, UPGRADE_BY_ROLL, kickerSetup } from "./data.js";
 import { rollDie } from "./prng.js";
 import { bigThreshold, scores } from "./state.js";
-import type { GameState, Upgrade } from "./types.js";
+import type { GameState, Kicker, Upgrade } from "./types.js";
 
 /** Which die is rolled to refill the market, based on the current leader's VP. */
 export function marketDie(state: GameState): { sides: number; offset: number } {
@@ -57,5 +57,31 @@ export function refillMarket(state: GameState): void {
 		}
 		state.supply[upgrade] -= 1;
 		state.market.push(upgrade);
+	}
+}
+
+/**
+ * Kicker expansion: refill the Kicker slots from the current era's pile. When
+ * the pile is empty the era ends — leftover slot cards of that era are removed
+ * (returned to the box) and the next era begins, refilling from its pile.
+ */
+export function refillKickers(state: GameState): void {
+	if (state.options.kicker !== true) {
+		return;
+	}
+	const { slots } = kickerSetup(state.players.filter((p) => !p.dropped).length);
+	for (let guard = 0; guard < 10 && state.kickerMarket.length < slots; guard++) {
+		let pile = state.kickerPiles[state.kickerEra];
+		if (pile.length === 0) {
+			if (state.kickerEra >= 3) {
+				return; // Era III exhausted: no more Kicker cards.
+			}
+			// Era ends: remove that era's leftover slot cards, advance, refill.
+			state.kickerMarket = state.kickerMarket.filter((k) => KICKER_SPECS[k].era !== state.kickerEra);
+			state.kickerEra = (state.kickerEra + 1) as 1 | 2 | 3;
+			pile = state.kickerPiles[state.kickerEra];
+		}
+		const card = pile.pop() as Kicker;
+		state.kickerMarket.push(card);
 	}
 }

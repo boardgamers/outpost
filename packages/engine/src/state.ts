@@ -4,6 +4,8 @@ import {
 	CAP_EXEMPT,
 	FACTORIES,
 	FIRST_TEN,
+	KICKERS_BY_ERA,
+	KICKER_SPECS,
 	LAST_THREE,
 	MAX_CARD_VALUE,
 	MAX_PLAYERS,
@@ -15,10 +17,11 @@ import {
 	PRODUCTION_DECKS,
 	SETUP_CHART,
 	UPGRADE_SPECS,
+	kickerSetup,
 } from "./data.js";
 import { nextInt, shuffle } from "./prng.js";
-import { RESOURCES, UPGRADES } from "./types.js";
-import type { FactoryType, GameState, PlayerState, Resource, Upgrade } from "./types.js";
+import { KICKERS, RESOURCES, UPGRADES } from "./types.js";
+import type { FactoryType, GameState, Kicker, PlayerState, Resource, Upgrade } from "./types.js";
 
 export function setup(players: number, options: Record<string, unknown>, seed: string): GameState {
 	if (!Number.isInteger(players) || players < MIN_PLAYERS || players > MAX_PLAYERS) {
@@ -37,6 +40,9 @@ export function setup(players: number, options: Record<string, unknown>, seed: s
 		decks: emptyPiles(),
 		discards: emptyPiles(),
 		megaSupply: Object.fromEntries(Object.entries(MEGA_CARDS).map(([r, m]) => [r, m.copies])),
+		kickerMarket: [],
+		kickerPiles: { 1: [], 2: [], 3: [] },
+		kickerEra: 1,
 		seed,
 		rngCounter: 0,
 		options: options ?? {},
@@ -54,13 +60,36 @@ export function setup(players: number, options: Record<string, unknown>, seed: s
 		state.decks[resource] = buildDeck(state, resource);
 	}
 
+	if (options.kicker === true) {
+		setupKickers(state);
+	}
+
 	return state;
+}
+
+/** Kicker expansion: build the shuffled era piles and fill the Kicker slots for era I. */
+function setupKickers(state: GameState): void {
+	const { copies } = kickerSetup(state.players.length);
+	for (const era of [1, 2, 3] as const) {
+		const pile: Kicker[] = [];
+		for (const k of KICKERS_BY_ERA[era]) {
+			for (let i = 0; i < copies; i++) {
+				pile.push(k);
+			}
+		}
+		state.kickerPiles[era] = shuffle(state, pile);
+	}
+	state.kickerEra = 1;
 }
 
 function createPlayer(index: number): PlayerState {
 	const upgrades = {} as Record<Upgrade, number>;
 	for (const u of UPGRADES) {
 		upgrades[u] = 0;
+	}
+	const kickers = {} as Record<Kicker, number>;
+	for (const k of KICKERS) {
+		kickers[k] = 0;
 	}
 	return {
 		name: `Player ${index + 1}`,
@@ -73,6 +102,7 @@ function createPlayer(index: number): PlayerState {
 		robots: 0,
 		hand: [],
 		upgrades,
+		kickers,
 		spent: 0,
 		done: false,
 		mustDiscard: false,
@@ -145,15 +175,21 @@ export function populationMax(player: PlayerState): number {
 	for (const u of UPGRADES) {
 		max += (UPGRADE_SPECS[u].populationBonus ?? 0) * player.upgrades[u];
 	}
+	// Kicker: Biosphere adds to the colony support (population) limit.
+	max += (KICKER_SPECS.biosphere.populationBonus ?? 0) * player.kickers.biosphere;
 	return max;
 }
 
 /**
  * Robots don't count against the population limit; each Robots upgrade allows
- * robots up to the current population count (v1.32 expert-rules limit).
+ * robots up to the current population count (v1.32 expert-rules limit). The
+ * Robot Prototype's free robot can be operated even with no Robots upgrade,
+ * but counts against the limit once any Robots upgrade is owned.
  */
 export function robotMax(player: PlayerState): number {
-	return player.upgrades.robots * player.population;
+	const fromUpgrades = player.upgrades.robots * player.population;
+	const prototype = player.kickers.robotPrototype > 0 ? player.kickers.robotPrototype : 0;
+	return fromUpgrades === 0 ? prototype : fromUpgrades;
 }
 
 export function operators(player: PlayerState): number {
@@ -352,6 +388,26 @@ export function populationCost(player: PlayerState): number {
 	return player.upgrades.ecoplants > 0 ? POPULATION_COST_ECOPLANTS : POPULATION_COST;
 }
 
+/** The card under auction: its display name, list price, and the buyer's discount (0 for Kicker cards). */
+export function auctionCard(auction: { upgrade?: Upgrade; kicker?: Kicker }): {
+	name: string;
+	price: number;
+	upgrade?: Upgrade;
+	kicker?: Kicker;
+} {
+	if (auction.kicker) {
+		const spec = KICKER_SPECS[auction.kicker];
+		return { name: spec.name, price: spec.price, kicker: auction.kicker };
+	}
+	const spec = UPGRADE_SPECS[auction.upgrade as Upgrade];
+	return { name: spec.name, price: spec.price, upgrade: auction.upgrade };
+}
+
+/** Discount a buyer gets on the card under auction (Kicker cards have none). */
+export function auctionDiscount(player: PlayerState, auction: { upgrade?: Upgrade; kicker?: Kicker }): number {
+	return auction.upgrade ? upgradeDiscount(player, auction.upgrade) : 0;
+}
+
 /** Per-buyer discount on an upgrade's auction price. */
 export function upgradeDiscount(player: PlayerState, upgrade: Upgrade): number {
 	let discount = 0;
@@ -363,6 +419,14 @@ export function upgradeDiscount(player: PlayerState, upgrade: Upgrade): number {
 	}
 	if (upgrade === "outpost") {
 		discount += 15 * player.upgrades.heavyEquipment + 10 * player.upgrades.ecoplants;
+	}
+	// Kicker: Smelter discounts Robots upgrades; Launch Facility discounts the
+	// three big production upgrades.
+	if (upgrade === "robots") {
+		discount += 5 * player.kickers.smelter;
+	}
+	if (upgrade === "spaceStation" || upgrade === "planetaryCruiser" || upgrade === "moonBase") {
+		discount += 30 * player.kickers.launchFacility;
 	}
 	return discount;
 }
@@ -387,6 +451,9 @@ export function victoryPoints(player: PlayerState): number {
 	}
 	for (const u of UPGRADES) {
 		vp += UPGRADE_SPECS[u].vp * player.upgrades[u];
+	}
+	for (const k of KICKERS) {
+		vp += KICKER_SPECS[k].vp * player.kickers[k];
 	}
 	return vp;
 }
@@ -416,13 +483,13 @@ export function drawCard(state: GameState, resource: Resource): number | undefin
 	return state.decks[resource].pop();
 }
 
-/** Max a player could pay for an upgrade right now: hand value plus their discount on it. */
-export function maxBid(state: GameState, seat: number, upgrade: Upgrade): number {
+/** Max a player could pay for a card right now: hand value plus their discount on it (none for Kicker cards). */
+export function maxBid(state: GameState, seat: number, upgrade?: Upgrade): number {
 	const player = state.players[seat];
 	if (!player) {
 		return 0;
 	}
-	return handValue(player) + upgradeDiscount(player, upgrade);
+	return handValue(player) + (upgrade ? upgradeDiscount(player, upgrade) : 0);
 }
 
 /**
@@ -432,7 +499,7 @@ export function maxBid(state: GameState, seat: number, upgrade: Upgrade): number
  * any hand they can see. Computed the same way from a stripped log (v = -1) as
  * from the live state, so replay is identical and it never leaks hand values.
  */
-export function publicMaxBid(state: GameState, seat: number, upgrade: Upgrade): number {
+export function publicMaxBid(state: GameState, seat: number, upgrade?: Upgrade): number {
 	const player = state.players[seat];
 	if (!player) {
 		return 0;
@@ -441,7 +508,7 @@ export function publicMaxBid(state: GameState, seat: number, upgrade: Upgrade): 
 	for (const card of player.hand) {
 		value += MAX_CARD_VALUE[card.t];
 	}
-	return value + upgradeDiscount(player, upgrade);
+	return value + (upgrade ? upgradeDiscount(player, upgrade) : 0);
 }
 
 /** True when every card in the player's hand is hidden (v = -1), i.e. a stripped state. */

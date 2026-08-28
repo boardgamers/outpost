@@ -1,4 +1,4 @@
-import type { FactoryType, Resource, Upgrade } from "./types.js";
+import type { FactoryType, Kicker, Resource, Upgrade } from "./types.js";
 
 // Rules data for the 20th Anniversary edition (former "Expert Rules v1.32").
 // Sources: the official Outpost reference sheet v1.32 (costs, average values,
@@ -107,6 +107,54 @@ export const UPGRADE_SPECS: Record<Upgrade, UpgradeSpec> = {
 	spaceStation: { name: "Space Station", price: 120, vp: 10, produces: "orbitalMedicine" },
 	planetaryCruiser: { name: "Planetary Cruiser", price: 160, vp: 15, produces: "ringOre" },
 	moonBase: { name: "Moon Base", price: 200, vp: 20, produces: "moonOre" },
+};
+
+export interface KickerSpec {
+	name: string;
+	era: 1 | 2 | 3;
+	/** Minimum bid. */
+	price: number;
+	vp: number;
+	/** Free counter received on purchase. */
+	freeRobot?: boolean;
+	freeFactory?: FactoryType;
+	populationBonus?: number;
+}
+
+/**
+ * Kicker expansion cards. Prices/VPs: Biosphere (250/25), NCF Prototype (60/0),
+ * and the 1 VP of the Era I cards are confirmed from the rulebook/BGG; the
+ * remaining values are inferences (Era I ~10/1, Era II ~40/2) pending the
+ * printed card values — see README "Data notes / deviations".
+ */
+export const KICKER_SPECS: Record<Kicker, KickerSpec> = {
+	iceProspector: { name: "Ice Prospector", era: 1, price: 10, vp: 1 },
+	robotPrototype: { name: "Robot Prototype", era: 1, price: 10, vp: 1, freeRobot: true },
+	smelter: { name: "Smelter", era: 1, price: 10, vp: 1 },
+	wilyTrader: { name: "Wily Trader", era: 1, price: 10, vp: 1 },
+	launchFacility: { name: "Launch Facility", era: 2, price: 40, vp: 2 },
+	merchantHouse: { name: "Merchant House", era: 2, price: 40, vp: 2 },
+	ncfPrototype: { name: "New Chemicals Factory Prototype", era: 2, price: 60, vp: 0, freeFactory: "newChemicals" },
+	refinery: { name: "Refinery", era: 2, price: 40, vp: 2 },
+	biosphere: { name: "Biosphere", era: 3, price: 250, vp: 25, populationBonus: 5 },
+};
+
+/** Kicker copies used and slots by player count (rest returned to the box). */
+export function kickerSetup(players: number): { copies: number; slots: number } {
+	if (players <= 4) {
+		return { copies: 1, slots: 1 };
+	}
+	if (players <= 7) {
+		return { copies: 2, slots: 2 };
+	}
+	return { copies: 3, slots: 3 };
+}
+
+/** Kicker types of each era, in shuffle order. */
+export const KICKERS_BY_ERA: Record<1 | 2 | 3, readonly Kicker[]> = {
+	1: ["iceProspector", "robotPrototype", "smelter", "wilyTrader"],
+	2: ["launchFacility", "merchantHouse", "ncfPrototype", "refinery"],
+	3: ["biosphere"],
 };
 
 /** Upgrade types rolled with the d4 / d10 / d12+1 (index = die result - 1). */

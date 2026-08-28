@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { UPGRADE_SPECS, UPGRADES, type GameState } from "outpost-engine";
+	import { KICKER_SPECS, UPGRADE_SPECS, UPGRADES, type GameState, type Kicker } from "outpost-engine";
 	import UpgradeBadges from "./UpgradeBadges.svelte";
-	import { UPGRADE_EFFECTS, type ViewerStore } from "./store.svelte";
+	import { KICKER_EFFECTS, UPGRADE_EFFECTS, type ViewerStore } from "./store.svelte";
 
 	interface Props {
 		state: GameState;
@@ -54,6 +54,54 @@
 						</span>
 						<UpgradeBadges {upgrade} />
 						<span class="ueffect">{UPGRADE_EFFECTS[upgrade]}</span>
+					</button>
+					{#if open && pick}
+						<div class="bidbox">
+							<div class="bidrow">
+								<button onclick={() => store.bumpAuctionBid(-1)} disabled={pick.bid <= spec.price}>−</button>
+								<input
+									type="number"
+									min={spec.price}
+									value={pick.bid}
+									oninput={(e) => store.setAuctionBid(Number(e.currentTarget.value))}
+								/>
+								<button onclick={() => store.bumpAuctionBid(1)}>+1</button>
+								<button onclick={() => store.bumpAuctionBid(5)}>+5</button>
+							</div>
+							<div class="bidrow">
+								<button class="confirm" onclick={() => store.confirmAuction()}>Auction at ◈ {pick.bid}</button>
+								<button class="cancel" onclick={() => store.cancel()}>Cancel</button>
+							</div>
+						</div>
+					{/if}
+				</div>
+			{/each}
+		</div>
+	{/if}
+	{#if state.kickerMarket.length > 0}
+		<div class="caption kicker-caption">Kicker cards — era {["", "I", "II", "III"][state.kickerEra]}</div>
+		<div class="cards">
+			{#each state.kickerMarket as kicker, i (i)}
+				{@const spec = KICKER_SPECS[kicker]}
+				{@const open = pick?.marketIndex === i && pick.kicker === true}
+				{@const blocked = store.turnBuys.length > 0}
+				<div class="slot">
+					<button
+						class="ucard kcard era-{spec.era}"
+						class:open
+						class:clickable={store.myActionTurn && !blocked}
+						disabled={!store.myActionTurn || blocked}
+						title={store.myActionTurn
+							? blocked
+								? "Undo your staged purchases to open an auction (auctions come first)"
+								: "Put up for auction"
+							: spec.name}
+						onclick={() => (open ? store.cancel() : store.openAuction(i, true))}
+					>
+						<span class="uname">{spec.name}</span>
+						<span class="uvp">{spec.vp} VP</span>
+						<span class="uprice">min ◈ {spec.price}</span>
+						<span class="ueffect">{KICKER_EFFECTS[kicker]}</span>
 					</button>
 					{#if open && pick}
 						<div class="bidbox">
@@ -148,6 +196,19 @@
 	.ucard.open {
 		outline: 2px solid var(--gold);
 		animation: glowPulse 2s ease-in-out infinite;
+	}
+	.kicker-caption {
+		margin-top: 4px;
+	}
+	/* Kicker era colors: era I blue, era II orange, era III purple. */
+	.kcard.era-1 {
+		border-top-color: #5aa5e0;
+	}
+	.kcard.era-2 {
+		border-top-color: #f08c48;
+	}
+	.kcard.era-3 {
+		border-top-color: #b48ce8;
 	}
 	.uname {
 		font-weight: 800;

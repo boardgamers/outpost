@@ -52,6 +52,9 @@ function applyRoundEntry(state: GameState, entry: LogEntry & { type: "round" }):
 	state.purchaseOrder = [...entry.purchaseOrder];
 	state.market = [...entry.market];
 	state.supply = { ...entry.supply };
+	if (entry.kickerMarket) {
+		state.kickerMarket = [...entry.kickerMarket];
+	}
 	for (const { player: seat, cards } of entry.produced) {
 		const player = state.players[seat];
 		if (player) {

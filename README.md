@@ -51,6 +51,22 @@ physical decks differ in a few counts (e.g. only two "4" water cards).
   this implementation follows the 20th Anniversary printing at 100 and 50. If a physical
   copy shows the lower values, it's a one-line change in `packages/engine/src/data.ts`.
 
+### Kicker expansion (game option)
+
+The `kicker` game option enables the Kicker expansion: a separate set of Kicker slots
+(1/2/3 by player count for 2-4/5-7/8-9) filled from era piles (I → II → III). Kicker cards
+are auctioned like colony upgrades. All nine types are implemented except the interactive
+forced exchange of **Wily Trader** and **Merchant House**, which is deferred (the cards
+still score their VP); their exchange ability is not yet wired up.
+
+- Confirmed card data: Biosphere 250/25 VP, New Chemicals Factory Prototype 60/0 VP, and
+  1 VP for each Era I card. The remaining prices/VPs are **inferences** (Era I ~10/1,
+  Era II ~40/2) pending the printed card values — each is a one-line change in
+  `packages/engine/src/data.ts` (`KICKER_SPECS`).
+- Ice Prospector / Refinery draw the extra card and discard the cheapest of the just-drawn
+  cards of that type automatically (the obvious choice; no interactive pick).
+- The Era III pile holds only Biosphere (the single Era III type), per the rules.
+
 ## Development
 
 ```bash
@@ -59,7 +75,7 @@ pnpm dev      # viewer dev server + mock backend harness (human + bots)
 pnpm check    # fmt:check + lint + tsc + test + build
 ```
 
-Dev harness URL params: `?players=4&seed=xyz&delay=700&auto=1`.
+Dev harness URL params: `?players=4&seed=xyz&delay=700&auto=1&fastBid=1&kicker=1`.
 
 Node >= 24, pnpm 11 (see `packageManager`). All dependencies pinned.
 

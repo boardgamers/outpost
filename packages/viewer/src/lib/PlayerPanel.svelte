@@ -2,6 +2,8 @@
 	import {
 		FACTORIES,
 		FACTORY_TYPES,
+		KICKERS,
+		KICKER_SPECS,
 		MAX_CARD_VALUE,
 		MIN_CARD_VALUE,
 		UPGRADE_SPECS,
@@ -14,7 +16,7 @@
 	} from "outpost-engine";
 	import ProductionCardView from "./ProductionCardView.svelte";
 	import ResourceIcon from "./ResourceIcon.svelte";
-	import { RESOURCE_LABELS, UPGRADE_EFFECTS, playerColor, type ViewerStore } from "./store.svelte";
+	import { KICKER_EFFECTS, RESOURCE_LABELS, UPGRADE_EFFECTS, playerColor, type ViewerStore } from "./store.svelte";
 
 	interface Props {
 		state: GameState;
@@ -45,6 +47,7 @@
 		})).filter((g) => g.items.length > 0)
 	);
 	const upgrades = $derived(UPGRADES.map((u) => ({ u, n: player.upgrades[u] })).filter((x) => x.n > 0));
+	const kickers = $derived(KICKERS.map((k) => ({ k, n: player.kickers[k] })).filter((x) => x.n > 0));
 	const hiddenCounts = $derived.by(() => {
 		// Mega cards are public and shown as actual cards; only the hidden
 		// singles are grouped into per-resource counts.
@@ -173,6 +176,21 @@
 					title="{spec.name}: {spec.vp} VP, list {spec.price}. {UPGRADE_EFFECTS[x.u]}{x.n > 1
 						? ` Owns ${x.n} copies.`
 						: ''}"
+					>{spec.name}{#if x.n > 1}×{x.n}{/if}</span
+				>
+			{/each}
+		</div>
+	{/if}
+
+	{#if kickers.length > 0}
+		<div class="row tags">
+			{#each kickers as x (x.k)}
+				{@const spec = KICKER_SPECS[x.k]}
+				<span
+					class="utag ktag era-{spec.era}"
+					title="{spec.name} (Kicker, era {['', 'I', 'II', 'III'][
+						spec.era
+					]}): {spec.vp} VP, list {spec.price}. {KICKER_EFFECTS[x.k]}{x.n > 1 ? ` Owns ${x.n} copies.` : ''}"
 					>{spec.name}{#if x.n > 1}×{x.n}{/if}</span
 				>
 			{/each}
@@ -438,6 +456,19 @@
 		border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
 		border-radius: 4px;
 		padding: 1px 6px;
+	}
+	/* Kicker badges use their era color (era I blue, II orange, III purple). */
+	.ktag.era-1 {
+		background: color-mix(in srgb, #5aa5e0 16%, var(--bg-elevated));
+		border-color: color-mix(in srgb, #5aa5e0 45%, transparent);
+	}
+	.ktag.era-2 {
+		background: color-mix(in srgb, #f08c48 16%, var(--bg-elevated));
+		border-color: color-mix(in srgb, #f08c48 45%, transparent);
+	}
+	.ktag.era-3 {
+		background: color-mix(in srgb, #b48ce8 16%, var(--bg-elevated));
+		border-color: color-mix(in srgb, #b48ce8 45%, transparent);
 	}
 	.hand {
 		gap: 4px;

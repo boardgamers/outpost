@@ -1,5 +1,16 @@
-import { FACTORIES, UPGRADE_SPECS } from "./data.js";
-import type { GameState, LogEntry } from "./types.js";
+import { FACTORIES, KICKER_SPECS, UPGRADE_SPECS } from "./data.js";
+import type { GameState, LogEntry, MoveInfo } from "./types.js";
+
+/** Display name of the card a move concerns (colony upgrade or Kicker card). */
+function cardName(info: MoveInfo | undefined, fallback: string): string {
+	if (info?.kicker) {
+		return KICKER_SPECS[info.kicker].name;
+	}
+	if (info?.upgrade) {
+		return UPGRADE_SPECS[info.upgrade].name;
+	}
+	return fallback;
+}
 
 function playerName(state: GameState, seat: number): string {
 	return state.players[seat]?.name ?? `Player ${seat + 1}`;
@@ -31,7 +42,7 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 				case "discard":
 					return `${name} discards ${info?.discarded ?? move.cards.length} card(s)`;
 				case "auction":
-					return `${name} puts ${info?.upgrade ? UPGRADE_SPECS[info.upgrade].name : "an upgrade"} up for auction at ${move.bid}`;
+					return `${name} puts ${cardName(info, "an upgrade")} up for auction at ${move.bid}`;
 				case "bid": {
 					// fastBid: the resolving move carries the outcome in its info.
 					if (info?.winningBid !== undefined) {
@@ -46,7 +57,7 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 				case "bidPass":
 					return `${name} passes on the auction`;
 				case "pay":
-					return `${name} buys ${info?.upgrade ? UPGRADE_SPECS[info.upgrade].name : "the upgrade"} (paid ${info?.paid ?? 0})`;
+					return `${name} buys ${cardName(info, "the upgrade")} (paid ${info?.paid ?? 0})`;
 				case "endTurn": {
 					const buys = (move.buys ?? []).map((buy) => {
 						switch (buy.buy) {

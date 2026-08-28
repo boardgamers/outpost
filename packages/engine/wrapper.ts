@@ -120,6 +120,12 @@ export function stripSecret(data: GameState, player?: number): GameState {
 		decks: Object.fromEntries(
 			Object.entries(data.decks).map(([resource, deck]) => [resource, deck.map(() => -1)])
 		) as GameState["decks"],
+		// The face-down Kicker piles' draw order is secret; only their sizes are public.
+		kickerPiles: {
+			1: data.kickerPiles[1].map(() => "iceProspector" as const),
+			2: data.kickerPiles[2].map(() => "launchFacility" as const),
+			3: data.kickerPiles[3].map(() => "biosphere" as const),
+		},
 		players: data.players.map((p, i) =>
 			i === viewer
 				? p

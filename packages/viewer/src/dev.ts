@@ -7,9 +7,17 @@ const seed = params.get("seed") ?? undefined;
 const auto = params.get("auto") === "1" || params.get("auto") === "true";
 const delayMs = params.get("delay") ? Number(params.get("delay")) : undefined;
 const fastBid = params.get("fastBid") === "1" || params.get("fastBid") === "true";
+const kicker = params.get("kicker") === "1" || params.get("kicker") === "true";
+const gameOptions: Record<string, unknown> = {};
+if (fastBid) {
+	gameOptions.fastBid = true;
+}
+if (kicker) {
+	gameOptions.kicker = true;
+}
 
 const emitter = launch("#app");
-startDevBackend(emitter as never, { players, seed, auto, delayMs, gameOptions: fastBid ? { fastBid: true } : {} });
+startDevBackend(emitter as never, { players, seed, auto, delayMs, gameOptions });
 
 (window as unknown as { outpostDev?: unknown }).outpostDev = {
 	emitter,

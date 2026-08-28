@@ -1,11 +1,13 @@
 import {
 	FACTORIES,
+	KICKER_SPECS,
 	MAX_CARD_VALUE,
 	MIN_CARD_VALUE,
 	PRODUCTION_DECKS,
 	UPGRADE_SPECS,
 	applyMove,
 	applyTurnBuy,
+	auctionCard,
 	bestPayment,
 	canBuyFactory,
 	countingHandSize,
@@ -24,6 +26,7 @@ import {
 	victoryPoints,
 	type FactoryType,
 	type GameState,
+	type Kicker,
 	type Move,
 	type PlayerState,
 	type TurnBuy,
@@ -92,6 +95,22 @@ export const UPGRADE_EFFECTS: Record<Upgrade, string> = {
 	moonBase: `Produces a Moon Ore card (${cardRange("moonOre")}) each round.`,
 };
 
+export const KICKER_EFFECTS: Record<Kicker, string> = {
+	iceProspector:
+		"When you draw Water cards in production, draw 1 extra Water card, then discard 1 of the Water cards just drawn.",
+	robotPrototype:
+		"Comes with a free robot you can operate even without a Robots upgrade (counts against your robot limit once you own one).",
+	smelter: "−5 on Robots upgrade bids. Draw 1 extra Ore card per 2 ore factories you operate.",
+	wilyTrader:
+		"Once per round, trade an Ore/Water/Titanium card to another player for their higher-valued card of the same type.",
+	launchFacility: "−30 on Space Station, Planetary Cruiser, and Moon Base bids.",
+	merchantHouse: "Like Wily Trader, but for Research, Microbiotics, and New Chemicals cards.",
+	ncfPrototype: "Comes with a free New Chemicals factory (no research card needed).",
+	refinery:
+		"When you draw Titanium cards in production, draw 1 extra Titanium card, then discard 1 of the Titanium cards just drawn.",
+	biosphere: "+5 colony support (population) limit.",
+};
+
 export class ViewerStore {
 	liveState = $state<GameState | null>(null);
 	replay = $state<ReplayState>({ active: false, current: 0, end: 0, state: null });
@@ -106,7 +125,7 @@ export class ViewerStore {
 	/** Indices into me.pendingMega selected for mega conversion (groups of 4). */
 	megaPick = $state<number[]>([]);
 	pending = $state<PendingKind | null>(null);
-	auctionPick = $state<{ marketIndex: number; bid: number } | null>(null);
+	auctionPick = $state<{ marketIndex: number; bid: number; kicker?: boolean } | null>(null);
 	bidAmount = $state(0);
 	manning = $state(false);
 	manningPick = $state<number[]>([]);
@@ -327,7 +346,7 @@ export class ViewerStore {
 		if (!me || !auction) {
 			return 0;
 		}
-		return handValue(me) + upgradeDiscount(me, auction.upgrade);
+		return handValue(me) + (auction.upgrade ? upgradeDiscount(me, auction.upgrade) : 0);
 	}
 
 	get finalRankings(): number[] {
@@ -381,7 +400,7 @@ export class ViewerStore {
 		if (!me || !auction) {
 			return 0;
 		}
-		return Math.max(0, auction.highBid - upgradeDiscount(me, auction.upgrade));
+		return Math.max(0, auction.highBid - (auction.upgrade ? upgradeDiscount(me, auction.upgrade) : 0));
 	}
 
 	pickTotal(): number {
@@ -445,35 +464,45 @@ export class ViewerStore {
 			: [...this.cardPick, index];
 	}
 
-	openAuction(marketIndex: number): void {
+	openAuction(marketIndex: number, kicker = false): void {
 		const s = this.liveState;
-		const upgrade = s?.market[marketIndex];
+		const price = kicker
+			? KICKER_SPECS[s?.kickerMarket[marketIndex] as Kicker]?.price
+			: UPGRADE_SPECS[s?.market[marketIndex] as Upgrade]?.price;
 		// Staged buys reference the current hand; an auction payment would shift
 		// those indices. Auction first, then stage purchases (undo re-enables it).
-		if (!this.myActionTurn || upgrade === undefined || this.turnBuys.length > 0) {
+		if (!this.myActionTurn || price === undefined || this.turnBuys.length > 0) {
 			return;
 		}
 		this.cancel();
-		this.auctionPick = { marketIndex, bid: UPGRADE_SPECS[upgrade].price };
+		this.auctionPick = { marketIndex, bid: price, ...(kicker ? { kicker: true } : {}) };
+	}
+
+	private auctionPickMin(pick: { marketIndex: number; kicker?: boolean }): number {
+		const s = this.liveState;
+		if (!s) {
+			return 0;
+		}
+		return pick.kicker
+			? KICKER_SPECS[s.kickerMarket[pick.marketIndex] as Kicker].price
+			: UPGRADE_SPECS[s.market[pick.marketIndex] as Upgrade].price;
 	}
 
 	bumpAuctionBid(delta: number): void {
 		const pick = this.auctionPick;
-		const s = this.liveState;
-		if (!pick || !s) {
+		if (!pick) {
 			return;
 		}
-		const min = UPGRADE_SPECS[s.market[pick.marketIndex] as Upgrade].price;
+		const min = this.auctionPickMin(pick);
 		this.auctionPick = { ...pick, bid: Math.max(min, pick.bid + delta) };
 	}
 
 	setAuctionBid(value: number): void {
 		const pick = this.auctionPick;
-		const s = this.liveState;
-		if (!pick || !s || !Number.isFinite(value)) {
+		if (!pick || !Number.isFinite(value)) {
 			return;
 		}
-		const min = UPGRADE_SPECS[s.market[pick.marketIndex] as Upgrade].price;
+		const min = this.auctionPickMin(pick);
 		this.auctionPick = { ...pick, bid: Math.max(min, Math.floor(value)) };
 	}
 
@@ -482,7 +511,12 @@ export class ViewerStore {
 		if (!pick) {
 			return;
 		}
-		this.send({ action: "auction", marketIndex: pick.marketIndex, bid: pick.bid });
+		this.send({
+			action: "auction",
+			marketIndex: pick.marketIndex,
+			bid: pick.bid,
+			...(pick.kicker ? { kicker: true } : {}),
+		});
 	}
 
 	prepareBid(): void {
@@ -491,7 +525,7 @@ export class ViewerStore {
 			return;
 		}
 		// fastBid: the floor is the list price, not the (hidden) high bid.
-		this.bidAmount = s.auction.bids ? UPGRADE_SPECS[s.auction.upgrade].price : s.auction.highBid + 1;
+		this.bidAmount = s.auction.bids ? auctionCard(s.auction).price : s.auction.highBid + 1;
 	}
 
 	confirmBid(): void {
@@ -500,7 +534,7 @@ export class ViewerStore {
 			return;
 		}
 		const amount = Math.floor(this.bidAmount);
-		const min = s.auction.bids ? UPGRADE_SPECS[s.auction.upgrade].price : s.auction.highBid + 1;
+		const min = s.auction.bids ? auctionCard(s.auction).price : s.auction.highBid + 1;
 		if (!Number.isInteger(amount) || amount < min || amount > this.maxBid) {
 			return;
 		}

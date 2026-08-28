@@ -1,6 +1,7 @@
-import { FACTORIES, MEGA_CARDS, PRODUCTION_DECKS, UPGRADE_SPECS } from "./data.js";
+import { FACTORIES, KICKER_SPECS, MEGA_CARDS, PRODUCTION_DECKS, UPGRADE_SPECS } from "./data.js";
 import { applyMove } from "./moves.js";
 import {
+	auctionCard,
 	bestPayment,
 	canBuyFactory,
 	handCapacity,
@@ -32,8 +33,8 @@ export function chooseMove(state: GameState, seat: number): Move {
 			// fastBid: bid the max affordable when the list price is reachable,
 			// otherwise pass (the sealed bid keeps a weak hand hidden).
 			if (auction?.bids) {
-				const max = handValue(player) + upgradeDiscount(player, auction.upgrade);
-				if (max >= UPGRADE_SPECS[auction.upgrade].price) {
+				const max = handValue(player) + (auction.upgrade ? upgradeDiscount(player, auction.upgrade) : 0);
+				if (max >= auctionCard(auction).price) {
 					return { action: "bid", amount: max };
 				}
 			}
@@ -44,7 +45,7 @@ export function chooseMove(state: GameState, seat: number): Move {
 			if (!auction) {
 				throw new Error("no auction in progress");
 			}
-			const due = Math.max(0, auction.highBid - upgradeDiscount(player, auction.upgrade));
+			const due = Math.max(0, auction.highBid - (auction.upgrade ? upgradeDiscount(player, auction.upgrade) : 0));
 			return { action: "pay", cards: bestPayment(player, due) ?? player.hand.map((_, i) => i) };
 		}
 		case "actions":
@@ -103,20 +104,28 @@ function chooseDiscard(player: PlayerState): Move {
 function chooseAction(state: GameState, player: PlayerState): Move {
 	const cash = handValue(player);
 
-	// 1. Auction the highest-VP upgrade we can afford at list price.
-	let bestIndex = -1;
+	// 1. Auction the highest-VP card we can afford at list price (upgrades and
+	// Kicker cards compete on VP; Kicker cards have no discount).
+	let best: { kicker: boolean; index: number; bid: number } | null = null;
 	let bestVp = -1;
-	state.market.forEach((upgrade, index) => {
+	for (const [index, upgrade] of state.market.entries()) {
 		const spec = UPGRADE_SPECS[upgrade];
 		const due = Math.max(0, spec.price - upgradeDiscount(player, upgrade));
 		if (cash >= due && spec.vp > bestVp) {
 			bestVp = spec.vp;
-			bestIndex = index;
+			best = { kicker: false, index, bid: spec.price };
 		}
-	});
-	if (bestIndex >= 0) {
-		const upgrade = state.market[bestIndex] as Upgrade;
-		return { action: "auction", marketIndex: bestIndex, bid: UPGRADE_SPECS[upgrade].price };
+	}
+	for (const [index, kicker] of state.kickerMarket.entries()) {
+		const spec = KICKER_SPECS[kicker];
+		if (cash >= spec.price && spec.vp > bestVp) {
+			bestVp = spec.vp;
+			best = { kicker: true, index, bid: spec.price };
+		}
+	}
+	if (best) {
+		const pick: { kicker: boolean; index: number; bid: number } = best;
+		return { action: "auction", marketIndex: pick.index, bid: pick.bid, ...(pick.kicker ? { kicker: true } : {}) };
 	}
 
 	return chooseTurn(player);

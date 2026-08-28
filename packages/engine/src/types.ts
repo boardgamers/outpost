@@ -34,6 +34,23 @@ export const UPGRADES = [
 
 export type Upgrade = (typeof UPGRADES)[number];
 
+export const KICKERS = [
+	"iceProspector",
+	"robotPrototype",
+	"smelter",
+	"wilyTrader",
+	"launchFacility",
+	"merchantHouse",
+	"ncfPrototype",
+	"refinery",
+	"biosphere",
+] as const;
+
+export type Kicker = (typeof KICKERS)[number];
+
+/** Any card that can sit in the market: a colony upgrade or a Kicker card. */
+export type MarketCard = Upgrade | Kicker;
+
 export interface ProductionCard {
 	/** Resource type. */
 	t: Resource;
@@ -55,6 +72,8 @@ export interface PlayerState {
 	robots: number;
 	hand: ProductionCard[];
 	upgrades: Record<Upgrade, number>;
+	/** Kicker expansion: copies of each Kicker card owned. */
+	kickers: Record<Kicker, number>;
 	/** Total credits spent over the game (purchase-order tie-break). */
 	spent: number;
 	/** Turn bookkeeping: has finished their action turn this round. */
@@ -76,9 +95,12 @@ export interface PlayerSettings {
 export type Phase = "mega" | "discard" | "actions" | "auction" | "auctionPayment" | "ended";
 
 export interface AuctionState {
-	/** Index into state.market of the upgrade under auction. */
+	/** Index into state.market (or state.kickerMarket when kicker is set). */
 	marketIndex: number;
-	upgrade: Upgrade;
+	/** The colony upgrade under auction (absent when a Kicker card is auctioned). */
+	upgrade?: Upgrade;
+	/** Kicker expansion: the Kicker card under auction (index into kickerMarket). */
+	kicker?: Kicker;
 	/** Seat of the player who opened the auction (their action turn resumes afterwards). */
 	auctioneer: number;
 	highBid: number;
@@ -110,7 +132,7 @@ export type TurnBuy =
 export type Move =
 	| { action: "mega"; cards: number[] }
 	| { action: "discard"; cards: number[] }
-	| { action: "auction"; marketIndex: number; bid: number }
+	| { action: "auction"; marketIndex: number; bid: number; kicker?: boolean }
 	| { action: "bid"; amount: number }
 	| { action: "bidPass" }
 	| { action: "pay"; cards: number[] }
@@ -124,6 +146,8 @@ export type LogEntry =
 			purchaseOrder: number[];
 			market: Upgrade[];
 			supply: Record<Upgrade, number>;
+			/** Kicker expansion: the Kicker slots after this round's refill. */
+			kickerMarket?: Kicker[];
 			produced: { player: number; cards: ProductionCard[] }[];
 	  }
 	| { type: "move"; player: number; move: Move; info?: MoveInfo }
@@ -133,6 +157,8 @@ export type LogEntry =
 export interface MoveInfo {
 	paid?: number;
 	upgrade?: Upgrade;
+	/** Kicker card bought this move (for the log description). */
+	kicker?: Kicker;
 	discarded?: number;
 	/** Mega cards taken with this "mega" move (for the log description). */
 	mega?: number;
@@ -166,6 +192,12 @@ export interface GameState {
 	market: Upgrade[];
 	/** Remaining copies of each upgrade in the supply. */
 	supply: Record<Upgrade, number>;
+	/** Kicker expansion: Kicker cards currently in the Kicker slots. */
+	kickerMarket: Kicker[];
+	/** Kicker expansion: remaining Kicker piles by era (shuffled, face-down). */
+	kickerPiles: Record<1 | 2 | 3, Kicker[]>;
+	/** Kicker expansion: current era (1-3); kicker slots refilled from this era. */
+	kickerEra: 1 | 2 | 3;
 	/** Draw piles, face-down (top = last element). */
 	decks: Record<Resource, number[]>;
 	/** Spent cards, face-up. */

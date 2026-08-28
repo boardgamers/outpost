@@ -84,6 +84,7 @@ export function sanitizeMove(raw: unknown): Move {
 				action,
 				marketIndex: int(move.marketIndex, "marketIndex", 0),
 				bid: int(move.bid, "bid", 0),
+				...(move.kicker === true ? { kicker: true } : {}),
 			};
 		case "bid":
 			// -1 is the masked value of another player's sealed bid in a stripped
