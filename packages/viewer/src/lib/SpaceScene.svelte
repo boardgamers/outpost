@@ -160,15 +160,18 @@
 		const margin = 80;
 		const xMax = 1020;
 		const usableWidth = xMax - margin;
-		const spacing = 22; // horizontal gap between buildings within a family
-		const familyGap = 12; // extra gap between two families on the same row
-		const rowGap = 22; // vertical gap between rows
+		const spacing = 22; // horizontal gap between two buildings side by side
+		const familyGap = 14; // horizontal gap between two families
+		const rowGap = 22; // vertical gap between the rows within a family
 		for (let ci = 0; ci < n; ci++) {
 			const cluster = clusters[ci]!;
 			const cx = margin + (usableWidth / Math.max(n, 1)) * (ci + 0.5);
 
 			// Group the cluster's buildings into families (same factory type /
-			// same upgrade), each family staying together as its own little row.
+			// same upgrade). Each family is laid out as its own little block:
+			// its members in rows of at most 2 (a family of 4 → two rows of 2,
+			// of 3 → 2 + 1), so a tall family reads as a small stack rather
+			// than one long line. Different families sit side by side.
 			const families = new Map<number, Omit<Building, "x" | "y">[]>();
 			for (const b of cluster.buildings) {
 				const key = familyKey(b);
@@ -178,45 +181,32 @@
 			}
 			const groups = [...families.entries()].sort((a, b) => a[0] - b[0]).map(([, members]) => members);
 
-			// Typeset the families into rows like words in a paragraph: place a
-			// family on the current row until it would overflow the row width,
-			// then wrap to a new row. A family never splits across rows. A
-			// single over-wide family gets a row to itself.
-			const rowWidth = Math.min(160, usableWidth / Math.max(n, 1) - 16);
-			const rows: Omit<Building, "x" | "y">[][][] = [];
-			let currentRow: Omit<Building, "x" | "y">[][] = [];
-			let currentWidth = 0;
-			for (const family of groups) {
-				const width = family.length * spacing;
-				const added = currentRow.length === 0 ? width : currentWidth + familyGap + width;
-				if (currentRow.length > 0 && added > rowWidth) {
-					rows.push(currentRow);
-					currentRow = [];
-					currentWidth = 0;
+			// Each family is laid out in at most 2 rows, split as evenly as
+			// possible (4 → 2+2, 5 → 3+2, 6 → 3+3), the back row raised.
+			const blocks = groups.map((members) => {
+				const count = members.length;
+				const perRow = count <= 2 ? count : Math.ceil(count / 2);
+				const rows = count <= 2 ? 1 : 2;
+				const cells: { b: Omit<Building, "x" | "y">; col: number; row: number }[] = [];
+				for (let i = 0; i < count; i++) {
+					const row = Math.floor(i / perRow);
+					const col = i % perRow;
+					cells.push({ b: members[i]!, col, row });
 				}
-				currentRow.push(family);
-				currentWidth = currentRow.length === 1 ? width : currentWidth + familyGap + width;
-			}
-			if (currentRow.length > 0) {
-				rows.push(currentRow);
-			}
+				return { cells, rows, width: perRow };
+			});
 
-			// Lay out each row centered on cx, back (top) rows first. A
-			// building's y follows the ground curve so it sits on the surface;
-			// earlier rows are raised to read as further away.
-			for (let ri = 0; ri < rows.length; ri++) {
-				const row = rows[ri]!;
-				const totalWidth = row.reduce((sum, family) => sum + family.length * spacing, 0) + (row.length - 1) * familyGap;
-				const raise = (rows.length - 1 - ri) * rowGap;
-				let x = cx - totalWidth / 2;
-				for (const family of row) {
-					for (const b of family) {
-						const bx = x + spacing / 2;
-						result.push({ ...b, x: bx, y: surfaceY(bx) + 20 - raise });
-						x += spacing;
-					}
-					x += familyGap;
+			// Place the family blocks left to right, centered on cx.
+			const totalWidth = blocks.reduce((sum, b) => sum + b.width * spacing, 0) + (blocks.length - 1) * familyGap;
+			let x = cx - totalWidth / 2;
+			for (const block of blocks) {
+				for (const cell of block.cells) {
+					const bx = x + cell.col * spacing + spacing / 2;
+					// Back rows are raised so they read as further away.
+					const raise = (block.rows - 1 - cell.row) * rowGap;
+					result.push({ ...cell.b, x: bx, y: surfaceY(bx) + 20 - raise });
 				}
+				x += block.width * spacing + familyGap;
 			}
 		}
 		// SVG paints in document order: sort by y so lower (closer) buildings
@@ -409,7 +399,7 @@
 						<rect class="base" x="-8" y="-1" width="16" height="2" rx="0.8" />
 					{/if}
 				{/if}
-				{#if b.manned}
+				{#if b.kind === "factory" && b.manned}
 					<g class="res" transform="translate(0 -5)">
 						{#if b.resource === "ore"}
 							<path d="M-2.5 1.5 L0 -2.5 L2.5 1.5 z" />
