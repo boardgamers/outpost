@@ -4,6 +4,7 @@
 		KICKER_SPECS,
 		UPGRADE_SPECS,
 		UPGRADES,
+		colonyEra,
 		upgradeEra,
 		upgradeNumber,
 		type GameState,
@@ -20,9 +21,19 @@
 
 	let { state, store }: Props = $props();
 
-	const supplyLeft = $derived(UPGRADES.map((u) => ({ u, n: state.supply[u] })).filter((x) => x.n > 0));
 	const pick = $derived(store.auctionPick);
 	const meIndex = $derived(store.playerIndex);
+	const gameEra = $derived(colonyEra(state));
+	// Remaining colony upgrades, grouped by era so each era gets a delimiter chip
+	// and the current era a highlight — same presentation as the Kicker supply.
+	const supplyByEra = $derived(
+		([1, 2, 3] as const)
+			.map((era) => ({
+				era,
+				counts: UPGRADES.map((u) => ({ u, n: state.supply[u] })).filter((x) => x.n > 0 && upgradeEra(x.u) === era),
+			}))
+			.filter((x) => x.counts.length > 0)
+	);
 	// Remaining Kicker cards per era: the pile is sorted (draw order hidden but
 	// the public counts preserved), so count copies of each type still in it.
 	const kickerSupply = $derived(
@@ -114,6 +125,30 @@
 			{/each}
 		</div>
 	{/if}
+	<div class="supply">
+		{#each supplyByEra as x (x.era)}
+			<span class="stag era-{x.era} ks-era" class:current={x.era === gameEra}>
+				<span class="stag-era">{["", "I", "II", "III"][x.era]}</span>
+			</span>
+			{#each x.counts as c (c.u)}
+				{@const spec = UPGRADE_SPECS[c.u]}
+				<span
+					class="stag era-{x.era}"
+					class:current={x.era === gameEra}
+					title="{spec.name} ({spec.vp} VP, list ◈ {spec.price}): {effectToText(
+						UPGRADE_EFFECTS[c.u]
+					)} ×{c.n} left in the supply — Era {['', 'I', 'II', 'III'][x.era]} upgrade (card #{upgradeNumber(
+						c.u
+					)}){x.era === gameEra ? ' (current era)' : ''}"
+				>
+					{spec.name}&nbsp;<span class="kcount">×{c.n}</span>
+				</span>
+			{/each}
+		{/each}
+		{#if supplyByEra.length === 0}
+			<span class="stag dim">Supply exhausted</span>
+		{/if}
+	</div>
 	{#if state.kickerMarket.length > 0}
 		<div class="caption kicker-caption">Kicker cards — era {["", "I", "II", "III"][state.kickerEra]}</div>
 		<div class="cards">
@@ -189,23 +224,6 @@
 			{/each}
 		</div>
 	{/if}
-	<div class="supply">
-		{#each supplyLeft as x (x.u)}
-			{@const spec = UPGRADE_SPECS[x.u]}
-			{@const era = upgradeEra(x.u)}
-			<span
-				class="stag era-{era}"
-				title="{spec.name} ({spec.vp} VP, list ◈ {spec.price}): {effectToText(
-					UPGRADE_EFFECTS[x.u]
-				)} ×{x.n} left in the supply — Era {['', 'I', 'II', 'III'][era]} upgrade (card #{upgradeNumber(x.u)})"
-			>
-				<span class="stag-era">{["", "I", "II", "III"][era]}</span>{spec.name} ×{x.n}
-			</span>
-		{/each}
-		{#if supplyLeft.length === 0}
-			<span class="stag dim">Supply exhausted</span>
-		{/if}
-	</div>
 </div>
 
 <style>
@@ -356,6 +374,7 @@
 		display: flex;
 		gap: 5px;
 		flex-wrap: wrap;
+		margin-top: 8px;
 	}
 	.stag {
 		font-size: 11px;
