@@ -1,5 +1,6 @@
 <script lang="ts">
 	import {
+		KICKERS_BY_ERA,
 		KICKER_SPECS,
 		UPGRADE_SPECS,
 		UPGRADES,
@@ -21,6 +22,13 @@
 	const supplyLeft = $derived(UPGRADES.map((u) => ({ u, n: state.supply[u] })).filter((x) => x.n > 0));
 	const pick = $derived(store.auctionPick);
 	const meIndex = $derived(store.playerIndex);
+	// Remaining Kicker cards per era: the era's types (fixed, public) plus the
+	// face-down pile's size (the draw order is hidden, so only the total shows).
+	const kickerSupply = $derived(
+		([1, 2, 3] as const)
+			.map((era) => ({ era, types: KICKERS_BY_ERA[era], left: state.kickerPiles[era].length }))
+			.filter((x) => x.left > 0 || x.era === state.kickerEra)
+	);
 
 	function myDue(upgrade: (typeof UPGRADES)[number]): number {
 		if (meIndex === undefined) {
@@ -149,6 +157,22 @@
 						</div>
 					{/if}
 				</div>
+			{/each}
+		</div>
+		<div class="supply ksupply">
+			{#each kickerSupply as x (x.era)}
+				<span
+					class="stag era-{x.era}"
+					class:current={x.era === state.kickerEra}
+					title="Era {['', 'I', 'II', 'III'][x.era]} Kicker cards ({x.types
+						.map((k) => KICKER_SPECS[k].name)
+						.join(', ')}): {x.left} left in the face-down pile{x.era === state.kickerEra ? ' — current era' : ''}"
+				>
+					<span class="stag-era">{["", "I", "II", "III"][x.era]}</span>{x.types
+						.map((k) => KICKER_SPECS[k].name)
+						.join(", ")}
+					<span class="kcount">×{x.left}</span>
+				</span>
 			{/each}
 		</div>
 	{/if}
@@ -351,5 +375,15 @@
 	}
 	.stag.dim {
 		font-style: italic;
+	}
+	.ksupply {
+		margin-top: 8px;
+	}
+	.stag.current {
+		border-color: var(--gold);
+	}
+	.kcount {
+		font-weight: 800;
+		color: var(--text);
 	}
 </style>
