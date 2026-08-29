@@ -160,9 +160,9 @@
 		const margin = 80;
 		const xMax = 1020;
 		const usableWidth = xMax - margin;
-		const spacing = 22; // horizontal gap between two buildings side by side
-		const familyGap = 14; // horizontal gap between two families
-		const rowGap = 22; // vertical gap between the rows within a family
+		const spacing = 18; // horizontal gap between two buildings side by side
+		const familyGap = 12; // horizontal gap between two families
+		const rowGap = 16; // vertical gap: the front row sits this much lower (closer)
 		for (let ci = 0; ci < n; ci++) {
 			const cluster = clusters[ci]!;
 			const cx = margin + (usableWidth / Math.max(n, 1)) * (ci + 0.5);
@@ -182,7 +182,8 @@
 			const groups = [...families.entries()].sort((a, b) => a[0] - b[0]).map(([, members]) => members);
 
 			// Each family is laid out in at most 2 rows, split as evenly as
-			// possible (4 → 2+2, 5 → 3+2, 6 → 3+3), the back row raised.
+			// possible (4 → 2+2, 5 → 3+2, 6 → 3+3). The back row sits on the
+			// ground; the front row is placed lower (closer to the viewer).
 			const blocks = groups.map((members) => {
 				const count = members.length;
 				const perRow = count <= 2 ? count : Math.ceil(count / 2);
@@ -202,9 +203,10 @@
 			for (const block of blocks) {
 				for (const cell of block.cells) {
 					const bx = x + cell.col * spacing + spacing / 2;
-					// Back rows are raised so they read as further away.
-					const raise = (block.rows - 1 - cell.row) * rowGap;
-					result.push({ ...cell.b, x: bx, y: surfaceY(bx) + 20 - raise });
+					// Row 0 (back) stays on the ground; later rows come forward
+					// (down the screen), never up into the sky.
+					const forward = cell.row * rowGap;
+					result.push({ ...cell.b, x: bx, y: surfaceY(bx) + 20 + forward });
 				}
 				x += block.width * spacing + familyGap;
 			}
