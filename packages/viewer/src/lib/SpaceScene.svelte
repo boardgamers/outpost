@@ -2,7 +2,9 @@
 	import { onMount } from "svelte";
 	import {
 		FACTORIES,
+		FACTORY_TYPES,
 		UPGRADE_SPECS,
+		upgradeNumber,
 		type FactoryType,
 		type GameState,
 		type Resource,
@@ -137,6 +139,16 @@
 			.filter((c) => c.buildings.length > 0);
 	});
 
+	// Order buildings so same-family ones sit together: factories first (by
+	// resource type), then upgrades (by card number). Within a family, manned
+	// before unmanned.
+	function familyKey(b: Omit<Building, "x" | "y">): number {
+		if (b.kind === "factory") {
+			return FACTORY_TYPES.indexOf(b.type as FactoryType);
+		}
+		return 100 + upgradeNumber(b.type as Upgrade);
+	}
+
 	const positioned = $derived.by((): Building[] => {
 		const result: Building[] = [];
 		const n = clusters.length;
@@ -148,35 +160,63 @@
 		const margin = 80;
 		const xMax = 1020;
 		const usableWidth = xMax - margin;
+		const spacing = 22; // horizontal gap between buildings within a family
+		const familyGap = 12; // extra gap between two families on the same row
+		const rowGap = 22; // vertical gap between rows
 		for (let ci = 0; ci < n; ci++) {
 			const cluster = clusters[ci]!;
-			const buildings = cluster.buildings;
 			const cx = margin + (usableWidth / Math.max(n, 1)) * (ci + 0.5);
-			// Cluster center y: below the rim with enough clearance for the
-			// tallest building (outpost tower extends -20 above its origin).
-			const cy = surfaceY(cx) + 22 + (ci % 2 === 0 ? 0 : 4);
 
-			// Fill the ellipse interior: use sunflower/spiral phyllotaxis so
-			// buildings spread evenly across the whole area, not just the rim.
-			const count = buildings.length;
-			const rx = Math.max(25, Math.min(70, count * 4.5));
-			const ry = Math.max(10, rx * 0.3);
-			const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+			// Group the cluster's buildings into families (same factory type /
+			// same upgrade), each family staying together as its own little row.
+			const families = new Map<number, Omit<Building, "x" | "y">[]>();
+			for (const b of cluster.buildings) {
+				const key = familyKey(b);
+				const family = families.get(key) ?? [];
+				family.push(b);
+				families.set(key, family);
+			}
+			const groups = [...families.entries()].sort((a, b) => a[0] - b[0]).map(([, members]) => members);
 
-			for (let bi = 0; bi < count; bi++) {
-				const b = buildings[bi]!;
-				// Phyllotaxis: each point at radius proportional to sqrt(index),
-				// angle stepping by the golden angle. This fills the ellipse.
-				const r = Math.sqrt((bi + 0.5) / count);
-				const angle = bi * goldenAngle + ci * 2.1;
-				const jitterX = ((bi * 7 + ci * 13) % 9) - 4;
-				const jitterY = ((bi * 5 + ci * 9) % 5) - 2;
-				const x = cx + Math.cos(angle) * r * rx + jitterX;
-				const rawY = cy + Math.sin(angle) * r * ry + jitterY;
-				// Clamp: never above the surface at this x (buildings extend up to -20).
-				const minY = surfaceY(x) + 20;
-				const y = Math.max(rawY, minY);
-				result.push({ ...b, x, y });
+			// Typeset the families into rows like words in a paragraph: place a
+			// family on the current row until it would overflow the row width,
+			// then wrap to a new row. A family never splits across rows. A
+			// single over-wide family gets a row to itself.
+			const rowWidth = Math.min(160, usableWidth / Math.max(n, 1) - 16);
+			const rows: Omit<Building, "x" | "y">[][][] = [];
+			let currentRow: Omit<Building, "x" | "y">[][] = [];
+			let currentWidth = 0;
+			for (const family of groups) {
+				const width = family.length * spacing;
+				const added = currentRow.length === 0 ? width : currentWidth + familyGap + width;
+				if (currentRow.length > 0 && added > rowWidth) {
+					rows.push(currentRow);
+					currentRow = [];
+					currentWidth = 0;
+				}
+				currentRow.push(family);
+				currentWidth = currentRow.length === 1 ? width : currentWidth + familyGap + width;
+			}
+			if (currentRow.length > 0) {
+				rows.push(currentRow);
+			}
+
+			// Lay out each row centered on cx, back (top) rows first. A
+			// building's y follows the ground curve so it sits on the surface;
+			// earlier rows are raised to read as further away.
+			for (let ri = 0; ri < rows.length; ri++) {
+				const row = rows[ri]!;
+				const totalWidth = row.reduce((sum, family) => sum + family.length * spacing, 0) + (row.length - 1) * familyGap;
+				const raise = (rows.length - 1 - ri) * rowGap;
+				let x = cx - totalWidth / 2;
+				for (const family of row) {
+					for (const b of family) {
+						const bx = x + spacing / 2;
+						result.push({ ...b, x: bx, y: surfaceY(bx) + 20 - raise });
+						x += spacing;
+					}
+					x += familyGap;
+				}
 			}
 		}
 		// SVG paints in document order: sort by y so lower (closer) buildings
