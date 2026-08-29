@@ -63,7 +63,7 @@ The `kicker` game option enables the Kicker expansion: a separate set of Kicker 
 are auctioned like colony upgrades. All nine types are implemented.
 
 - Confirmed card data (2011 rulebook + BGG): Ice Prospector 10/1, Robot Prototype 10/0,
-  Smelter 30/1, Wily Trader 10/1, Launch Facility 75/2, Merchant House 60/1, New Chemicals
+  Smelter 15/1, Wily Trader 10/1, Launch Facility 75/2, Merchant House 60/1, New Chemicals
   Factory Prototype 60/0, Biosphere 250/25. **Refinery's printed cost/VP are not
   documented** — the rulebook has a production error (its card image is missing). As the
   Era II analog of Ice Prospector (mirroring Wily Trader 10/1 → Merchant House 60/1) it is

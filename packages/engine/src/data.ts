@@ -133,7 +133,7 @@ export interface KickerSpec {
 export const KICKER_SPECS: Record<Kicker, KickerSpec> = {
 	iceProspector: { name: "Ice Prospector", era: 1, price: 10, vp: 1 },
 	robotPrototype: { name: "Robot Prototype", era: 1, price: 10, vp: 0, freeRobot: true },
-	smelter: { name: "Smelter", era: 1, price: 30, vp: 1 },
+	smelter: { name: "Smelter", era: 1, price: 15, vp: 1 },
 	wilyTrader: { name: "Wily Trader", era: 1, price: 10, vp: 1 },
 	launchFacility: { name: "Launch Facility", era: 2, price: 75, vp: 2 },
 	merchantHouse: { name: "Merchant House", era: 2, price: 60, vp: 1 },
