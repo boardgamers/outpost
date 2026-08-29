@@ -16,7 +16,14 @@
 	} from "outpost-engine";
 	import ProductionCardView from "./ProductionCardView.svelte";
 	import ResourceIcon from "./ResourceIcon.svelte";
-	import { KICKER_EFFECTS, RESOURCE_LABELS, UPGRADE_EFFECTS, playerColor, type ViewerStore } from "./store.svelte";
+	import {
+		KICKER_EFFECTS,
+		RESOURCE_LABELS,
+		UPGRADE_EFFECTS,
+		effectToText,
+		playerColor,
+		type ViewerStore,
+	} from "./store.svelte";
 
 	interface Props {
 		state: GameState;
@@ -204,7 +211,7 @@
 				{@const spec = UPGRADE_SPECS[x.u]}
 				<span
 					class="utag"
-					title="{spec.name}: {spec.vp} VP, list {spec.price}. {UPGRADE_EFFECTS[x.u]}{x.n > 1
+					title="{spec.name}: {spec.vp} VP, list {spec.price}. {effectToText(UPGRADE_EFFECTS[x.u])}{x.n > 1
 						? ` Owns ${x.n} copies.`
 						: ''}"
 					>{spec.name}{#if x.n > 1}×{x.n}{/if}</span
@@ -221,7 +228,9 @@
 					class="utag ktag era-{spec.era}"
 					title="{spec.name} (Kicker, era {['', 'I', 'II', 'III'][
 						spec.era
-					]}): {spec.vp} VP, list {spec.price}. {KICKER_EFFECTS[x.k]}{x.n > 1 ? ` Owns ${x.n} copies.` : ''}"
+					]}): {spec.vp} VP, list {spec.price}. {effectToText(KICKER_EFFECTS[x.k])}{x.n > 1
+						? ` Owns ${x.n} copies.`
+						: ''}"
 					>{spec.name}{#if x.n > 1}×{x.n}{/if}</span
 				>
 			{/each}

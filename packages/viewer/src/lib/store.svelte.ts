@@ -30,6 +30,7 @@ import {
 	type Kicker,
 	type Move,
 	type PlayerState,
+	type Resource,
 	type TurnBuy,
 	type Upgrade,
 } from "outpost-engine";
@@ -80,36 +81,121 @@ function cardRange(resource: keyof typeof MIN_CARD_VALUE): string {
 	return `${MIN_CARD_VALUE[resource]}–${MAX_CARD_VALUE[resource]}`;
 }
 
-export const UPGRADE_EFFECTS: Record<Upgrade, string> = {
-	dataLibrary: "−10 on Scientists and Laboratory bids (per copy).",
-	warehouse: "+3 hand capacity (per copy).",
-	heavyEquipment: `Allows Titanium factories (${cardRange("titanium")} cards). −5 on Warehouse/Nodule, −15 on Outpost (per copy).`,
-	nodule: "+3 population limit (per copy).",
-	scientists: `Produces a Research card (${cardRange("research")}) each round (per copy).`,
-	orbitalLab: `Produces a Microbiotics card (${cardRange("microbiotics")}) each round (per copy).`,
-	robots: "Allows buying robots, operators that ignore the population limit (per copy: up to population).",
-	laboratory: `Allows Research factories (${cardRange("research")} cards); comes with a free one.`,
-	ecoplants: "Colonists cost 5 instead of 10. −10 on Outpost bids (per copy).",
-	outpost: "Free titanium factory, +5 hand capacity, +5 population limit.",
-	spaceStation: `Produces an Orbital Medicine card (${cardRange("orbitalMedicine")}) each round.`,
-	planetaryCruiser: `Produces a Ring Ore card (${cardRange("ringOre")}) each round.`,
-	moonBase: `Produces a Moon Ore card (${cardRange("moonOre")}) each round.`,
+/**
+ * A card effect as display tokens, so icons can replace words: a Resource /
+ * FactoryType renders as its icon, an Upgrade / Kicker as an era-badged chip,
+ * and "manned" as filled factory icons. Plain strings are literal text.
+ */
+export type EffectToken =
+	| string
+	| { r: Resource }
+	| { card: Resource }
+	| { f: Resource; n: number }
+	| { u: Upgrade }
+	| { k: Kicker };
+
+/** Flatten an effect to a plain-text string (for tooltips / log titles). */
+export function effectToText(tokens: EffectToken[]): string {
+	return tokens
+		.map((t) => {
+			if (typeof t === "string") {
+				return t;
+			}
+			if ("r" in t) {
+				return RESOURCE_LABELS[t.r] ?? t.r;
+			}
+			if ("card" in t) {
+				return `${RESOURCE_LABELS[t.card] ?? t.card} card`;
+			}
+			if ("f" in t) {
+				return `${t.n} ${RESOURCE_LABELS[t.f] ?? t.f} factories`;
+			}
+			if ("u" in t) {
+				return UPGRADE_SPECS[t.u].name;
+			}
+			return KICKER_SPECS[t.k].name;
+		})
+		.join("");
+}
+
+export const UPGRADE_EFFECTS: Record<Upgrade, EffectToken[]> = {
+	dataLibrary: ["−10 on ", { u: "scientists" }, " and ", { u: "laboratory" }, " bids (per copy)."],
+	warehouse: ["+3 hand capacity (per copy)."],
+	heavyEquipment: [
+		"Allows ",
+		{ f: "titanium", n: 1 },
+		` (${cardRange("titanium")} cards). −5 on `,
+		{ u: "warehouse" },
+		"/",
+		{ u: "nodule" },
+		", −15 on ",
+		{ u: "outpost" },
+		" (per copy).",
+	],
+	nodule: ["+3 population limit (per copy)."],
+	scientists: ["Produces a ", { card: "research" }, ` (${cardRange("research")}) each round (per copy).`],
+	orbitalLab: ["Produces a ", { card: "microbiotics" }, ` (${cardRange("microbiotics")}) each round (per copy).`],
+	robots: ["Allows buying robots, operators that ignore the population limit (per copy: up to population)."],
+	laboratory: ["Allows ", { f: "research", n: 1 }, ` (${cardRange("research")} cards); comes with a free one.`],
+	ecoplants: ["Colonists cost 5 instead of 10. −10 on ", { u: "outpost" }, " bids (per copy)."],
+	outpost: ["Free ", { f: "titanium", n: 1 }, ", +5 hand capacity, +5 population limit."],
+	spaceStation: ["Produces an ", { card: "orbitalMedicine" }, ` (${cardRange("orbitalMedicine")}) each round.`],
+	planetaryCruiser: ["Produces a ", { card: "ringOre" }, ` (${cardRange("ringOre")}) each round.`],
+	moonBase: ["Produces a ", { card: "moonOre" }, ` (${cardRange("moonOre")}) each round.`],
 };
 
-export const KICKER_EFFECTS: Record<Kicker, string> = {
-	iceProspector:
-		"When you draw Water cards in production, draw 1 extra Water card, then discard 1 of the Water cards just drawn.",
-	robotPrototype:
-		"Comes with a free robot you can operate even without a Robots upgrade (counts against your robot limit once you own one).",
-	smelter: "−5 on Robots upgrade bids. Draw 1 extra Ore card per 2 Ore factories you operate.",
-	wilyTrader:
-		"Once per round, trade an Ore/Water/Titanium card to another player for their higher-valued card of the same type.",
-	launchFacility: "−30 on Space Station, Planetary Cruiser, and Moon Base bids.",
-	merchantHouse: "Like Wily Trader, but for Research, Microbiotics, and New Chemicals cards.",
-	ncfPrototype: "Comes with a free New Chemicals factory (no Research card needed).",
-	refinery:
-		"When you draw Titanium cards in production, draw 1 extra Titanium card, then discard 1 of the Titanium cards just drawn.",
-	biosphere: "+5 colony support (population) limit.",
+export const KICKER_EFFECTS: Record<Kicker, EffectToken[]> = {
+	iceProspector: [
+		"When you draw ",
+		{ r: "water" },
+		" in production, draw 1 extra ",
+		{ card: "water" },
+		", then discard 1 of them.",
+	],
+	robotPrototype: [
+		"Comes with a free robot you can operate even without a ",
+		{ u: "robots" },
+		" upgrade (counts against your robot limit once you own one).",
+	],
+	smelter: ["−5 on ", { u: "robots" }, " bids. Draw 1 extra ", { card: "ore" }, " per ", { f: "ore", n: 2 }, "."],
+	wilyTrader: [
+		"Once per round, trade an ",
+		{ r: "ore" },
+		"/",
+		{ r: "water" },
+		"/",
+		{ r: "titanium" },
+		" card to another player for their higher-valued card of the same type.",
+	],
+	launchFacility: [
+		"−30 on ",
+		{ u: "spaceStation" },
+		", ",
+		{ u: "planetaryCruiser" },
+		", and ",
+		{ u: "moonBase" },
+		" bids.",
+	],
+	merchantHouse: [
+		"Like ",
+		{ k: "wilyTrader" },
+		", but for ",
+		{ r: "research" },
+		", ",
+		{ r: "microbiotics" },
+		", and ",
+		{ r: "newChemicals" },
+		" cards.",
+	],
+	ncfPrototype: ["Comes with a free ", { f: "newChemicals", n: 1 }, " (no ", { card: "research" }, " needed)."],
+	refinery: [
+		"When you draw ",
+		{ r: "titanium" },
+		" in production, draw 1 extra ",
+		{ card: "titanium" },
+		", then discard 1 of them.",
+	],
+	biosphere: ["+5 colony support (population) limit."],
 };
 
 export class ViewerStore {

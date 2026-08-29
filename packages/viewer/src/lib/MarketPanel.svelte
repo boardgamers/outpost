@@ -11,7 +11,7 @@
 	} from "outpost-engine";
 	import UpgradeBadges from "./UpgradeBadges.svelte";
 	import CardEffect from "./CardEffect.svelte";
-	import { KICKER_EFFECTS, UPGRADE_EFFECTS, type ViewerStore } from "./store.svelte";
+	import { KICKER_EFFECTS, UPGRADE_EFFECTS, effectToText, type ViewerStore } from "./store.svelte";
 
 	interface Props {
 		state: GameState;
@@ -83,7 +83,7 @@
 								· you pay ◈ {due}{/if}
 						</span>
 						<UpgradeBadges {upgrade} />
-						<span class="ueffect"><CardEffect text={UPGRADE_EFFECTS[upgrade]} /></span>
+						<span class="ueffect"><CardEffect tokens={UPGRADE_EFFECTS[upgrade]} /></span>
 					</button>
 					{#if open && pick}
 						<div class="bidbox">
@@ -137,7 +137,7 @@
 						<span class="uname">{spec.name}</span>
 						<span class="uvp">{spec.vp} VP</span>
 						<span class="uprice">min ◈ {spec.price}</span>
-						<span class="ueffect"><CardEffect text={KICKER_EFFECTS[kicker]} /></span>
+						<span class="ueffect"><CardEffect tokens={KICKER_EFFECTS[kicker]} /></span>
 					</button>
 					{#if open && pick}
 						<div class="bidbox">
@@ -177,12 +177,11 @@
 					<span
 						class="stag era-{x.era}"
 						class:current={x.era === state.kickerEra}
-						title="{spec.name} ({spec.vp} VP, list ◈ {spec.price}): {KICKER_EFFECTS[c.k]} ×{c.n} left in the Era {[
-							'',
-							'I',
-							'II',
-							'III',
-						][x.era]} pile{x.era === state.kickerEra ? ' (current era)' : ''}"
+						title="{spec.name} ({spec.vp} VP, list ◈ {spec.price}): {effectToText(
+							KICKER_EFFECTS[c.k]
+						)} ×{c.n} left in the Era {['', 'I', 'II', 'III'][x.era]} pile{x.era === state.kickerEra
+							? ' (current era)'
+							: ''}"
 					>
 						{spec.name}&nbsp;<span class="kcount">×{c.n}</span>
 					</span>
@@ -196,9 +195,9 @@
 			{@const era = upgradeEra(x.u)}
 			<span
 				class="stag era-{era}"
-				title="{spec.name} ({spec.vp} VP, list ◈ {spec.price}): {UPGRADE_EFFECTS[
-					x.u
-				]} ×{x.n} left in the supply — Era {['', 'I', 'II', 'III'][era]} upgrade (card #{upgradeNumber(x.u)})"
+				title="{spec.name} ({spec.vp} VP, list ◈ {spec.price}): {effectToText(
+					UPGRADE_EFFECTS[x.u]
+				)} ×{x.n} left in the supply — Era {['', 'I', 'II', 'III'][era]} upgrade (card #{upgradeNumber(x.u)})"
 			>
 				<span class="stag-era">{["", "I", "II", "III"][era]}</span>{spec.name} ×{x.n}
 			</span>

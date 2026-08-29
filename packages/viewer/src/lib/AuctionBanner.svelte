@@ -15,8 +15,8 @@
 	const spec = $derived(
 		auction ? (auction.kicker ? KICKER_SPECS[auction.kicker] : UPGRADE_SPECS[auction.upgrade!]) : null
 	);
-	const effectText = $derived(
-		auction ? (auction.kicker ? KICKER_EFFECTS[auction.kicker] : UPGRADE_EFFECTS[auction.upgrade!]) : ""
+	const effectTokens = $derived(
+		auction ? (auction.kicker ? KICKER_EFFECTS[auction.kicker] : UPGRADE_EFFECTS[auction.upgrade!]) : []
 	);
 	const nameOf = (seat: number) => state.players[seat]?.name ?? `Player ${seat + 1}`;
 	const meIndex = $derived(store.playerIndex);
@@ -45,7 +45,7 @@
 			{#if auction.upgrade}
 				<UpgradeBadges upgrade={auction.upgrade} />
 			{/if}
-			<span class="ueffect"><CardEffect text={effectText} /></span>
+			<span class="ueffect"><CardEffect tokens={effectTokens} /></span>
 		</div>
 		<div class="status">
 			{#if fast && state.phase === "auction"}
