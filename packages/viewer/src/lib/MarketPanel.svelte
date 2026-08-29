@@ -168,7 +168,12 @@
 							: spec.name}
 						onclick={() => (open ? store.cancel() : store.openAuction(i, true))}
 					>
-						<span class="uname">{spec.name}</span>
+						<span class="uname">
+							{spec.name}
+							<span class="uera era-{spec.era}" title="Era {['', 'I', 'II', 'III'][spec.era]} Kicker card">
+								{["", "I", "II", "III"][spec.era]}
+							</span>
+						</span>
 						<span class="uvp">{spec.vp} VP</span>
 						<span class="uprice">min ◈ {spec.price}</span>
 						<span class="ueffect"><CardEffect tokens={KICKER_EFFECTS[kicker]} /></span>
