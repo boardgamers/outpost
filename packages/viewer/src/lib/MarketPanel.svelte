@@ -134,7 +134,6 @@
 				{@const spec = UPGRADE_SPECS[c.u]}
 				<span
 					class="stag era-{x.era}"
-					class:current={x.era === gameEra}
 					title="{spec.name} ({spec.vp} VP, list ◈ {spec.price}): {effectToText(
 						UPGRADE_EFFECTS[c.u]
 					)} ×{c.n} left in the supply — Era {['', 'I', 'II', 'III'][x.era]} upgrade (card #{upgradeNumber(
@@ -211,7 +210,6 @@
 					{@const spec = KICKER_SPECS[c.k]}
 					<span
 						class="stag era-{x.era}"
-						class:current={x.era === state.kickerEra}
 						title="{spec.name} ({spec.vp} VP, list ◈ {spec.price}): {effectToText(
 							KICKER_EFFECTS[c.k]
 						)} ×{c.n} left in the Era {['', 'I', 'II', 'III'][x.era]} pile{x.era === state.kickerEra
