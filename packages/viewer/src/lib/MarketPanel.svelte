@@ -10,6 +10,7 @@
 		type Kicker,
 	} from "outpost-engine";
 	import UpgradeBadges from "./UpgradeBadges.svelte";
+	import CardEffect from "./CardEffect.svelte";
 	import { KICKER_EFFECTS, UPGRADE_EFFECTS, type ViewerStore } from "./store.svelte";
 
 	interface Props {
@@ -22,12 +23,17 @@
 	const supplyLeft = $derived(UPGRADES.map((u) => ({ u, n: state.supply[u] })).filter((x) => x.n > 0));
 	const pick = $derived(store.auctionPick);
 	const meIndex = $derived(store.playerIndex);
-	// Remaining Kicker cards per era: the era's types (fixed, public) plus the
-	// face-down pile's size (the draw order is hidden, so only the total shows).
+	// Remaining Kicker cards per era: the pile is sorted (draw order hidden but
+	// the public counts preserved), so count copies of each type still in it.
 	const kickerSupply = $derived(
 		([1, 2, 3] as const)
-			.map((era) => ({ era, types: KICKERS_BY_ERA[era], left: state.kickerPiles[era].length }))
-			.filter((x) => x.left > 0 || x.era === state.kickerEra)
+			.map((era) => ({
+				era,
+				counts: KICKERS_BY_ERA[era]
+					.map((k) => ({ k, n: state.kickerPiles[era].filter((c) => c === k).length }))
+					.filter((x) => x.n > 0),
+			}))
+			.filter((x) => x.counts.length > 0 || x.era === state.kickerEra)
 	);
 
 	function myDue(upgrade: (typeof UPGRADES)[number]): number {
@@ -62,20 +68,22 @@
 							: spec.name}
 						onclick={() => (open ? store.cancel() : store.openAuction(i))}
 					>
-						<span class="uname">{spec.name}</span>
+						<span class="uname">
+							{spec.name}
+							<span
+								class="uera era-{upgradeEra(upgrade)}"
+								title="Era {['', 'I', 'II', 'III'][upgradeEra(upgrade)]} upgrade (card #{upgradeNumber(upgrade)})"
+							>
+								{["", "I", "II", "III"][upgradeEra(upgrade)]}
+							</span>
+						</span>
 						<span class="uvp">{spec.vp} VP</span>
 						<span class="uprice">
 							min ◈ {spec.price}{#if due < spec.price}
 								· you pay ◈ {due}{/if}
 						</span>
-						<span
-							class="uera era-{upgradeEra(upgrade)}"
-							title="Era {['', 'I', 'II', 'III'][upgradeEra(upgrade)]} upgrade (card #{upgradeNumber(upgrade)})"
-						>
-							{["", "I", "II", "III"][upgradeEra(upgrade)]}
-						</span>
 						<UpgradeBadges {upgrade} />
-						<span class="ueffect">{UPGRADE_EFFECTS[upgrade]}</span>
+						<span class="ueffect"><CardEffect text={UPGRADE_EFFECTS[upgrade]} /></span>
 					</button>
 					{#if open && pick}
 						<div class="bidbox">
@@ -129,7 +137,7 @@
 						<span class="uname">{spec.name}</span>
 						<span class="uvp">{spec.vp} VP</span>
 						<span class="uprice">min ◈ {spec.price}</span>
-						<span class="ueffect">{KICKER_EFFECTS[kicker]}</span>
+						<span class="ueffect"><CardEffect text={KICKER_EFFECTS[kicker]} /></span>
 					</button>
 					{#if open && pick}
 						<div class="bidbox">
@@ -161,18 +169,24 @@
 		</div>
 		<div class="supply ksupply">
 			{#each kickerSupply as x (x.era)}
-				<span
-					class="stag era-{x.era}"
-					class:current={x.era === state.kickerEra}
-					title="Era {['', 'I', 'II', 'III'][x.era]} Kicker cards ({x.types
-						.map((k) => KICKER_SPECS[k].name)
-						.join(', ')}): {x.left} left in the face-down pile{x.era === state.kickerEra ? ' — current era' : ''}"
-				>
-					<span class="stag-era">{["", "I", "II", "III"][x.era]}</span>{x.types
-						.map((k) => KICKER_SPECS[k].name)
-						.join(", ")}
-					<span class="kcount">×{x.left}</span>
+				<span class="stag era-{x.era} ks-era" class:current={x.era === state.kickerEra}>
+					<span class="stag-era">{["", "I", "II", "III"][x.era]}</span>
 				</span>
+				{#each x.counts as c (c.k)}
+					{@const spec = KICKER_SPECS[c.k]}
+					<span
+						class="stag era-{x.era}"
+						class:current={x.era === state.kickerEra}
+						title="{spec.name} ({spec.vp} VP, list ◈ {spec.price}): {KICKER_EFFECTS[c.k]} ×{c.n} left in the Era {[
+							'',
+							'I',
+							'II',
+							'III',
+						][x.era]} pile{x.era === state.kickerEra ? ' (current era)' : ''}"
+					>
+						{spec.name}&nbsp;<span class="kcount">×{c.n}</span>
+					</span>
+				{/each}
 			{/each}
 		</div>
 	{/if}
@@ -269,7 +283,8 @@
 		letter-spacing: 0.06em;
 		border-radius: 4px;
 		padding: 1px 5px;
-		align-self: flex-start;
+		margin-left: 5px;
+		vertical-align: 1px;
 	}
 	.uera.era-1 {
 		color: #5aa5e0;

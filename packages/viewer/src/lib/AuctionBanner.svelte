@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { KICKER_SPECS, UPGRADE_SPECS, type GameState } from "outpost-engine";
 	import UpgradeBadges from "./UpgradeBadges.svelte";
+	import CardEffect from "./CardEffect.svelte";
 	import { KICKER_EFFECTS, UPGRADE_EFFECTS, type ViewerStore } from "./store.svelte";
 
 	interface Props {
@@ -44,7 +45,7 @@
 			{#if auction.upgrade}
 				<UpgradeBadges upgrade={auction.upgrade} />
 			{/if}
-			<span class="ueffect">{effectText}</span>
+			<span class="ueffect"><CardEffect text={effectText} /></span>
 		</div>
 		<div class="status">
 			{#if fast && state.phase === "auction"}

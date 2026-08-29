@@ -83,12 +83,12 @@ function cardRange(resource: keyof typeof MIN_CARD_VALUE): string {
 export const UPGRADE_EFFECTS: Record<Upgrade, string> = {
 	dataLibrary: "−10 on Scientists and Laboratory bids (per copy).",
 	warehouse: "+3 hand capacity (per copy).",
-	heavyEquipment: `Allows titanium factories (${cardRange("titanium")} cards). −5 on Warehouse/Nodule, −15 on Outpost (per copy).`,
+	heavyEquipment: `Allows Titanium factories (${cardRange("titanium")} cards). −5 on Warehouse/Nodule, −15 on Outpost (per copy).`,
 	nodule: "+3 population limit (per copy).",
 	scientists: `Produces a Research card (${cardRange("research")}) each round (per copy).`,
 	orbitalLab: `Produces a Microbiotics card (${cardRange("microbiotics")}) each round (per copy).`,
 	robots: "Allows buying robots, operators that ignore the population limit (per copy: up to population).",
-	laboratory: `Allows research factories (${cardRange("research")} cards); comes with a free one.`,
+	laboratory: `Allows Research factories (${cardRange("research")} cards); comes with a free one.`,
 	ecoplants: "Colonists cost 5 instead of 10. −10 on Outpost bids (per copy).",
 	outpost: "Free titanium factory, +5 hand capacity, +5 population limit.",
 	spaceStation: `Produces an Orbital Medicine card (${cardRange("orbitalMedicine")}) each round.`,
@@ -101,12 +101,12 @@ export const KICKER_EFFECTS: Record<Kicker, string> = {
 		"When you draw Water cards in production, draw 1 extra Water card, then discard 1 of the Water cards just drawn.",
 	robotPrototype:
 		"Comes with a free robot you can operate even without a Robots upgrade (counts against your robot limit once you own one).",
-	smelter: "−5 on Robots upgrade bids. Draw 1 extra Ore card per 2 ore factories you operate.",
+	smelter: "−5 on Robots upgrade bids. Draw 1 extra Ore card per 2 Ore factories you operate.",
 	wilyTrader:
 		"Once per round, trade an Ore/Water/Titanium card to another player for their higher-valued card of the same type.",
 	launchFacility: "−30 on Space Station, Planetary Cruiser, and Moon Base bids.",
 	merchantHouse: "Like Wily Trader, but for Research, Microbiotics, and New Chemicals cards.",
-	ncfPrototype: "Comes with a free New Chemicals factory (no research card needed).",
+	ncfPrototype: "Comes with a free New Chemicals factory (no Research card needed).",
 	refinery:
 		"When you draw Titanium cards in production, draw 1 extra Titanium card, then discard 1 of the Titanium cards just drawn.",
 	biosphere: "+5 colony support (population) limit.",

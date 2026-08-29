@@ -4,7 +4,17 @@ import { applyMove, dropPlayer as dropPlayerCore, initGame } from "./src/moves.j
 import { rankings as computeRankings } from "./src/rankings.js";
 import { replay as replayCore } from "./src/replay.js";
 import { availableMoves, scores as computeScores } from "./src/state.js";
-import type { GameState, LogEntry, Move, ProductionCard } from "./src/types.js";
+import { KICKERS, type GameState, type Kicker, type LogEntry, type Move, type ProductionCard } from "./src/types.js";
+
+/**
+ * The face-down Kicker piles' draw order is secret, but the multiset of their
+ * contents is public (initial copies minus the public market and owned cards).
+ * Sort each pile into canonical order so the counts are visible without
+ * leaking what comes next.
+ */
+function sortedPile(pile: Kicker[]): Kicker[] {
+	return [...pile].sort((a, b) => KICKERS.indexOf(a) - KICKERS.indexOf(b));
+}
 
 export async function init(
 	players: number,
@@ -119,13 +129,13 @@ function hideProduced(
 	}
 	return {
 		...entry,
-		// The face-down Kicker piles' draw order is secret; only sizes are public.
+		// The face-down Kicker piles' draw order is secret; sort to show counts.
 		...(entry.kickerPiles
 			? {
 					kickerPiles: {
-						1: entry.kickerPiles[1].map(() => "iceProspector" as const),
-						2: entry.kickerPiles[2].map(() => "launchFacility" as const),
-						3: entry.kickerPiles[3].map(() => "biosphere" as const),
+						1: sortedPile(entry.kickerPiles[1]),
+						2: sortedPile(entry.kickerPiles[2]),
+						3: sortedPile(entry.kickerPiles[3]),
 					},
 				}
 			: {}),
@@ -173,11 +183,12 @@ export function stripSecret(data: GameState, player?: number): GameState {
 		decks: Object.fromEntries(
 			Object.entries(data.decks).map(([resource, deck]) => [resource, deck.map(() => -1)])
 		) as GameState["decks"],
-		// The face-down Kicker piles' draw order is secret; only their sizes are public.
+		// The face-down Kicker piles' draw order is secret; their (public) counts
+		// are shown by sorting into canonical order.
 		kickerPiles: {
-			1: data.kickerPiles[1].map(() => "iceProspector" as const),
-			2: data.kickerPiles[2].map(() => "launchFacility" as const),
-			3: data.kickerPiles[3].map(() => "biosphere" as const),
+			1: sortedPile(data.kickerPiles[1]),
+			2: sortedPile(data.kickerPiles[2]),
+			3: sortedPile(data.kickerPiles[3]),
 		},
 		players: data.players.map((p, i) => {
 			if (i === viewer) {

@@ -7,7 +7,7 @@ import { producePlayer } from "./production.js";
 import { replay } from "./replay.js";
 import { populationMax, robotMax, upgradeDiscount, victoryPoints } from "./state.js";
 import { stripSecret } from "../wrapper.js";
-import type { GameState, PlayerState, ProductionCard } from "./types.js";
+import { KICKERS, type GameState, type PlayerState, type ProductionCard } from "./types.js";
 
 function kickerGame(players = 4, seed = "kicker-spec"): GameState {
 	return initGame(players, { kicker: true }, seed);
@@ -187,12 +187,21 @@ test("kicker: Smelter draws a bonus ore card per two ore factories", () => {
 	assert.equal(produced.filter((c) => c.t === "ore").length, 6);
 });
 
-test("kicker: the face-down piles are hidden by stripSecret, the slots stay public", () => {
+test("kicker: the face-down piles are order-masked by stripSecret, the slots stay public", () => {
 	const state = kickerGame(4);
 	const stripped = stripSecret(state, 0);
-	// Pile contents are masked (same length, placeholder names).
-	assert.equal(stripped.kickerPiles[1].length, state.kickerPiles[1].length);
-	assert.deepEqual([...new Set(stripped.kickerPiles[1])], ["iceProspector"]);
+	// The pile's draw order is destroyed (sorted into canonical order) but its
+	// public multiset of contents is preserved.
+	for (const era of [1, 2, 3] as const) {
+		const sorted = [...state.kickerPiles[era]].sort();
+		assert.deepEqual([...stripped.kickerPiles[era]].sort(), sorted);
+		// Canonical (KICKERS-index) order, not the shuffled draw order.
+		const indexes = stripped.kickerPiles[era].map((k) => KICKERS.indexOf(k));
+		assert.deepEqual(
+			indexes,
+			[...indexes].sort((a, b) => a - b)
+		);
+	}
 	// The face-up slot card stays visible.
 	assert.deepEqual(stripped.kickerMarket, state.kickerMarket);
 });
