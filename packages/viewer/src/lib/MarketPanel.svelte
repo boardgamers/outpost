@@ -1,5 +1,13 @@
 <script lang="ts">
-	import { KICKER_SPECS, UPGRADE_SPECS, UPGRADES, type GameState, type Kicker } from "outpost-engine";
+	import {
+		KICKER_SPECS,
+		UPGRADE_SPECS,
+		UPGRADES,
+		upgradeEra,
+		upgradeNumber,
+		type GameState,
+		type Kicker,
+	} from "outpost-engine";
 	import UpgradeBadges from "./UpgradeBadges.svelte";
 	import { KICKER_EFFECTS, UPGRADE_EFFECTS, type ViewerStore } from "./store.svelte";
 
@@ -51,6 +59,12 @@
 						<span class="uprice">
 							min ◈ {spec.price}{#if due < spec.price}
 								· you pay ◈ {due}{/if}
+						</span>
+						<span
+							class="uera era-{upgradeEra(upgrade)}"
+							title="Era {['', 'I', 'II', 'III'][upgradeEra(upgrade)]} upgrade (card #{upgradeNumber(upgrade)})"
+						>
+							{["", "I", "II", "III"][upgradeEra(upgrade)]}
 						</span>
 						<UpgradeBadges {upgrade} />
 						<span class="ueffect">{UPGRADE_EFFECTS[upgrade]}</span>
@@ -141,11 +155,14 @@
 	<div class="supply">
 		{#each supplyLeft as x (x.u)}
 			{@const spec = UPGRADE_SPECS[x.u]}
+			{@const era = upgradeEra(x.u)}
 			<span
-				class="stag"
-				title="{spec.name} ({spec.vp} VP, list ◈ {spec.price}): {UPGRADE_EFFECTS[x.u]} ×{x.n} left in the supply"
+				class="stag era-{era}"
+				title="{spec.name} ({spec.vp} VP, list ◈ {spec.price}): {UPGRADE_EFFECTS[
+					x.u
+				]} ×{x.n} left in the supply — Era {['', 'I', 'II', 'III'][era]} upgrade (card #{upgradeNumber(x.u)})"
 			>
-				{spec.name} ×{x.n}
+				<span class="stag-era">{["", "I", "II", "III"][era]}</span>{spec.name} ×{x.n}
 			</span>
 		{/each}
 		{#if supplyLeft.length === 0}
@@ -222,6 +239,26 @@
 	.kcard.era-3 {
 		border-top-color: #b48ce8;
 	}
+	.uera {
+		font-size: 9.5px;
+		font-weight: 800;
+		letter-spacing: 0.06em;
+		border-radius: 4px;
+		padding: 1px 5px;
+		align-self: flex-start;
+	}
+	.uera.era-1 {
+		color: #5aa5e0;
+		background: color-mix(in srgb, #5aa5e0 16%, transparent);
+	}
+	.uera.era-2 {
+		color: #f08c48;
+		background: color-mix(in srgb, #f08c48 16%, transparent);
+	}
+	.uera.era-3 {
+		color: #b48ce8;
+		background: color-mix(in srgb, #b48ce8 16%, transparent);
+	}
 	.uname {
 		font-weight: 800;
 		font-size: 13px;
@@ -289,6 +326,28 @@
 		border: 1px solid var(--line);
 		border-radius: 4px;
 		padding: 1px 6px;
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+	}
+	.stag-era {
+		font-size: 9px;
+		font-weight: 800;
+		letter-spacing: 0.04em;
+		border-radius: 3px;
+		padding: 0 3px;
+	}
+	.stag.era-1 .stag-era {
+		color: #5aa5e0;
+		background: color-mix(in srgb, #5aa5e0 16%, transparent);
+	}
+	.stag.era-2 .stag-era {
+		color: #f08c48;
+		background: color-mix(in srgb, #f08c48 16%, transparent);
+	}
+	.stag.era-3 .stag-era {
+		color: #b48ce8;
+		background: color-mix(in srgb, #b48ce8 16%, transparent);
 	}
 	.stag.dim {
 		font-style: italic;

@@ -180,6 +180,17 @@ export const UPGRADE_BY_ROLL: readonly Upgrade[] = [
 export const FIRST_TEN: readonly Upgrade[] = UPGRADE_BY_ROLL.slice(0, 10);
 export const LAST_THREE: readonly Upgrade[] = UPGRADE_BY_ROLL.slice(10);
 
+/** The upgrade's card number (1-13), i.e. its die-roll index in UPGRADE_BY_ROLL. */
+export function upgradeNumber(upgrade: Upgrade): number {
+	return UPGRADE_BY_ROLL.indexOf(upgrade) + 1;
+}
+
+/** The game era an upgrade card belongs to: I (1-4), II (5-10), III (11-13). */
+export function upgradeEra(upgrade: Upgrade): 1 | 2 | 3 {
+	const n = upgradeNumber(upgrade);
+	return n <= 4 ? 1 : n <= 10 ? 2 : 3;
+}
+
 export interface SetupRow {
 	firstTen: number;
 	lastThree: number;
