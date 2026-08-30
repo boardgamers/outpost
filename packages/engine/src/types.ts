@@ -187,6 +187,8 @@ export type LogEntry =
 			/** Era-fallback streaks as this round began (for exact replay). */
 			eraStreak4?: number;
 			eraStreak10?: number;
+			/** The game era in effect this round (evaluated at the colony ship's arrival). */
+			era?: 1 | 2 | 3;
 			produced: { player: number; cards: ProductionCard[] }[];
 			/** Mega-eligible groups per player this round (rule 12.1), for exact replay. */
 			megaGroups?: { player: number; groups: Partial<Record<Resource, number>> }[];
@@ -253,6 +255,12 @@ export interface GameState {
 	 */
 	eraStreak4?: number;
 	eraStreak10?: number;
+	/**
+	 * The game era in effect (1-3). Era transitions happen during Phase 2, when
+	 * the colony ship arrives: a mid-round VP change does not advance the era
+	 * until the next round begins. Optional for pre-0.9.7 saved states.
+	 */
+	era?: 1 | 2 | 3;
 	/** Kicker expansion: Kicker cards currently in the Kicker slots. */
 	kickerMarket: Kicker[];
 	/** Kicker expansion: remaining Kicker piles by era (shuffled, face-down). */

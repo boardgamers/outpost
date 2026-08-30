@@ -23,7 +23,7 @@
 
 	const pick = $derived(store.auctionPick);
 	const meIndex = $derived(store.playerIndex);
-	const gameEra = $derived(colonyEra(state));
+	const gameEra = $derived(state.era ?? colonyEra(state));
 	// Remaining colony upgrades, grouped by era so each era gets a delimiter chip
 	// and the current era a highlight — same presentation as the Kicker supply.
 	const supplyByEra = $derived(

@@ -1,5 +1,5 @@
 import { FACTORIES, KICKER_SPECS, MEGA_CARDS, ROBOT_COST, UPGRADE_SPECS, VICTORY_VP } from "./data.js";
-import { refillKickers, refillMarket, updateEraStreaks } from "./market.js";
+import { colonyEra, refillKickers, refillMarket, updateEraStreaks } from "./market.js";
 import { producePlayer } from "./production.js";
 import {
 	canBuyFactory,
@@ -86,8 +86,11 @@ export function beginRound(state: GameState): void {
 	state.round += 1;
 	state.purchaseOrder = computePurchaseOrder(state);
 	// The "very rare" era fallback is evaluated as the round begins, before the
-	// refill draws down the supply.
+	// refill draws down the supply. The era in effect for this round is fixed
+	// here, at the colony ship's arrival — mid-round VP changes wait for the
+	// next ship.
 	updateEraStreaks(state);
+	state.era = colonyEra(state);
 	refillMarket(state);
 	refillKickers(state);
 
@@ -110,6 +113,7 @@ export function beginRound(state: GameState): void {
 		kickerPiles: { 1: [...state.kickerPiles[1]], 2: [...state.kickerPiles[2]], 3: [...state.kickerPiles[3]] },
 		eraStreak4: state.eraStreak4,
 		eraStreak10: state.eraStreak10,
+		era: state.era,
 		produced,
 		megaGroups,
 	});

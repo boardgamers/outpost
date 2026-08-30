@@ -66,6 +66,32 @@ test("kicker: the era follows the game era (leader VP), discarding the ended era
 	assert.equal(KICKER_SPECS[state.kickerMarket[0]!].era, 2);
 });
 
+test("kicker: a mid-round era advance takes effect at the next colony ship, not immediately", () => {
+	const state = kickerGame(4);
+	assert.equal(state.era, 1);
+	assert.equal(state.kickerEra, 1);
+	const slotCard = state.kickerMarket[0]!;
+	assert.equal(KICKER_SPECS[slotCard].era, 1);
+	// Mid-round, the leader crosses the Era II threshold (e.g. wins an auction).
+	const leader = state.players[0] as PlayerState;
+	leader.upgrades.orbitalLab = 4;
+	assert.ok(victoryPoints(leader) >= 10);
+	// Rule: era transitions happen during Phase 2 (colony ship arrival). Until
+	// then the effective era and the Kicker slots are unchanged — the era I
+	// Kicker can still be bought this round.
+	assert.equal(state.era, 1);
+	assert.equal(state.kickerEra, 1);
+	assert.deepEqual(state.kickerMarket, [slotCard]);
+	// The next round's colony ship applies the transition.
+	beginRound(state);
+	assert.equal(state.era, 2);
+	assert.equal(state.kickerEra, 2);
+	assert.equal(state.kickerPiles[1].length, 0);
+	assert.ok(state.kickerMarket.every((k) => KICKER_SPECS[k].era === 2));
+	const entry = state.log[state.log.length - 1];
+	assert.ok(entry?.type === "round" && entry.era === 2 && entry.kickerEra === 2);
+});
+
 test("kicker: an era advance replays identically from a stripped log", () => {
 	const state = kickerGame(4);
 	// Cross the Era II threshold and start a new round so the round entry

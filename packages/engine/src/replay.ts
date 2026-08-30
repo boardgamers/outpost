@@ -76,6 +76,9 @@ function applyRoundEntry(state: GameState, entry: LogEntry & { type: "round" }):
 	if (entry.eraStreak10 !== undefined) {
 		state.eraStreak10 = entry.eraStreak10;
 	}
+	if (entry.era !== undefined) {
+		state.era = entry.era;
+	}
 	for (const { player: seat, cards } of entry.produced) {
 		const player = state.players[seat];
 		if (player) {

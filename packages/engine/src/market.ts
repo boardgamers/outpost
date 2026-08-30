@@ -96,10 +96,12 @@ export function refillMarket(state: GameState): void {
 }
 
 /**
- * Kicker expansion: refill the Kicker slots from the current era's pile. The
- * Kicker era follows the game era (leader VP), not the piles: when the era
- * advances, leftover Kicker cards of the ended era — in the slots and in that
- * era's pile — are returned to the box and the slots refill from the new era.
+ * Kicker expansion: refill the Kicker slots from the current era's pile. Era
+ * transitions take effect here, during Phase 2 (colony ship arrival) — rule:
+ * "When Era I ends, return any Era I Kicker cards still in Kicker slots and
+ * in the Era I pile to the game box", repeated per ended era, then the slots
+ * refill from the new era's pile. A mid-round VP change does NOT advance the
+ * era until the next colony ship.
  */
 export function refillKickers(state: GameState): void {
 	if (state.options.kicker !== true) {
@@ -107,9 +109,10 @@ export function refillKickers(state: GameState): void {
 	}
 	const era = colonyEra(state);
 	if (era > state.kickerEra) {
-		const ended = state.kickerEra;
-		state.kickerMarket = state.kickerMarket.filter((k) => KICKER_SPECS[k].era !== ended);
-		state.kickerPiles[ended] = [];
+		state.kickerMarket = state.kickerMarket.filter((k) => KICKER_SPECS[k].era >= era);
+		for (let ended = 1; ended < era; ended++) {
+			state.kickerPiles[ended as 1 | 2 | 3] = [];
+		}
 		state.kickerEra = era;
 	}
 	const { slots } = kickerSetup(state.players.filter((p) => !p.dropped).length);

@@ -7,7 +7,7 @@
 
 	let { state }: Props = $props();
 
-	const era = $derived(state.ended ? null : colonyEra(state));
+	const era = $derived(state.ended ? null : (state.era ?? colonyEra(state)));
 
 	const phaseLabel = $derived(
 		state.ended
@@ -36,7 +36,10 @@
 	</span>
 	<span class="item">Round <strong>{state.round}</strong></span>
 	{#if era !== null}
-		<span class="item era" title="Game era (leader VP): sets which colony upgrades and Kicker cards are available">
+		<span
+			class="item era"
+			title="Game era: sets which colony upgrades and Kicker cards are available. Evaluated from the leader's VP when the colony ship arrives — a mid-round VP change counts at the next round"
+		>
 			Era {["", "I", "II", "III"][era]}
 		</span>
 	{/if}
