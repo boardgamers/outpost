@@ -10,7 +10,7 @@
 	const recent = $derived(
 		lines
 			.map((line, index) => ({ line, index }))
-			.slice(-40)
+			.slice(-150)
 			.reverse()
 	);
 </script>
