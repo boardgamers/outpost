@@ -90,7 +90,8 @@
 						</div>
 						<div class="hint">
 							<span class="maxline">
-								You hold ◈ {store.myHandValue}{#if discount > 0}
+								You hold ◈ {store.myHandValue}
+								{#if discount > 0}
 									<span class="plusdisc" title="your discount on this upgrade">+{discount}</span>
 								{/if}
 								<span class="maxeq">= max bid <strong>◈ {maxBid}</strong></span>
@@ -150,7 +151,8 @@
 						</div>
 						<div class="hint">
 							<span class="maxline">
-								You hold ◈ {store.myHandValue}{#if discount > 0}
+								You hold ◈ {store.myHandValue}
+								{#if discount > 0}
 									<span class="plusdisc" title="your discount on this upgrade">+{discount}</span>
 								{/if}
 								<span class="maxeq">= max bid <strong>◈ {maxBid}</strong></span>
@@ -164,8 +166,7 @@
 			{:else if state.phase !== "auction"}
 				<div class="turn">
 					{#if store.myPayment}
-						You won: select hand cards worth at least ◈ {due} and confirm below (bid {auction.highBid}{#if discount > 0}
-							− {discount} discount{/if}).
+						You won: select hand cards worth at least ◈ {due} and confirm below (bid {auction.highBid}{#if discount > 0}{` − ${discount} discount`}{/if}).
 					{:else}
 						Waiting for {nameOf(auction.highBidder)} to pay…
 					{/if}

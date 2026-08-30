@@ -90,7 +90,8 @@
 						</span>
 						<span class="uvp">{spec.vp} VP</span>
 						<span class="uprice">
-							min ◈ {spec.price}{#if due < spec.price}
+							min ◈ {spec.price}
+							{#if due < spec.price}
 								· you pay ◈ {due}{/if}
 						</span>
 						<UpgradeBadges {upgrade} />

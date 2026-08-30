@@ -110,7 +110,8 @@
 					{@const taking = store.megaTake[resource] ?? 0}
 					<div class="mega-row">
 						<span class="mega-name">
-							Mega {RESOURCE_LABELS[resource] ?? resource}{#if mega}
+							Mega {RESOURCE_LABELS[resource] ?? resource}
+							{#if mega}
 								<em>(◈ {mega.value})</em>{/if}
 						</span>
 						<span class="mega-stepper">

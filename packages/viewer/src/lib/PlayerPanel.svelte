@@ -163,9 +163,8 @@
 				class="prod"
 				title="production per round: one card per manned factory plus free cards from producing upgrades (average in parentheses)"
 			>
-				⚙ ◈ {production.min === production.max
-					? production.min
-					: `${production.min}–${production.max}`}{#if production.min !== production.max}
+				⚙ ◈ {production.min === production.max ? production.min : `${production.min}–${production.max}`}
+				{#if production.min !== production.max}
 					<span class="avg">(~{Math.round(production.avg)})</span>
 				{/if}
 			</span>
@@ -214,7 +213,7 @@
 					title="{spec.name}: {spec.vp} VP, list {spec.price}. {effectToText(UPGRADE_EFFECTS[x.u])}{x.n > 1
 						? ` Owns ${x.n} copies.`
 						: ''}"
-					>{spec.name}{#if x.n > 1}×{x.n}{/if}</span
+					>{spec.name}{#if x.n > 1}{` ×${x.n}`}{/if}</span
 				>
 			{/each}
 		</div>
@@ -231,7 +230,7 @@
 					]}): {spec.vp} VP, list {spec.price}. {effectToText(KICKER_EFFECTS[x.k])}{x.n > 1
 						? ` Owns ${x.n} copies.`
 						: ''}"
-					>{spec.name}{#if x.n > 1}×{x.n}{/if}</span
+					>{spec.name}{#if x.n > 1}{` ×${x.n}`}{/if}</span
 				>
 			{/each}
 		</div>
