@@ -184,7 +184,7 @@
 			// Each family is laid out in at most 2 rows, split as evenly as
 			// possible (4 → 2+2, 5 → 3+2, 6 → 3+3). The back row sits on the
 			// ground; the front row is placed lower (closer to the viewer).
-			const blocks = groups.map((members) => {
+			const toBlocks = (members: Omit<Building, "x" | "y">[]) => {
 				const count = members.length;
 				const perRow = count <= 2 ? count : Math.ceil(count / 2);
 				const rows = count <= 2 ? 1 : 2;
@@ -195,21 +195,37 @@
 					cells.push({ b: members[i]!, col, row });
 				}
 				return { cells, rows, width: perRow };
-			});
+			};
 
-			// Place the family blocks left to right, centered on cx.
-			const totalWidth = blocks.reduce((sum, b) => sum + b.width * spacing, 0) + (blocks.length - 1) * familyGap;
-			let x = cx - totalWidth / 2;
-			for (const block of blocks) {
-				for (const cell of block.cells) {
-					const bx = x + cell.col * spacing + spacing / 2;
-					// Row 0 (back) stays on the ground; later rows come forward
-					// (down the screen), never up into the sky.
-					const forward = cell.row * rowGap;
-					result.push({ ...cell.b, x: bx, y: surfaceY(bx) + 20 + forward });
+			// Factories form the top band; upgrades get their own band below it,
+			// so the cluster stays narrow and the two kinds never collide.
+			const factoryBlocks = groups.filter((g) => g[0]!.kind === "factory").map(toBlocks);
+			const upgradeBlocks = groups.filter((g) => g[0]!.kind === "upgrade").map(toBlocks);
+
+			// Place a band's family blocks left to right, centered on cx, with
+			// row 0 at baseRow rows below the ground line. Rows only ever come
+			// forward (down the screen), never up into the sky.
+			const placeBand = (blocks: ReturnType<typeof toBlocks>[], baseRow: number) => {
+				if (blocks.length === 0) {
+					return 0;
 				}
-				x += block.width * spacing + familyGap;
-			}
+				const totalWidth = blocks.reduce((sum, b) => sum + b.width * spacing, 0) + (blocks.length - 1) * familyGap;
+				let x = cx - totalWidth / 2;
+				let deepest = 0;
+				for (const block of blocks) {
+					deepest = Math.max(deepest, block.rows);
+					for (const cell of block.cells) {
+						const bx = x + cell.col * spacing + spacing / 2;
+						const forward = (baseRow + cell.row) * rowGap;
+						result.push({ ...cell.b, x: bx, y: surfaceY(bx) + 20 + forward });
+					}
+					x += block.width * spacing + familyGap;
+				}
+				return deepest;
+			};
+
+			const factoryDepth = placeBand(factoryBlocks, 0);
+			placeBand(upgradeBlocks, factoryDepth);
 		}
 		// SVG paints in document order: sort by y so lower (closer) buildings
 		// render on top of higher ones.
