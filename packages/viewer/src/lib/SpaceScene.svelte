@@ -202,15 +202,13 @@
 			const factoryBlocks = groups.filter((g) => g[0]!.kind === "factory").map(toBlocks);
 			const upgradeBlocks = groups.filter((g) => g[0]!.kind === "upgrade").map(toBlocks);
 
-			// Place a band's family blocks left to right, centered on cx, with
-			// row 0 at baseRow rows below the ground line. Rows only ever come
-			// forward (down the screen), never up into the sky.
-			const placeBand = (blocks: ReturnType<typeof toBlocks>[], baseRow: number) => {
-				if (blocks.length === 0) {
-					return 0;
-				}
-				const totalWidth = blocks.reduce((sum, b) => sum + b.width * spacing, 0) + (blocks.length - 1) * familyGap;
-				let x = cx - totalWidth / 2;
+			// Place a band's family blocks left to right from a given left edge,
+			// with row 0 at baseRow rows below the ground line. Rows only ever
+			// come forward (down the screen), never up into the sky.
+			const bandWidth = (blocks: ReturnType<typeof toBlocks>[]) =>
+				blocks.reduce((sum, b) => sum + b.width * spacing, 0) + (blocks.length - 1) * familyGap;
+			const placeBand = (blocks: ReturnType<typeof toBlocks>[], left: number, baseRow: number) => {
+				let x = left;
 				let deepest = 0;
 				for (const block of blocks) {
 					deepest = Math.max(deepest, block.rows);
@@ -224,8 +222,11 @@
 				return deepest;
 			};
 
-			const factoryDepth = placeBand(factoryBlocks, 0);
-			placeBand(upgradeBlocks, factoryDepth);
+			// The factory band is centered on the cluster; the upgrade band
+			// starts at the same left edge as the leftmost factory.
+			const left = cx - bandWidth(factoryBlocks.length > 0 ? factoryBlocks : upgradeBlocks) / 2;
+			const factoryDepth = placeBand(factoryBlocks, left, 0);
+			placeBand(upgradeBlocks, left, factoryDepth);
 		}
 		// SVG paints in document order: sort by y so lower (closer) buildings
 		// render on top of higher ones.
