@@ -4,6 +4,7 @@ import {
 	auctionCard,
 	bestPayment,
 	canBuyFactory,
+	countingHandSize,
 	exchangeResources,
 	handCapacity,
 	handValue,
@@ -59,9 +60,12 @@ export function chooseMove(state: GameState, seat: number): Move {
 }
 
 /**
- * Confirm the mega choice (rule 12.1, blind): take a Mega card for each group
- * whose fixed value beats the expected value of 4 fresh draws of that resource
- * (a conservative pick — it ignores the hand-capacity pressure a mega relieves).
+ * Confirm the mega choice (rule 12.1, blind). The printed mega value is below
+ * the expected value of 4 fresh draws (e.g. Mega Water 30 vs 4×7=28... close,
+ * but titanium 44 vs 40), so a mega is taken for its hand-capacity relief —
+ * one card counting as 4 instead of four singles — not for raw value. Since
+ * mega cards are unlimited, hoarding them just strains the deck; take them
+ * only when the hand is actually under pressure.
  */
 function chooseMega(state: GameState, player: PlayerState): Move {
 	const eligible = megaEligible(state, player);
@@ -72,7 +76,9 @@ function chooseMega(state: GameState, player: PlayerState): Move {
 			continue;
 		}
 		const expected = 4 * PRODUCTION_DECKS[resource as Resource].average;
-		if (mega.value >= expected) {
+		const relief = (groups as number) * 3;
+		const pressured = countingHandSize(player) + (player.pendingMega?.length ?? 0) - relief > handCapacity(player);
+		if (mega.value >= expected || pressured) {
 			take[resource as Resource] = groups as number;
 		}
 	}

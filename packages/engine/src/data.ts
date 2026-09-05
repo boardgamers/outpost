@@ -1,12 +1,10 @@
 import type { FactoryType, Kicker, Resource, Upgrade } from "./types.js";
 
 // Rules data for the 20th Anniversary edition (former "Expert Rules v1.32").
-// Sources: the official Outpost reference sheet v1.32 (costs, average values,
-// VPs, setup chart) and owner card counts reported on BGG (thread 2801038) for
-// the production deck distributions. Water, titanium, new chemicals and
-// orbital medicine distributions are confirmed card-by-card; the other decks
-// use symmetric bell distributions matching the confirmed deck sizes and the
-// official average values.
+// Sources: the official Outpost reference sheet v1.32 (averages, setup chart),
+// owner card counts reported on BGG (thread 2801038), and a physical copy —
+// every production deck, factory cost/VP and upgrade cost/VP is confirmed
+// card-by-card against the printed cards.
 
 export interface DeckSpec {
 	average: number;
@@ -15,15 +13,15 @@ export interface DeckSpec {
 }
 
 export const PRODUCTION_DECKS: Record<Resource, DeckSpec> = {
-	ore: { average: 3, distribution: { 1: 3, 2: 6, 3: 8, 4: 6, 5: 3 } },
+	ore: { average: 3, distribution: { 1: 6, 2: 8, 3: 8, 4: 8, 5: 6 } },
 	water: { average: 7, distribution: { 4: 3, 5: 5, 6: 7, 7: 9, 8: 7, 9: 5, 10: 3 } },
 	titanium: { average: 10, distribution: { 7: 5, 8: 7, 9: 9, 10: 11, 11: 9, 12: 7, 13: 5 } },
 	research: { average: 13, distribution: { 9: 2, 10: 3, 11: 4, 12: 5, 13: 6, 14: 5, 15: 4, 16: 3, 17: 2 } },
 	microbiotics: { average: 17, distribution: { 14: 1, 15: 2, 16: 3, 17: 4, 18: 3, 19: 2, 20: 1 } },
 	newChemicals: { average: 20, distribution: { 14: 2, 16: 3, 18: 4, 20: 5, 22: 4, 24: 3, 26: 2 } },
 	orbitalMedicine: { average: 30, distribution: { 20: 2, 25: 3, 30: 4, 35: 3, 40: 2 } },
-	ringOre: { average: 40, distribution: { 30: 2, 35: 2, 40: 4, 45: 2, 50: 2 } },
-	moonOre: { average: 50, distribution: { 40: 2, 45: 2, 50: 4, 55: 2, 60: 2 } },
+	ringOre: { average: 40, distribution: { 30: 1, 35: 3, 40: 4, 45: 3, 50: 1 } },
+	moonOre: { average: 50, distribution: { 40: 1, 45: 3, 50: 4, 55: 3, 60: 1 } },
 };
 
 /** Highest card value in each production deck (public rules data). */
@@ -50,14 +48,13 @@ export const CAP_EXEMPT: readonly Resource[] = ["research", "microbiotics"];
  * take 1 Mega card per group of 4 draws instead — a fixed printed value that
  * counts as 4 cards toward hand capacity. Mega cards are a separate face-up
  * pool (the shuffled decks are unaffected and reshuffle normally); a spent or
- * discarded mega returns to its pool. The pool size is the physical component
- * count — no rulebook text covers exhaustion, so an empty pool just means the
- * player takes the 4 normal draws instead.
+ * discarded mega returns to its pool. The pool is unlimited — like any
+ * component shortage, stand-ins are made if the printed cards run out.
  */
-export const MEGA_CARDS: Partial<Record<Resource, { value: number; copies: number }>> = {
-	water: { value: 30, copies: 9 },
-	titanium: { value: 44, copies: 9 },
-	newChemicals: { value: 88, copies: 9 },
+export const MEGA_CARDS: Partial<Record<Resource, { value: number }>> = {
+	water: { value: 30 },
+	titanium: { value: 44 },
+	newChemicals: { value: 88 },
 };
 
 /** Resources eligible for mega production (one mega per 4 manned factories). */
@@ -101,8 +98,8 @@ export const UPGRADE_SPECS: Record<Upgrade, UpgradeSpec> = {
 	scientists: { name: "Scientists", price: 40, vp: 2, produces: "research" },
 	orbitalLab: { name: "Orbital Lab", price: 50, vp: 3, produces: "microbiotics" },
 	robots: { name: "Robots", price: 50, vp: 3 },
-	laboratory: { name: "Laboratory", price: 100, vp: 5, freeFactory: "research" },
-	ecoplants: { name: "Ecoplants", price: 50, vp: 5 },
+	laboratory: { name: "Laboratory", price: 80, vp: 5, freeFactory: "research" },
+	ecoplants: { name: "Ecoplants", price: 30, vp: 5 },
 	outpost: { name: "Outpost", price: 100, vp: 5, freeFactory: "titanium", handCapacityBonus: 5, populationBonus: 5 },
 	spaceStation: { name: "Space Station", price: 120, vp: 10, produces: "orbitalMedicine" },
 	planetaryCruiser: { name: "Planetary Cruiser", price: 160, vp: 15, produces: "ringOre" },
@@ -122,23 +119,22 @@ export interface KickerSpec {
 }
 
 /**
- * Kicker expansion cards. Confirmed from the 2011 rulebook and BGG sources:
- * Ice Prospector 10/1, Robot Prototype 10/0, Smelter 30/1, Wily Trader 10/1,
- * Launch Facility 75/2, Merchant House 60/1, NCF Prototype 60/0, Biosphere
- * 250/25. Refinery's printed cost/VP are not documented (the rulebook has a
- * production error — its card image is missing); as the Era II analog of the
- * 10/1 Ice Prospector (mirroring Wily Trader 10/1 → Merchant House 60/1) it is
- * provisionally 60/1 — see README "Data notes".
+ * Kicker expansion cards, all confirmed against a physical copy: Ice
+ * Prospector 10/1, Robot Prototype 10/0, Smelter 15/1, Wily Trader 10/1,
+ * Launch Facility 60/2, Merchant House 15/1, NCF Prototype 60/0, Refinery
+ * 15/1, Biosphere 250/25. (The 2011 rulebook PDF has production errors — the
+ * Refinery card image is missing and Launch Facility / Merchant House list
+ * 75/2 and 60/1 — so all costs come from the printed cards.)
  */
 export const KICKER_SPECS: Record<Kicker, KickerSpec> = {
 	iceProspector: { name: "Ice Prospector", era: 1, price: 10, vp: 1 },
 	robotPrototype: { name: "Robot Prototype", era: 1, price: 10, vp: 0, freeRobot: true },
 	smelter: { name: "Smelter", era: 1, price: 15, vp: 1 },
 	wilyTrader: { name: "Wily Trader", era: 1, price: 10, vp: 1 },
-	launchFacility: { name: "Launch Facility", era: 2, price: 75, vp: 2 },
-	merchantHouse: { name: "Merchant House", era: 2, price: 60, vp: 1 },
+	launchFacility: { name: "Launch Facility", era: 2, price: 60, vp: 2 },
+	merchantHouse: { name: "Merchant House", era: 2, price: 15, vp: 1 },
 	ncfPrototype: { name: "New Chemicals Factory Prototype", era: 2, price: 60, vp: 0, freeFactory: "newChemicals" },
-	refinery: { name: "Refinery", era: 2, price: 60, vp: 1 },
+	refinery: { name: "Refinery", era: 2, price: 15, vp: 1 },
 	biosphere: { name: "Biosphere", era: 3, price: 250, vp: 25, populationBonus: 5 },
 };
 
@@ -198,7 +194,7 @@ export interface SetupRow {
 	bigThreshold: number;
 }
 
-/** Expert game setup chart (reference sheet v1.32). Player count 2 uses a die roll per type instead. */
+/** Expert game setup chart (reference sheet v1.32). The game is 2-9 players; player count 2 uses a die roll per type instead. */
 export const SETUP_CHART: Record<number, SetupRow> = {
 	2: { firstTen: 0, lastThree: 0, bigThreshold: 40 },
 	3: { firstTen: 2, lastThree: 2, bigThreshold: 35 },
@@ -208,7 +204,6 @@ export const SETUP_CHART: Record<number, SetupRow> = {
 	7: { firstTen: 5, lastThree: 5, bigThreshold: 40 },
 	8: { firstTen: 5, lastThree: 6, bigThreshold: 30 },
 	9: { firstTen: 6, lastThree: 6, bigThreshold: 35 },
-	10: { firstTen: 7, lastThree: 7, bigThreshold: 40 },
 };
 
 export const VICTORY_VP = 75;

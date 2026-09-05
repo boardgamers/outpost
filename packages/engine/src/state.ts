@@ -43,7 +43,6 @@ export function setup(players: number, options: Record<string, unknown>, seed: s
 		eraStreak10: 0,
 		decks: emptyPiles(),
 		discards: emptyPiles(),
-		megaSupply: Object.fromEntries(Object.entries(MEGA_CARDS).map(([r, m]) => [r, m.copies])),
 		kickerMarket: [],
 		kickerPiles: { 1: [], 2: [], 3: [] },
 		kickerEra: 1,
@@ -125,7 +124,7 @@ function emptyPiles(): Record<Resource, number[]> {
 }
 
 function createSupply(players: number): Record<Upgrade, number> {
-	const row = SETUP_CHART[Math.min(players, 10)];
+	const row = SETUP_CHART[players];
 	const supply = {} as Record<Upgrade, number>;
 	for (const u of FIRST_TEN) {
 		supply[u] = row?.firstTen ?? 3;
@@ -163,7 +162,7 @@ function buildDeck(state: GameState, resource: Resource): number[] {
 }
 
 export function bigThreshold(state: GameState): number {
-	return SETUP_CHART[Math.min(state.players.length, 10)]?.bigThreshold ?? 40;
+	return SETUP_CHART[state.players.length]?.bigThreshold ?? 40;
 }
 
 export function handCapacity(player: PlayerState): number {
@@ -217,14 +216,16 @@ export function handValue(player: PlayerState): number {
 
 /**
  * Mega production eligibility (rule 12.1): the Mega cards a player may elect to
- * take this round — full groups of 4 operated factories per mega resource whose
- * pool isn't empty. Only factory draws count (never upgrade freebies or Kicker
- * bonuses), and the election is blind: made before the draw values are seen.
+ * take this round — full groups of 4 operated factories per mega resource. Only
+ * factory draws count (never upgrade freebies or Kicker bonuses), and the
+ * election is blind: made before the draw values are seen.
  */
-export function megaEligible(state: GameState, player: PlayerState): Partial<Record<Resource, number>> {
+export function megaEligible(_state: GameState, player: PlayerState): Partial<Record<Resource, number>> {
 	const result: Partial<Record<Resource, number>> = {};
 	for (const [resource, groups] of Object.entries(player.megaGroups ?? {})) {
-		if ((groups ?? 0) > 0 && (state.megaSupply[resource as Resource] ?? 0) > 0) {
+		// Mega cards are unlimited (stand-ins are made if the printed pool runs
+		// out), so eligibility depends only on the groups of 4.
+		if ((groups ?? 0) > 0) {
 			result[resource as Resource] = groups;
 		}
 	}
@@ -541,16 +542,18 @@ export function computePurchaseOrder(state: GameState): number[] {
 		.map((e) => e.seat);
 }
 
-export function drawCard(state: GameState, resource: Resource): number | undefined {
-	const deck = state.decks[resource];
-	if (deck.length === 0) {
+export function drawCard(state: GameState, resource: Resource): number {
+	if (state.decks[resource].length === 0) {
 		const discard = state.discards[resource];
 		if (discard.length === 0) {
-			return undefined;
+			// Every card of the deck is held in hands: produce a stand-in at the
+			// deck's average value. It is a real card ("created on paper if
+			// needed") — spent normally and grows the deck from then on.
+			return PRODUCTION_DECKS[resource].average;
 		}
 		state.decks[resource] = shuffle(state, discard.splice(0));
 	}
-	return state.decks[resource].pop();
+	return state.decks[resource].pop() as number;
 }
 
 /** Max a player could pay for a card right now: hand value plus their discount on it (none for Kicker cards). */

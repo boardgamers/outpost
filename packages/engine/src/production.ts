@@ -17,10 +17,7 @@ export function producePlayer(state: GameState, player: PlayerState): Production
 	player.megaGroups = megaGroupsFor(player);
 	for (const factory of player.factories) {
 		if (factory.manned) {
-			const value = drawCard(state, factory.type);
-			if (value !== undefined) {
-				produced.push({ t: factory.type, v: value });
-			}
+			produced.push({ t: factory.type, v: drawCard(state, factory.type) });
 		}
 	}
 	for (const u of UPGRADES) {
@@ -29,10 +26,7 @@ export function producePlayer(state: GameState, player: PlayerState): Production
 			continue;
 		}
 		for (let i = 0; i < player.upgrades[u]; i++) {
-			const value = drawCard(state, resource);
-			if (value !== undefined) {
-				produced.push({ t: resource, v: value });
-			}
+			produced.push({ t: resource, v: drawCard(state, resource) });
 		}
 	}
 	applyKickerProduction(state, player, produced);
@@ -52,11 +46,7 @@ function applyKickerProduction(state: GameState, player: PlayerState, produced: 
 			return;
 		}
 		for (let i = 0; i < count; i++) {
-			const value = drawCard(state, resource);
-			if (value === undefined) {
-				break;
-			}
-			produced.push({ t: resource, v: value });
+			produced.push({ t: resource, v: drawCard(state, resource) });
 			// Discard the cheapest of this phase's draws of the type.
 			let worst = -1;
 			for (let j = 0; j < produced.length; j++) {
@@ -78,11 +68,7 @@ function applyKickerProduction(state: GameState, player: PlayerState, produced: 
 		const oreFactories = player.factories.filter((f) => f.type === "ore" && f.manned).length;
 		const bonus = Math.floor(oreFactories / 2) * player.kickers.smelter;
 		for (let i = 0; i < bonus; i++) {
-			const value = drawCard(state, "ore");
-			if (value === undefined) {
-				break;
-			}
-			produced.push({ t: "ore", v: value });
+			produced.push({ t: "ore", v: drawCard(state, "ore") });
 		}
 	}
 }

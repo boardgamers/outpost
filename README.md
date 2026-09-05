@@ -32,12 +32,11 @@ version Stronghold Games adopted as the base rules:
 
 ### Data notes / deviations
 
-Production card distributions and averages follow the official reference sheet v1.32 and
-owner-verified card counts (BGG thread 2801038). Water, titanium, new chemicals and orbital
-medicine decks are confirmed card-by-card; the remaining decks (ore, research, microbiotics,
-ring ore, moon ore) use symmetric bell distributions matching the confirmed deck sizes and
-official average values, since exact value splits were not available. The original edition's
-physical decks differ in a few counts (e.g. only two "4" water cards).
+Production card distributions, factory costs/VPs and upgrade costs/VPs all follow the
+physical 20th Anniversary printing, confirmed card-by-card against a physical copy
+(averages per the official reference sheet v1.32; water, titanium, new chemicals and
+orbital medicine were earlier confirmed via owner counts, BGG thread 2801038). The
+original edition's physical decks differ in a few counts (e.g. only two "4" water cards).
 
 - In-game randomness (deck shuffles, die rolls, tie-breaks) is fully deterministic from the
   game seed; BGS supplies the seed, so replays and save/load are exact.
@@ -48,13 +47,15 @@ physical decks differ in a few counts (e.g. only two "4" water cards).
   Mega Water 30, Mega Titanium 44, Mega New Chemicals 88 — that counts as 4 cards toward
   hand capacity). The election is **blind**, made before any of that round's production
   draws are revealed, and decided per group of 4; only operated factories count (never
-  upgrade freebies or Kicker bonuses). Mega cards are a separate face-up pool of 9 per
-  type; a spent or discarded mega returns to its pool. The pool size is the physical
-  component count — no rulebook text covers exhaustion, so an empty pool simply means you
-  take the normal draws instead (this is an inference, not a documented ruling).
-- Tom Lehmann's 1994 Expert Game v1.32 document lists Laboratory at 80 and Ecoplants at 30;
-  this implementation follows the 20th Anniversary printing at 100 and 50. If a physical
-  copy shows the lower values, it's a one-line change in `packages/engine/src/data.ts`.
+  upgrade freebies or Kicker bonuses). Mega cards are a separate face-up pool; a spent or
+  discarded mega returns to its pool. The pool is unlimited — like every component in the
+  game, stand-ins are made if the printed cards run out (rulebook-confirmed).
+- Component shortage: production and mega cards are unlimited. When a deck and its discard
+  pile are both empty (every card held in hands), a factory produces a stand-in card at the
+  deck's average value — a real card ("created on paper if needed") that is spent normally
+  and joins the discard pile, permanently growing that deck.
+- Laboratory (80) and Ecoplants (30) follow the physical card printing (confirmed against
+  the 20th Anniversary edition), matching Tom Lehmann's 1994 Expert Game v1.32 document.
 
 ### Kicker expansion (game option)
 
@@ -62,12 +63,12 @@ The `kicker` game option enables the Kicker expansion: a separate set of Kicker 
 (1/2/3 by player count for 2-4/5-7/8-9) filled from era piles (I → II → III). Kicker cards
 are auctioned like colony upgrades. All nine types are implemented.
 
-- Confirmed card data (2011 rulebook + BGG): Ice Prospector 10/1, Robot Prototype 10/0,
-  Smelter 15/1, Wily Trader 10/1, Launch Facility 75/2, Merchant House 60/1, New Chemicals
-  Factory Prototype 60/0, Biosphere 250/25. **Refinery's printed cost/VP are not
-  documented** — the rulebook has a production error (its card image is missing). As the
-  Era II analog of Ice Prospector (mirroring Wily Trader 10/1 → Merchant House 60/1) it is
-  provisionally 60/1, a one-line change in `packages/engine/src/data.ts` (`KICKER_SPECS`).
+- Card data confirmed against the printed cards: Ice Prospector 10/1, Robot Prototype 10/0,
+  Smelter 15/1, Wily Trader 10/1, **Launch Facility 60/2**, **Merchant House 15/1**, New
+  Chemicals Factory Prototype 60/0, **Refinery 15/1**, Biosphere 250/25. (The 2011 rulebook
+  PDF has production errors — the Refinery card image is missing and the Launch Facility /
+  Merchant House values are misprinted — which is why these had to come from a physical
+  copy.)
 - Ice Prospector / Refinery draw the extra card and discard the cheapest of the just-drawn
   cards of that type automatically (the obvious choice; no interactive pick).
 - The Era III pile holds only Biosphere (the single Era III type), per the rules.

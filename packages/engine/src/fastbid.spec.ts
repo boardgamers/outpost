@@ -21,9 +21,14 @@ function seatAfter(state: GameState, seat: number): number {
 	return order[(order.indexOf(seat) + 1) % order.length] as number;
 }
 
+/** Index of a market card with a 25 list price (Warehouse / Heavy Equipment / Nodule). */
+function price25Index(state: GameState): number {
+	return state.market.findIndex((u) => UPGRADE_SPECS[u].price === 25);
+}
+
 function open(state: GameState, bid = 25): number {
 	const opener = state.activeSeat;
-	applyMove(state, { action: "auction", marketIndex: 0, bid }, opener);
+	applyMove(state, { action: "auction", marketIndex: price25Index(state), bid }, opener);
 	return opener;
 }
 
@@ -162,7 +167,7 @@ test("fastBid: full flow replays identically, including from a stripped log", ()
 	for (const rec of roundEntry.produced) {
 		rec.cards = Array.from({ length: 6 }, () => ({ t: "research", v: 10 }) as ProductionCard);
 	}
-	const upgrade = state.market[0]!;
+	const upgrade = state.market[price25Index(state)]!;
 	const opener = open(state, 25);
 	const second = seatAfter(state, opener);
 	const third = seatAfter(state, second);
@@ -214,13 +219,13 @@ test("fastBid: a seat that provably cannot reach the list price is auto-passed o
 	const opener = state.activeSeat;
 	const weak = seatAfter(state, opener);
 	const strong = seatAfter(state, weak);
-	// market[0] is Nodule (list 25). Two ore cards max out at 10 < 25: publicly
-	// unable to reach the price, so the seat is auto-passed (bid 0).
+	// Two ore cards max out at 10 < 25 (list price): publicly unable to reach
+	// the price, so the seat is auto-passed (bid 0).
 	(state.players[weak] as PlayerState).hand = [
 		{ t: "ore", v: 4 },
 		{ t: "ore", v: 5 },
 	];
-	const info = applyMove(state, { action: "auction", marketIndex: 0, bid: 25 }, opener).log.at(-1);
+	const info = applyMove(state, { action: "auction", marketIndex: price25Index(state), bid: 25 }, opener).log.at(-1);
 	assert.equal(state.auction?.bids?.[weak], 0);
 	// The auto-pass is recorded on the opening move for replay.
 	assert.ok(info?.type === "move" && info.info?.autoPassed?.includes(weak));
@@ -232,10 +237,10 @@ test("fastBid: a mega card's printed value counts toward the public max (no fals
 	const state = fastGame();
 	const opener = state.activeSeat;
 	const holder = seatAfter(state, opener);
-	// Nodule lists at 25. A Mega Titanium is publicly worth 44 (face-up), so the
-	// seat can reach the price even though the titanium deck max is only 13.
+	// A Mega Titanium is publicly worth 44 (face-up), so the seat can reach the
+	// 25 list price even though the titanium deck max is only 13.
 	(state.players[holder] as PlayerState).hand = [{ t: "titanium", v: 44, m: true }];
-	applyMove(state, { action: "auction", marketIndex: 0, bid: 25 }, opener);
+	applyMove(state, { action: "auction", marketIndex: price25Index(state), bid: 25 }, opener);
 	// Not auto-passed: the seat is still expected to bid.
 	assert.equal(state.auction?.bids?.[holder], undefined);
 	const pending = currentPlayer(state);
@@ -249,7 +254,7 @@ test("fastBid: auto-passing everyone else resolves the auction at list price", (
 	for (const s of state.purchaseOrder.filter((x) => x !== opener)) {
 		(state.players[s] as PlayerState).hand = [{ t: "ore", v: 5 }];
 	}
-	applyMove(state, { action: "auction", marketIndex: 0, bid: 25 }, opener);
+	applyMove(state, { action: "auction", marketIndex: price25Index(state), bid: 25 }, opener);
 	// Sole bidder left: the auction resolves immediately at the list price.
 	assert.equal(state.phase, "auctionPayment");
 	assert.equal(state.auction?.highBidder, opener);
@@ -277,7 +282,7 @@ test("fastBid: auto-pass replays identically from a stripped log", () => {
 					]
 				: Array.from({ length: 6 }, () => ({ t: "research", v: 10 }) as ProductionCard);
 	}
-	applyMove(state, { action: "auction", marketIndex: 0, bid: 25 }, opener);
+	applyMove(state, { action: "auction", marketIndex: price25Index(state), bid: 25 }, opener);
 	applyMove(state, { action: "bid", amount: 30 }, strong);
 	assert.equal(state.phase, "auctionPayment");
 	// A spectator's stripped log replays to the same resolution: strong (30)

@@ -48,15 +48,12 @@ function megaGame(): GameState {
 	return state;
 }
 
-test("mega: eligibility needs 4 pending draws of a mega resource with pool copies", () => {
+test("mega: eligibility needs 4 pending draws of a mega resource", () => {
 	const state = megaGame();
 	const player = state.players[0] as PlayerState;
 	assert.deepEqual(megaEligible(state, player), { water: 1 });
 	// Ore and titanium have no group of 4.
 	assert.equal(megaEligible(state, player).titanium, undefined);
-	// An empty pool removes eligibility.
-	state.megaSupply.water = 0;
-	assert.deepEqual(megaEligible(state, player), {});
 });
 
 test("mega: ineligible players auto-confirm to singles and skip the mega phase", () => {
@@ -72,10 +69,8 @@ test("mega: ineligible players auto-confirm to singles and skip the mega phase",
 test("mega: electing a Mega card takes one fixed-value mega and keeps the rest as singles", () => {
 	const state = megaGame();
 	const player = state.players[0] as PlayerState;
-	const before = state.megaSupply.water ?? 0;
 	// Blind election: take 1 Mega Water; the other water draw and the ore stay singles.
 	applyMove(state, { action: "mega", take: { water: 1 } }, 0);
-	assert.equal(state.megaSupply.water, before - 1);
 	const megas = player.hand.filter((c) => c.m);
 	assert.equal(megas.length, 1);
 	assert.equal(megas[0]?.t, "water");
@@ -111,10 +106,28 @@ test("mega: rejects taking more Mega cards than eligible", () => {
 	assert.throws(() => applyMove(state, { action: "mega", take: { titanium: 1 } }, 0));
 });
 
-test("mega: rejects converting more groups than the pool holds", () => {
-	const state = megaGame();
-	state.megaSupply.water = 0;
-	assert.throws(() => applyMove(state, { action: "mega", take: { water: 1 } }, 0));
+test("mega: Mega cards are unlimited — the physical pool running out never blocks a conversion", () => {
+	// 9 operated water factories → 2 groups; both convert even though the
+	// printed pool holds fewer copies.
+	const state = initGame(3, {}, "mega-unlimited");
+	const player = state.players[0] as PlayerState;
+	const produced: ProductionCard[] = Array.from({ length: 9 }, () => ({ t: "water", v: 7 }));
+	const roundEntry = state.log.find((e) => e.type === "round");
+	if (roundEntry && roundEntry.type === "round") {
+		const rec = roundEntry.produced.find((r) => r.player === 0);
+		if (rec) {
+			rec.cards = produced.map((c) => ({ ...c }));
+		}
+		roundEntry.megaGroups = [{ player: 0, groups: { water: 2 } }];
+	}
+	player.hand = [];
+	player.pendingMega = produced.map((c) => ({ ...c }));
+	player.factories = Array.from({ length: 9 }, () => ({ type: "water", manned: true }));
+	player.megaGroups = { water: 2 };
+	state.phase = "mega";
+	applyMove(state, { action: "mega", take: { water: 2 } }, 0);
+	assert.equal(player.hand.filter((c) => c.m).length, 2);
+	assert.equal(player.hand.filter((c) => !c.m).length, 1);
 });
 
 test("mega: the draws a Mega card replaces return to the deck (they never happen)", () => {
@@ -136,13 +149,11 @@ test("mega: spending a mega card returns it to the pool", () => {
 	const state = megaGame();
 	const player = state.players[0] as PlayerState;
 	applyMove(state, { action: "mega", take: { water: 1 } }, 0);
-	const afterTake = state.megaSupply.water ?? 0;
 	// Force a discard of the mega card (index of the mega in hand).
 	const megaIndex = player.hand.findIndex((c) => c.m);
 	player.mustDiscard = true;
 	state.phase = "discard";
 	applyMove(state, { action: "discard", cards: [megaIndex] }, 0);
-	assert.equal(state.megaSupply.water, afterTake + 1);
 	// The mega does not enter the shuffled discard pile.
 	assert.ok(!state.discards.water.includes(MEGA_CARDS.water?.value ?? -1));
 });
@@ -196,12 +207,10 @@ test("mega: full flow replays identically, including from a stripped log", () =>
 	const replayed = replay(state);
 	const replayedHand = JSON.stringify((replayed.players[0] as PlayerState).hand);
 	assert.equal(replayedHand, liveHand);
-	assert.equal(replayed.megaSupply.water, state.megaSupply.water);
 
 	// From the perspective of seat 1 (hand hidden, mega value public).
 	const strippedReplay = replay(stripSecret(state, 1));
 	const replayMega = (strippedReplay.players[0] as PlayerState).hand.find((c) => c.m);
 	assert.equal(replayMega?.v, MEGA_CARDS.water?.value);
-	assert.equal(strippedReplay.megaSupply.water, state.megaSupply.water);
 	assert.equal(handValue(strippedReplay.players[0] as PlayerState) >= 0, true);
 });

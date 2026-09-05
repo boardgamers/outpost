@@ -271,8 +271,6 @@ export interface GameState {
 	decks: Record<Resource, number[]>;
 	/** Spent cards, face-up. */
 	discards: Record<Resource, number[]>;
-	/** Remaining mega production cards per resource (separate face-up pool). */
-	megaSupply: Partial<Record<Resource, number>>;
 	seed: string;
 	/** Number of PRNG draws consumed so far (determinism across save/load). */
 	rngCounter: number;

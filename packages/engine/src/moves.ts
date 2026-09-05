@@ -304,11 +304,9 @@ function removeCards(state: GameState, player: PlayerState, indices: number[]): 
 	const sorted = [...indices].sort((a, b) => b - a);
 	for (const i of sorted) {
 		const card = player.hand.splice(i, 1)[0] as ProductionCard;
-		if (card.m) {
-			// A spent/discarded mega returns to its face-up pool (it was never
-			// part of the shuffled deck).
-			state.megaSupply[card.t] = (state.megaSupply[card.t] ?? 0) + 1;
-		} else {
+		// A spent/discarded mega returns to its face-up pool (it was never part
+		// of the shuffled deck). The pool is unlimited, so nothing to track.
+		if (!card.m) {
 			state.discards[card.t].push(card.v);
 		}
 	}
@@ -414,7 +412,6 @@ function moveMega(state: GameState, move: Move & { action: "mega" }, seat: numbe
 		for (let g = 0; g < Math.min(count * 4, available.length); g++) {
 			consumed.add(available[g] as number);
 		}
-		state.megaSupply[resource as Resource] = (state.megaSupply[resource as Resource] ?? 0) - count;
 		for (let g = 0; g < count; g++) {
 			megas.push({ t: resource as Resource, v: mega.value, m: true });
 		}
