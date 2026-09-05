@@ -57,9 +57,10 @@ original edition's physical decks differ in a few counts (e.g. only two "4" wate
 - Laboratory (80) and Ecoplants (30) follow the physical card printing (confirmed against
   the 20th Anniversary edition), matching Tom Lehmann's 1994 Expert Game v1.32 document.
 
-### Kicker expansion (game option)
+### Kicker expansion
 
-The `kicker` game option enables the Kicker expansion: a separate set of Kicker slots
+The Kicker expansion is a native BGS expansion (`expansions: ["kicker"]` on game creation,
+mapped by the wrapper onto the internal `kicker` option): a separate set of Kicker slots
 (1/2/3 by player count for 2-4/5-7/8-9) filled from era piles (I → II → III). Kicker cards
 are auctioned like colony upgrades. All nine types are implemented.
 

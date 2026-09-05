@@ -18,12 +18,16 @@ function sortedPile(pile: Kicker[]): Kicker[] {
 
 export async function init(
 	players: number,
-	_expansions: string[],
+	expansions: string[],
 	options: Record<string, unknown>,
 	seed: string,
 	_creator?: number
 ): Promise<GameState> {
-	return initGame(players, options ?? {}, seed);
+	// The Kicker expansion is a native BGS expansion (name "kicker" on the
+	// gameinfo doc); map it onto the internal option. The options.kicker check
+	// stays for saved games created back when it was a plain checkbox option.
+	const merged = { ...(options ?? {}), ...(expansions.includes("kicker") ? { kicker: true } : {}) };
+	return initGame(players, merged, seed);
 }
 
 export async function move(data: GameState, mv: unknown, player: number): Promise<GameState> {

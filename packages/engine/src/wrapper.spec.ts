@@ -16,6 +16,16 @@ function play(state: GameState, moves: number): GameState {
 	return state;
 }
 
+test("wrapper: init maps the native kicker expansion onto the internal option", async () => {
+	const plain = await wrapper.init(3, [], {}, "wrapper-kicker");
+	assert.equal(plain.options.kicker, undefined);
+	const expanded = await wrapper.init(3, ["kicker"], {}, "wrapper-kicker");
+	assert.equal(expanded.options.kicker, true);
+	// The era piles are built only with the expansion enabled.
+	assert.ok(expanded.kickerPiles[1].length > 0);
+	assert.equal(plain.kickerPiles[1].length, 0);
+});
+
 test("wrapper: init/currentPlayer/scores/logLength contract", async () => {
 	const state = await wrapper.init(4, [], {}, "wrapper-spec");
 	assert.equal(state.players.length, 4);

@@ -166,4 +166,8 @@ curl -X PUT "https://admin.boardgamers.space/api/admin/page/outpost:rules/en" \
 
 Game-creation options (e.g. `fastBid`) are declared in the `options` array on the
 gameinfo doc (same GET/PUT flow as step 3); option values are captured on the game
-doc at creation, so editing the declaration never affects ongoing games.
+doc at creation, so editing the declaration never affects ongoing games. Expansions
+use the native BGS mechanism: declared as `expansions: [{ name, label }]` on the
+gameinfo doc, the chosen names arrive in `wrapper.init`'s `expansions: string[]`
+param and the wrapper maps `kicker` onto the internal `options.kicker` flag (also
+kept working for games created back when it was a checkbox option).
