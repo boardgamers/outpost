@@ -9,6 +9,7 @@ import {
 	handCapacity,
 	handValue,
 	hasExchange,
+	maxBid,
 	megaEligible,
 	mustAutoPassBid,
 	populationCost,
@@ -510,10 +511,9 @@ function moveAuction(
 	if (isFastBid(state)) {
 		// Sealed-bid auction: everyone bids at once, the auctioneer's opening
 		// bid is their sealed bid. Passing is itself a private bid of 0, so a
-		// weak hand is normally not revealed by skipping the player — but a seat
-		// whose PUBLIC max bid cannot even reach the list price is auto-passed:
-		// that bound uses only public card types, so it leaks nothing and simply
-		// skips bids the auction would never wait on.
+		// weak hand is normally not revealed by skipping the player — auto-passed
+		// seats are recorded in info.autoPassed and applied verbatim on replay,
+		// indistinguishable from a manual sealed pass.
 		state.auction.bids = { [seat]: bid };
 		const autoPassed = fastAutoPass(state, state.auction);
 		// Auto-passing may leave the auctioneer as the only bidder: resolve now.
@@ -654,11 +654,12 @@ function moveBidPass(state: GameState, _move: Move & { action: "bidPass" }, seat
 }
 
 /**
- * Auto-pass the seats that provably cannot reach a fast auction's list price:
- * their public max bid (each card worth its deck max — public information) is
- * below the price floor. This leaks nothing (the bound is computable from the
- * public card types) and skips bids the auction would never wait on. Returns
- * the seats passed; replay applies the recorded seats verbatim.
+ * Auto-pass the seats that cannot reach a fast auction's list price. The
+ * public bound (each card worth its deck max — public information) always
+ * applies; the true hand value is only consulted for seats that opted into
+ * autoPassBids, and both are recorded in the move's info.autoPassed and
+ * applied verbatim on replay — indistinguishable from a public-bound pass or
+ * a manual sealed pass, so the true-value check leaks nothing about the hand.
  */
 function fastAutoPass(state: GameState, auction: NonNullable<GameState["auction"]>): number[] {
 	const bids = auction.bids;
@@ -668,9 +669,19 @@ function fastAutoPass(state: GameState, auction: NonNullable<GameState["auction"
 	const price = auctionPrice(auction);
 	const seats = replayMode
 		? replayAutoPassed
-		: state.players.flatMap((p, seat) =>
-				!p.dropped && bids[seat] === undefined && publicMaxBid(state, seat, auction.upgrade) < price ? [seat] : []
-			);
+		: state.players.flatMap((p, seat) => {
+				if (p.dropped || bids[seat] !== undefined) {
+					return [];
+				}
+				if (publicMaxBid(state, seat, auction.upgrade) < price) {
+					return [seat];
+				}
+				// Optional chain: states saved before the settings field existed lack it.
+				if (p.settings?.autoPassBids === true && maxBid(state, seat, auction.upgrade) < price) {
+					return [seat];
+				}
+				return [];
+			});
 	for (const seat of seats) {
 		bids[seat] = 0;
 	}
