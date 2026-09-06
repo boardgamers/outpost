@@ -63,9 +63,10 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 					// fastBid: the resolving move carries the outcome in its info.
 					if (info?.winningBid !== undefined) {
 						const won = playerName(state, info.winner ?? entry.player);
-						return `${name} bids (sealed) — ${won} wins at ${info.winningBid === info.secondBid ? info.winningBid : Math.min((info.secondBid ?? 0) + 1, info.winningBid)}`;
+						return `${name} bids ${move.amount} (sealed) — ${won} wins at ${info.winningBid === info.secondBid ? info.winningBid : Math.min((info.secondBid ?? 0) + 1, info.winningBid)}`;
 					}
 					if (move.amount < 0) {
+						// Sealed bid still hidden (auction running).
 						return `${name} bids (sealed)` + autoPassSuffix(state, info);
 					}
 					return `${name} bids ${move.amount}` + autoPassSuffix(state, info);

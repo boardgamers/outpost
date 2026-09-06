@@ -105,19 +105,27 @@ function hideProduced(
 	entry: LogEntry,
 	viewer: number | undefined,
 	fastBid: boolean,
-	hideOwnProduction = false
+	hideOwnProduction = false,
+	sealedBidVisible = false
 ): LogEntry {
 	if (entry.type === "init") {
 		// The seed derives every deck order; it must never reach a client.
 		return { ...entry, seed: "" };
 	}
-	if (entry.type === "move" && entry.move.action === "bid" && entry.player !== viewer) {
-		// fastBid: another player's sealed bid stays hidden. Masking a
-		// sequential bid too is harmless — the amount is already public via
-		// auction.highBid for the seats it concerns.
+	if (entry.type === "move" && entry.move.action === "bid" && entry.player !== viewer && !sealedBidVisible) {
+		// fastBid: another player's sealed bid stays hidden while its auction
+		// runs; once the auction resolves every bid is revealed (even losing
+		// ones), like Powergrid. Masking a sequential bid too is harmless — the
+		// amount is already public via auction.highBid for the seats it concerns.
 		return { ...entry, move: { action: "bid", amount: -1 } };
 	}
-	if (fastBid && entry.type === "move" && entry.move.action === "auction" && entry.player !== viewer) {
+	if (
+		fastBid &&
+		!sealedBidVisible &&
+		entry.type === "move" &&
+		entry.move.action === "auction" &&
+		entry.player !== viewer
+	) {
 		// fastBid: the auctioneer's opening bid is their sealed bid — it stays
 		// hidden from the other players like any sealed bid. In a sequential
 		// auction the opening bid is the public high bid, so it is not masked.
@@ -150,6 +158,43 @@ function hideProduced(
 			cards: player === viewer && !hideOwnProduction ? cards : cards.map((c): ProductionCard => ({ t: c.t, v: -1 })),
 		})),
 	};
+}
+
+/**
+ * fastBid reveal: the log indexes whose sealed bids are public because their
+ * auction has already resolved by that point. The resolving move itself (the
+ * one carrying info.winningBid) is where the bids turn visible, so its own
+ * index is included. A stripped log is the source of truth for replays, so
+ * the reveal must be derivable from the stripped entries alone — it is: the
+ * resolution outcome (winningBid/secondBid/winner) is deliberately never
+ * masked, and auction boundaries are marked by "auction" moves.
+ */
+function revealedBidIndexes(log: LogEntry[]): Set<number> {
+	const revealed = new Set<number>();
+	// Indexes of the bid moves of the auction currently collecting sealed bids.
+	let pending: number[] = [];
+	for (let i = 0; i < log.length; i++) {
+		const entry = log[i] as LogEntry;
+		if (entry.type !== "move") {
+			continue;
+		}
+		if (entry.move.action === "auction") {
+			pending = [i];
+			continue;
+		}
+		if (entry.move.action === "bid") {
+			pending.push(i);
+		}
+		if (entry.info?.winningBid !== undefined) {
+			// The auction resolves here: every sealed bid of it is revealed.
+			for (const j of pending) {
+				revealed.add(j);
+			}
+			revealed.add(i);
+			pending = [];
+		}
+	}
+	return revealed;
 }
 
 export function stripSecret(data: GameState, player?: number): GameState {
@@ -215,11 +260,27 @@ export function stripSecret(data: GameState, player?: number): GameState {
 				),
 			};
 		}),
-		log: data.log.map((entry) =>
-			hideProduced(entry, viewer, data.options.fastBid === true, hideOwnProduction(data, viewer))
-		),
+		log: maskLog(data, viewer),
 		messages: [...data.messages],
 	};
+}
+
+/**
+ * The log as a viewer sees it: hidden values masked, resolved sealed bids
+ * revealed. `start`/`end` slice the absolute log indexes; `revealed` is always
+ * computed on the full log so a slice of a resolved auction still shows its bids.
+ */
+function maskLog(
+	data: GameState,
+	viewer: number | undefined,
+	start = 0,
+	end = data.log.length
+): (LogEntry & { simple?: string })[] {
+	const revealed = revealedBidIndexes(data.log);
+	const hideOwn = hideOwnProduction(data, viewer);
+	return data.log
+		.slice(start, end)
+		.map((entry, i) => hideProduced(entry, viewer, data.options.fastBid === true, hideOwn, revealed.has(i + start)));
 }
 
 export interface LogSliceOptions {
@@ -242,11 +303,12 @@ export function logSlice(data: GameState, options?: LogSliceOptions): LogSliceRe
 	// Each entry also carries a plain-text `simple` line: the game-server's
 	// lastMoveText probes entries for simple/message/text to show the last move
 	// in the game list, and our structured entries otherwise stringify to noise.
-	// describeLogEntry never reveals hidden values (sealed bids, exchange takes).
-	const log = data.log.slice(start, end).map((entry) => {
-		const masked = hideProduced(entry, viewer, data.options.fastBid === true, hideOwnProduction(data, viewer));
-		return { ...masked, simple: describeLogEntry(data, masked) };
-	});
+	// describeLogEntry never reveals hidden values (unresolved sealed bids,
+	// exchange takes).
+	const log = maskLog(data, viewer, start, end).map((masked) => ({
+		...masked,
+		simple: describeLogEntry(data, masked),
+	}));
 	const result: LogSliceResult = { log };
 	if (options?.end === undefined) {
 		result.availableMoves = availableMoves(data, viewer);

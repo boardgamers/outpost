@@ -4,7 +4,7 @@ import { UPGRADE_SPECS } from "./data.js";
 import { applyMove, initGame } from "./moves.js";
 import { replay } from "./replay.js";
 import { currentPlayer, stripSecret } from "../wrapper.js";
-import type { GameState, PlayerState, ProductionCard } from "./types.js";
+import type { GameState, LogEntry, PlayerState, ProductionCard } from "./types.js";
 
 function fastGame(): GameState {
 	const state = initGame(3, { fastBid: true }, "fastbid-spec");
@@ -81,6 +81,49 @@ test("fastBid: resolves when all bids are in — second-highest + 1", () => {
 	assert.equal(state.auction?.highBid, 31);
 	const entry = state.log.at(-1);
 	assert.ok(entry?.type === "move" && entry.info?.winningBid === 40 && entry.info.secondBid === 30);
+});
+
+test("fastBid: all bids are revealed after the auction resolves (even losing ones)", () => {
+	const state = fastGame();
+	const opener = open(state, 25);
+	const second = seatAfter(state, opener);
+	const third = seatAfter(state, second);
+	applyMove(state, { action: "bid", amount: 40 }, second);
+	applyMove(state, { action: "bid", amount: 30 }, third);
+	assert.equal(state.phase, "auctionPayment");
+
+	// A bystander's stripped state now carries every real bid amount in the
+	// log: the opener's 25, the winner's 40, the loser's 30.
+	const bystander = stripSecret(state, undefined);
+	const bids = bystander.log.filter(
+		(e): e is LogEntry & { type: "move" } =>
+			e.type === "move" && (e.move.action === "bid" || e.move.action === "auction")
+	);
+	const amounts = bids.map((e) =>
+		e.move.action === "bid" ? e.move.amount : e.move.action === "auction" ? e.move.bid : -1
+	);
+	assert.ok(amounts.includes(25));
+	assert.ok(amounts.includes(40));
+	assert.ok(amounts.includes(30));
+	assert.ok(!amounts.includes(-1));
+	// The resolving entry's own sealed amount is revealed too.
+	const resolving = bids.at(-1);
+	assert.ok(resolving?.type === "move" && resolving.move.action === "bid" && resolving.move.amount === 30);
+});
+
+test("fastBid: a running auction's bids stay hidden even mid-log", () => {
+	const state = fastGame();
+	const opener = open(state, 25);
+	const second = seatAfter(state, opener);
+	applyMove(state, { action: "bid", amount: 40 }, second);
+	// Auction still running (third hasn't bid): bids masked for a bystander…
+	const during = stripSecret(state, undefined);
+	const duringBid = during.log.find((e) => e.type === "move" && e.move.action === "bid" && e.player === second);
+	assert.ok(duringBid?.type === "move" && duringBid.move.action === "bid" && duringBid.move.amount === -1);
+	// …but the opener's own view keeps its own bid visible.
+	const own = stripSecret(state, second);
+	const ownBid = own.log.find((e) => e.type === "move" && e.move.action === "bid" && e.player === second);
+	assert.ok(ownBid?.type === "move" && ownBid.move.action === "bid" && ownBid.move.amount === 40);
 });
 
 test("fastBid: price is capped at the winner's own bid when second is one below", () => {

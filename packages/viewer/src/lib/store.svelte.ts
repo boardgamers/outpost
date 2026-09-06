@@ -259,6 +259,31 @@ export class ViewerStore {
 		}
 		this.rebuildDraft();
 		this.bridge.replaceLog(this.logLines);
+		this.autoPassSealedBid(state);
+	}
+
+	/**
+	 * fastBid honouring the autoPassBids setting: when my sealed bid is due and
+	 * my true hand cannot reach the list price, submit a sealed pass (bid 0).
+	 * It is indistinguishable from a manual pass, so nothing leaks — unlike an
+	 * engine-side true-value skip, which would reveal the hand is weak by its
+	 * timing. The engine's public-bound fastAutoPass already handles the
+	 * provably-unable case for everyone.
+	 */
+	private autoPassSealedBid(state: GameState): void {
+		const seat = this.playerIndex;
+		const auction = state.auction;
+		if (state.ended || this.replay.active || seat === undefined || state.phase !== "auction" || !auction?.bids) {
+			return;
+		}
+		const me = state.players[seat];
+		if (!me || me.dropped || me.settings?.autoPassBids !== true || auction.bids[seat] !== undefined) {
+			return;
+		}
+		const max = handValue(me) + (auction.upgrade ? upgradeDiscount(me, auction.upgrade) : 0);
+		if (max < auctionCard(auction).price) {
+			this.send({ action: "bidPass" });
+		}
 	}
 
 	// Re-apply the staged buys on top of the (new) live state; drop them when
