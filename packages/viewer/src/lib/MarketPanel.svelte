@@ -63,7 +63,7 @@
 		<div class="cards">
 			{#each state.market as upgrade, i (i)}
 				{@const spec = UPGRADE_SPECS[upgrade]}
-				{@const open = pick?.marketIndex === i}
+				{@const open = pick?.marketIndex === i && pick.kicker !== true}
 				{@const due = myDue(upgrade)}
 				{@const blocked = store.turnBuys.length > 0}
 				<div class="slot">
