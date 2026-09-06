@@ -237,6 +237,42 @@ test("fastBid: full flow replays identically, including from a stripped log", ()
 	assert.equal(strippedReplay.market.length, state.market.length);
 });
 
+test("fastBid: the autoPassBids setting auto-passes a weak hand on open (engine-side, recorded for replay)", () => {
+	const state = fastGame();
+	const opener = state.activeSeat;
+	const weak = seatAfter(state, opener);
+	const strong = seatAfter(state, weak);
+	// Publicly this hand could reach the 25 list price (research max 17 each),
+	// but its true value is 6 — with the setting on, the engine auto-passes the
+	// seat without any client move.
+	(state.players[weak] as PlayerState).hand = Array.from(
+		{ length: 6 },
+		() => ({ t: "research", v: 1 }) as ProductionCard
+	);
+	(state.players[weak] as PlayerState).settings.autoPassBids = true;
+	const entry = applyMove(state, { action: "auction", marketIndex: price25Index(state), bid: 25 }, opener).log.at(-1);
+	assert.equal(state.auction?.bids?.[weak], 0);
+	assert.ok(entry?.type === "move" && entry.info?.autoPassed?.includes(weak));
+	// Only the strong seat is still expected to bid.
+	assert.equal(currentPlayer(state), strong);
+	// Replay reproduces the auto-pass verbatim from the recorded info.
+	const replayed = replay(state);
+	assert.equal(replayed.auction?.bids?.[weak], 0);
+});
+
+test("fastBid: without the setting, a weak-but-publicly-able hand is not auto-passed", () => {
+	const state = fastGame();
+	const opener = state.activeSeat;
+	const weak = seatAfter(state, opener);
+	(state.players[weak] as PlayerState).hand = Array.from(
+		{ length: 6 },
+		() => ({ t: "research", v: 1 }) as ProductionCard
+	);
+	applyMove(state, { action: "auction", marketIndex: price25Index(state), bid: 25 }, opener);
+	assert.equal(state.auction?.bids?.[weak], undefined);
+	assert.ok(((currentPlayer(state) as number[]) ?? []).includes(weak));
+});
+
 test("fastBid: payment due uses the resolved price with discount", () => {
 	const state = initGame(3, { fastBid: true }, "fastbid-discount");
 	const opener = state.activeSeat;
