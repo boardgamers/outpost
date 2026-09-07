@@ -75,7 +75,18 @@
 	const pickTotal = $derived(isMe ? store.pickTotal() : 0);
 	const pickRequired = $derived(isMe ? store.pickRequired : null);
 	const pickCount = $derived(isMe ? store.cardPick.length : 0);
-	const production = $derived(productionRange(player));
+	// While I stage the manning assignment, show the production the STAGED
+	// factories would give next round — the range updates live with each toggle.
+	const production = $derived.by(() => {
+		if (!manning) {
+			return productionRange(player);
+		}
+		const staged = {
+			...player,
+			factories: player.factories.map((f, i) => ({ ...f, manned: store.manningPick.includes(i) })),
+		};
+		return productionRange(staged);
+	});
 </script>
 
 <div

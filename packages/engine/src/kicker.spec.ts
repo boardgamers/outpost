@@ -5,7 +5,7 @@ import { refillKickers } from "./market.js";
 import { applyMove, beginRound, initGame } from "./moves.js";
 import { producePlayer } from "./production.js";
 import { replay } from "./replay.js";
-import { populationMax, robotMax, upgradeDiscount, victoryPoints } from "./state.js";
+import { populationMax, productionRange, robotMax, upgradeDiscount, victoryPoints } from "./state.js";
 import { stripSecret } from "../wrapper.js";
 import { KICKERS, type GameState, type PlayerState, type ProductionCard } from "./types.js";
 
@@ -211,6 +211,30 @@ test("kicker: Smelter draws a bonus ore card per two ore factories", () => {
 	const produced = producePlayer(state, player);
 	// 4 factories + floor(4/2)=2 Smelter bonus = 6 ore cards.
 	assert.equal(produced.filter((c) => c.t === "ore").length, 6);
+});
+
+test("kicker: Smelter raises the expected production range by its bonus ore draws", () => {
+	const state = kickerGame(4);
+	const player = state.players[0] as PlayerState;
+	player.factories = [
+		{ type: "ore", manned: true },
+		{ type: "ore", manned: true },
+		{ type: "ore", manned: true },
+		{ type: "ore", manned: true },
+	];
+	const plain = productionRange(player);
+	player.kickers.smelter = 1;
+	const smelted = productionRange(player);
+	// floor(4/2) = 2 bonus ore draws: ore is 1..5, average 3.
+	assert.equal(smelted.min, plain.min + 2);
+	assert.equal(smelted.max, plain.max + 10);
+	assert.equal(smelted.avg, plain.avg + 6);
+	// Two smelter copies double the bonus; an unmanned factory doesn't count.
+	player.kickers.smelter = 2;
+	assert.equal(productionRange(player).avg, plain.avg + 12);
+	player.factories[3] = { type: "ore", manned: false };
+	// 3 manned ore: -1 ore draw (-3), smelter bonus floor(3/2)*2 = 2 draws (+6).
+	assert.equal(productionRange(player).avg, plain.avg - 3 + 6);
 });
 
 test("kicker: the face-down piles are order-masked by stripSecret, the slots stay public", () => {

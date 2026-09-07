@@ -397,6 +397,13 @@ export function productionRange(player: PlayerState): { min: number; max: number
 			}
 		}
 	}
+	// Kicker — Smelter: one extra ore draw per two operated ore factories.
+	if (player.kickers.smelter > 0) {
+		const oreFactories = player.factories.filter((f) => f.type === "ore" && f.manned).length;
+		for (let i = 0; i < Math.floor(oreFactories / 2) * player.kickers.smelter; i++) {
+			add("ore");
+		}
+	}
 	// Mega production (4 manned factories of a mega resource): the best case is
 	// the fixed mega value per group of 4, singles at deck max for the rest.
 	for (const [resource, mega] of Object.entries(MEGA_CARDS)) {
