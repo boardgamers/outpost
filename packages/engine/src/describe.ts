@@ -25,6 +25,17 @@ function autoPassSuffix(state: GameState, info: MoveInfo | undefined): string {
 	return ` — ${seats.map((s) => playerName(state, s)).join(", ")} auto-pass${seats.length === 1 ? "es" : ""} (can't reach the price)`;
 }
 
+/**
+ * fastBid keeps its moveset quiet while an auction collects sealed bids:
+ * the opening, every bid and every pass of an unresolved auction all read
+ * as a neutral "sealed auction in progress" — no amounts, no pass-vs-bid,
+ * no auto-pass names. Once the resolving move is logged the real moves are
+ * revealed (amounts, passes) by the wrapper's unmasking and described fully.
+ */
+function sealedQuiet(state: GameState): boolean {
+	return state.phase === "auction" && state.auction?.bids !== undefined;
+}
+
 export function describeLogEntry(state: GameState, entry: LogEntry): string {
 	switch (entry.type) {
 		case "init":
@@ -51,13 +62,14 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 				case "discard":
 					return `${name} discards ${info?.discarded ?? move.cards.length} card(s)`;
 				case "auction":
-					// fastBid: the opening bid is the auctioneer's sealed bid, masked to
-					// -1 for the other players — show no amount when it is hidden.
+					// fastBid: while the sealed bids are collected, the opening is
+					// neutral for everyone (even the auctioneer — the amount is
+					// sealed). After resolution the wrapper reveals the bid.
+					if (sealedQuiet(state) || move.bid < 0) {
+						return `${name} puts ${cardName(info, "an upgrade")} up for sealed auction`;
+					}
 					return (
-						(move.bid < 0
-							? `${name} puts ${cardName(info, "an upgrade")} up for auction (sealed bid)`
-							: `${name} puts ${cardName(info, "an upgrade")} up for auction at ${move.bid}`) +
-						autoPassSuffix(state, info)
+						`${name} puts ${cardName(info, "an upgrade")} up for auction at ${move.bid}` + autoPassSuffix(state, info)
 					);
 				case "bid": {
 					// fastBid: the resolving move carries the outcome in its info.
@@ -65,13 +77,20 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 						const won = playerName(state, info.winner ?? entry.player);
 						return `${name} bids ${move.amount} (sealed) — ${won} wins at ${info.winningBid === info.secondBid ? info.winningBid : Math.min((info.secondBid ?? 0) + 1, info.winningBid)}`;
 					}
-					if (move.amount < 0) {
-						// Sealed bid still hidden (auction running).
-						return `${name} bids (sealed)` + autoPassSuffix(state, info);
+					if (sealedQuiet(state) || move.amount < 0) {
+						return `${name} takes part in the sealed auction`;
 					}
 					return `${name} bids ${move.amount}` + autoPassSuffix(state, info);
 				}
 				case "bidPass":
+					// fastBid: a pass can be the resolving move — it carries the outcome.
+					if (info?.winningBid !== undefined) {
+						const won = playerName(state, info.winner ?? entry.player);
+						return `${name} passes — ${won} wins the sealed auction at ${info.winningBid === info.secondBid ? info.winningBid : Math.min((info.secondBid ?? 0) + 1, info.winningBid)}`;
+					}
+					if (sealedQuiet(state)) {
+						return `${name} takes part in the sealed auction`;
+					}
 					return `${name} passes on the auction` + autoPassSuffix(state, info);
 				case "pay":
 					return `${name} buys ${cardName(info, "the upgrade")} (paid ${info?.paid ?? 0})`;
