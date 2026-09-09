@@ -7,10 +7,12 @@
 		card: ProductionCard;
 		selected?: boolean;
 		selectable?: boolean;
+		/** Marks a card parked on a Wily Trader / Merchant House until the exchange step ends. */
+		parked?: boolean;
 		onclick?: () => void;
 	}
 
-	let { card, selected = false, selectable = false, onclick }: Props = $props();
+	let { card, selected = false, selectable = false, parked = false, onclick }: Props = $props();
 	const hidden = $derived(card.v < 0);
 	// Soft hyphens so long words wrap inside the narrow card only when needed.
 	const label = $derived(
@@ -24,11 +26,12 @@
 	class:selected
 	class:selectable
 	class:hidden
+	class:parked
 	class:mega={card.m === true}
 	disabled={!selectable}
-	title="{card.m ? 'Mega ' : ''}{RESOURCE_LABELS[card.t]}{hidden ? '' : `: ${card.v} credits`}{card.m
-		? ' (counts as 4 cards toward hand capacity)'
-		: ''}"
+	title={parked
+		? "Received in an exchange — parked on your Wily Trader / Merchant House until the exchange step ends."
+		: `${card.m ? "Mega " : ""}${RESOURCE_LABELS[card.t]}${hidden ? "" : `: ${card.v} credits`}${card.m ? " (counts as 4 cards toward hand capacity)" : ""}`}
 	{onclick}
 >
 	<span class="icon"><ResourceIcon resource={card.t} size={13} /></span>
@@ -99,6 +102,12 @@
 		background: linear-gradient(160deg, #3a4152, #262b38 65%, #1b1f29);
 		border-color: #454e63;
 		color: #8f9ab0;
+	}
+	.pcard.parked {
+		border-style: dashed;
+		border-color: color-mix(in srgb, var(--gold) 55%, #454e63);
+		opacity: 0.75;
+		cursor: help;
 	}
 	.pcard.mega {
 		border-width: 2px;

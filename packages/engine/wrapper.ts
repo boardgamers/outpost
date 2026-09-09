@@ -231,15 +231,16 @@ export function stripSecret(data: GameState, player?: number): GameState {
 				}
 			: auction;
 	// The cards parked on a Wily Trader / Merchant House this phase were taken
-	// from other players' hands; their values stay hidden from everyone but the
-	// seat that parked them (it is about to get them back).
+	// from other players' hands and sit face-down until the exchange step ends,
+	// so their values are hidden from EVERYONE while the step runs — the seat
+	// that parked them included (it only learns the value when the card lands).
 	const exchange = data.exchange;
 	const maskedExchange = exchange
 		? {
 				...exchange,
 				parked: exchange.parked.map(({ seat, card }) => ({
 					seat,
-					card: { t: card.t, v: seat === viewer || card.m ? card.v : -1, ...(card.m ? { m: true as const } : {}) },
+					card: { t: card.t, v: card.m ? card.v : -1, ...(card.m ? { m: true as const } : {}) },
 				})),
 			}
 		: exchange;

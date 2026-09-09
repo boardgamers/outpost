@@ -285,12 +285,21 @@ test("exchange: parked card values are hidden from other viewers", () => {
 	applyMove(state, { action: "exchange", card: 0, target: 1 }, 0);
 	assert.equal(state.phase, "exchange");
 	assert.equal(state.exchange?.seat, 1);
-	// Seat 2 (a bystander) must not see the parked card's value.
-	const stripped = stripSecret(state, 2);
-	const parked = stripped.exchange?.parked ?? [];
-	assert.equal(parked.length, 1);
-	assert.equal(parked[0]?.card.v, -1);
-	// The giver (seat 0) sees it.
+	// The parked card sits face-down until the exchange step ends, so NO seat —
+	// bystander (2) or the giver who parked it (0) — sees its value yet.
+	for (const seat of [0, 1, 2, undefined]) {
+		const stripped = stripSecret(state, seat);
+		const parked = stripped.exchange?.parked ?? [];
+		assert.equal(parked.length, 1);
+		assert.equal(parked[0]?.card.v, -1, `seat ${seat}`);
+	}
+	// Once the step closes (seat 1 passes) and the card lands in the giver's
+	// hand, the giver sees it in their hand.
+	applyMove(state, { action: "exchangePass" }, 1);
+	assert.equal(state.phase, "actions");
 	const ownView = stripSecret(state, 0);
-	assert.equal(ownView.exchange?.parked[0]?.card.v, 9);
+	assert.equal(
+		ownView.players[0]?.hand.some((c) => c.t === "ore" && c.v === 9),
+		true
+	);
 });

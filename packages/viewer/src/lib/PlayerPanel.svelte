@@ -71,6 +71,10 @@
 	// have picked a card to offer and this player holds a matching card.
 	const exchangeTargetable = $derived(store.myExchange && !isMe && store.exchangeTargets.includes(index));
 	const exchangeTargeted = $derived(exchangeTargetable && store.exchangeTarget === index);
+	// Cards this seat took in exchanges this step, parked face-down on their Wily
+	// Trader / Merchant House. Shown in the hand with an unknown value until the
+	// step ends and they land.
+	const parkedMine = $derived((state.exchange?.parked ?? []).filter((p) => p.seat === index).map((p) => p.card));
 	const operators = $derived(player.population + player.robots);
 	const pickTotal = $derived(isMe ? store.pickTotal() : 0);
 	const pickRequired = $derived(isMe ? store.pickRequired : null);
@@ -297,7 +301,10 @@
 					/>
 				{/if}
 			{/each}
-			{#if player.hand.length === 0}
+			{#each parkedMine as card, i (i)}
+				<ProductionCardView {card} parked />
+			{/each}
+			{#if player.hand.length === 0 && parkedMine.length === 0}
 				<span class="none">no cards</span>
 			{/if}
 		{:else}
@@ -306,6 +313,9 @@
 			{/each}
 			{#each hiddenCounts as [res, n] (res)}
 				<span class="hcount res-{res}" title="{n} {RESOURCE_LABELS[res]} card{n === 1 ? '' : 's'}">{n}</span>
+			{/each}
+			{#each parkedMine as card, i (i)}
+				<ProductionCardView {card} />
 			{/each}
 			{#if player.hand.length === 0}
 				<span class="none">no cards</span>
