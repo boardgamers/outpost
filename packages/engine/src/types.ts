@@ -189,6 +189,8 @@ export type LogEntry =
 			eraStreak10?: number;
 			/** The game era in effect this round (evaluated at the colony ship's arrival). */
 			era?: 1 | 2 | 3;
+			/** Set when the era advances with this round (drives the log delimiter). */
+			eraBegan?: 1 | 2 | 3;
 			produced: { player: number; cards: ProductionCard[] }[];
 			/** Mega-eligible groups per player this round (rule 12.1), for exact replay. */
 			megaGroups?: { player: number; groups: Partial<Record<Resource, number>> }[];

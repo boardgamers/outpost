@@ -21,7 +21,7 @@
 		{#each recent as item (item.index)}
 			{@const era = item.line.match(/^Era (II|III) begins/)?.[1]}
 			{#if era}
-				<div class="eramark">Era {era} begins</div>
+				<div class="eramark era-{era === 'II' ? 2 : 3}">Era {era} begins</div>
 				<div class="entry" class:latest={item.index === lines.length - 1}>
 					{item.line.replace(/^Era (II|III) begins — /, "")}
 				</div>
@@ -77,21 +77,24 @@
 		color: var(--text-dim);
 	}
 	.eramark {
-		font-size: 10px;
+		font-size: 11px;
 		font-weight: 800;
-		letter-spacing: 0.08em;
+		letter-spacing: 0.1em;
 		text-transform: uppercase;
-		color: var(--gold);
 		text-align: center;
-		padding: 4px 0 2px;
-		display: flex;
-		align-items: center;
-		gap: 8px;
+		padding: 5px 10px;
+		margin: 4px -12px 2px;
+		border-top: 1px solid;
+		border-bottom: 1px solid;
 	}
-	.eramark::before,
-	.eramark::after {
-		content: "";
-		flex: 1;
-		border-top: 1px solid color-mix(in srgb, var(--gold) 45%, transparent);
+	.eramark.era-2 {
+		color: #f08c48;
+		background: color-mix(in srgb, #f08c48 22%, transparent);
+		border-color: color-mix(in srgb, #f08c48 55%, transparent);
+	}
+	.eramark.era-3 {
+		color: #b48ce8;
+		background: color-mix(in srgb, #b48ce8 22%, transparent);
+		border-color: color-mix(in srgb, #b48ce8 55%, transparent);
 	}
 </style>

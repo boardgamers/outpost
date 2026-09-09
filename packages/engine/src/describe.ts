@@ -48,10 +48,9 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 			return `Game started with ${entry.players} players`;
 		case "round": {
 			const market = entry.market.map((u) => UPGRADE_SPECS[u].name).join(", ") || "empty";
-			// Era change doubles as the delimiter: era I is the opening era, so a
-			// round entry with era II/III is exactly where the new era starts.
-			const era = entry.era ?? 1;
-			const prefix = era > 1 ? `Era ${["", "I", "II", "III"][era]} begins — ` : "";
+			// eraBegan flags exactly the round the era advances; older logs lack
+			// it and simply get no delimiter.
+			const prefix = entry.eraBegan ? `Era ${["", "I", "II", "III"][entry.eraBegan]} begins — ` : "";
 			return `${prefix}Round ${entry.round}: colony ship arrives: ${market}`;
 		}
 		case "end": {

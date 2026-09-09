@@ -91,6 +91,7 @@ export function beginRound(state: GameState): void {
 	// here, at the colony ship's arrival — mid-round VP changes wait for the
 	// next ship.
 	updateEraStreaks(state);
+	const previousEra = state.era;
 	state.era = colonyEra(state);
 	refillMarket(state);
 	refillKickers(state);
@@ -115,6 +116,9 @@ export function beginRound(state: GameState): void {
 		eraStreak4: state.eraStreak4,
 		eraStreak10: state.eraStreak10,
 		era: state.era,
+		// Era I is the opening era (undefined before round 1), so this flags
+		// exactly the rounds where the era advances.
+		...(previousEra !== undefined && state.era !== previousEra ? { eraBegan: state.era } : {}),
 		produced,
 		megaGroups,
 	});
