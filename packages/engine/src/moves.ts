@@ -915,7 +915,7 @@ function moveExchange(
 			: `${player.name} trades a ${given.t} card to ${target.name} for a higher one`
 	);
 	advanceExchange(state);
-	return { exchangeTake: takeIndex, exchangeValue: taken.v };
+	return { exchangeTake: takeIndex, exchangeGiven: { t: given.t, v: given.v }, exchangeValue: taken.v };
 }
 
 function moveExchangePass(state: GameState, seat: number): MoveInfo {

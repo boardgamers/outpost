@@ -106,7 +106,8 @@ function hideProduced(
 	viewer: number | undefined,
 	fastBid: boolean,
 	hideOwnProduction = false,
-	sealedBidVisible = false
+	sealedBidVisible = false,
+	gameEnded = false
 ): LogEntry {
 	if (entry.type === "init") {
 		// The seed derives every deck order; it must never reach a client.
@@ -131,10 +132,19 @@ function hideProduced(
 		// auction the opening bid is the public high bid, so it is not masked.
 		return { ...entry, move: { ...entry.move, bid: -1 } };
 	}
-	if (entry.type === "move" && entry.move.action === "exchange" && entry.player !== viewer && entry.info) {
-		// The value of the card taken from the target stays hidden from everyone
-		// but the giver (it joins the giver's hand once the phase ends).
-		return { ...entry, info: { ...entry.info, exchangeValue: -1 } };
+	if (entry.type === "move" && entry.move.action === "exchange" && entry.info) {
+		// The cards of an exchange are shown to the two participants only, until
+		// the game ends: the returned card joins the giver's hand (hidden from
+		// others), and the offered card's value is the giver's secret to keep.
+		const participant = viewer !== undefined && (viewer === entry.player || viewer === entry.move.target);
+		if (!participant && !gameEnded) {
+			const info = { ...entry.info, exchangeValue: -1 };
+			if (info.exchangeGiven) {
+				info.exchangeGiven = { ...info.exchangeGiven, v: -1 };
+			}
+			return { ...entry, info };
+		}
+		return entry;
 	}
 	if (entry.type !== "round") {
 		return entry;
@@ -280,7 +290,9 @@ function maskLog(
 	const hideOwn = hideOwnProduction(data, viewer);
 	return data.log
 		.slice(start, end)
-		.map((entry, i) => hideProduced(entry, viewer, data.options.fastBid === true, hideOwn, revealed.has(i + start)));
+		.map((entry, i) =>
+			hideProduced(entry, viewer, data.options.fastBid === true, hideOwn, revealed.has(i + start), data.ended)
+		);
 }
 
 export interface LogSliceOptions {

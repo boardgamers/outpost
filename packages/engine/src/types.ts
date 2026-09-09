@@ -225,10 +225,15 @@ export interface MoveInfo {
 	 * log replays verbatim (the target's card values are hidden, so which card
 	 * they hand back cannot be recomputed). `exchangeTake` is the index into
 	 * the target's hand of the card they returned, or -1 when they had nothing
-	 * higher and returned the given card. `exchangeValue` is the returned
-	 * card's value (for the log description; -1 keeps it hidden).
+	 * higher and returned the given card. `exchangeGiven` is the offered card;
+	 * its value is no longer secret once offered (it leaves the giver's hand
+	 * for good — it either goes to the target or bounces back from the parked
+	 * cards at the same value), so it is logged verbatim. `exchangeValue` is
+	 * the returned card's value (-1 keeps it hidden from non-participants
+	 * until the game ends).
 	 */
 	exchangeTake?: number;
+	exchangeGiven?: { t: Resource; v: number };
 	exchangeValue?: number;
 }
 

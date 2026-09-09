@@ -4,7 +4,7 @@ import { moveAI } from "./ai.js";
 import { applyMove, enterMegaPhase, initGame } from "./moves.js";
 import { replay } from "./replay.js";
 import { availableMoves, exchangeResources, hasExchange, scores } from "./state.js";
-import { currentPlayer, stripSecret } from "../wrapper.js";
+import { currentPlayer, logSlice, stripSecret } from "../wrapper.js";
 import type { GameState, PlayerState, ProductionCard } from "./types.js";
 
 function kickerGame(players = 3, seed = "exchange-spec"): GameState {
@@ -88,6 +88,37 @@ test("exchange: a higher card is traded back and reaches the giver", () => {
 	if (info?.type === "move") {
 		assert.equal(info.info?.exchangeTake !== undefined, true);
 	}
+});
+
+test("exchange: the cards are shown to the two participants, hidden from others until the game ends", () => {
+	const state = kickerGame();
+	toExchange(state);
+	// Seat 0 gives ore 5 to seat 1, who returns ore 9.
+	applyMove(state, { action: "exchange", card: 0, target: 1 }, 0);
+	const entry = state.log.at(-1);
+	assert.ok(entry?.type === "move" && entry.info?.exchangeGiven?.v === 5 && entry.info.exchangeValue === 9);
+
+	// Participants (giver 0, target 1) see both values in the log text.
+	for (const seat of [0, 1]) {
+		const line = logSlice(state, { player: seat }).log.at(-1)?.simple ?? "";
+		assert.ok(line.includes("Ore 5"), `${seat}: ${line}`);
+		assert.ok(line.includes("Ore 9"), `${seat}: ${line}`);
+	}
+	// A bystander gets the neutral text with no values.
+	const other = logSlice(state, { player: 2 }).log.at(-1)?.simple ?? "";
+	assert.ok(!other.includes("5") && !other.includes("9"), other);
+	assert.ok(other.includes("a card"), other);
+
+	// Same for a spectator and for stripSecret's log.
+	const spectator = stripSecret(state, undefined).log.at(-1);
+	assert.ok(
+		spectator?.type === "move" && spectator.info?.exchangeGiven?.v === -1 && spectator.info.exchangeValue === -1
+	);
+
+	// Once the game ends, everyone sees the cards.
+	state.ended = true;
+	const final = logSlice(state, { player: 2 }).log.at(-1)?.simple ?? "";
+	assert.ok(final.includes("Ore 5") && final.includes("Ore 9"), final);
 });
 
 test("exchange: a taken card stays parked and untargetable while the phase runs", () => {

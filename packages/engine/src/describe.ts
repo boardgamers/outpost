@@ -16,6 +16,12 @@ function playerName(state: GameState, seat: number): string {
 	return state.players[seat]?.name ?? `Player ${seat + 1}`;
 }
 
+/** Display name of a production resource key (ore → Ore, newChemicals → New Chemicals). */
+function resourceName(t: string): string {
+	const spaced = t.replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase();
+	return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
 /** Suffix naming the seats an auction auto-passed (they provably couldn't bid). */
 function autoPassSuffix(state: GameState, info: MoveInfo | undefined): string {
 	const seats = info?.autoPassed;
@@ -100,9 +106,17 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 					return `${name} buys ${cardName(info, "the upgrade")} (paid ${info?.paid ?? 0})`;
 				case "exchange": {
 					const target = playerName(state, move.target);
+					// Card values are masked to -1 for non-participants until the
+					// game ends (the wrapper hides them); -1 keeps the neutral text.
+					const given = info?.exchangeGiven;
+					const givenText = given && given.v >= 0 ? `${resourceName(given.t)} ${given.v}` : "a card";
+					const backText =
+						(info?.exchangeValue ?? -1) >= 0
+							? ` for ${given ? resourceName(given.t) : ""} ${info?.exchangeValue}`
+							: " for a higher one";
 					return info?.exchangeTake === -1
-						? `${name} offers a card to ${target}, who has nothing higher to trade back`
-						: `${name} trades a card with ${target} for a higher one`;
+						? `${name} offers ${givenText} to ${target}, who has nothing higher to trade back`
+						: `${name} trades ${givenText} with ${target}${backText}`;
 				}
 				case "exchangePass":
 					return `${name} passes on the exchange`;
