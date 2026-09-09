@@ -42,7 +42,11 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 			return `Game started with ${entry.players} players`;
 		case "round": {
 			const market = entry.market.map((u) => UPGRADE_SPECS[u].name).join(", ") || "empty";
-			return `Round ${entry.round}: colony ship arrives: ${market}`;
+			// Era change doubles as the delimiter: era I is the opening era, so a
+			// round entry with era II/III is exactly where the new era starts.
+			const era = entry.era ?? 1;
+			const prefix = era > 1 ? `Era ${["", "I", "II", "III"][era]} begins — ` : "";
+			return `${prefix}Round ${entry.round}: colony ship arrives: ${market}`;
 		}
 		case "end": {
 			const scores = entry.scores.map((vp, seat) => `${playerName(state, seat)} ${vp} VP`).join(", ");
