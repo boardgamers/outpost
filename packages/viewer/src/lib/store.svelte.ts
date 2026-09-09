@@ -780,6 +780,34 @@ export class ViewerStore {
 		this.suggestPayment(10);
 	}
 
+	/**
+	 * How many copies of a factory the hand can pay for at once: a card pays
+	 * for a single copy (its overpay is lost), so this is the number of groups
+	 * the cards partition into, each reaching the cost. Greedy by descending
+	 * value — fill a group from the top, close it, start the next.
+	 */
+	private maxFactoryCopies(factory: FactoryType): number {
+		const me = this.me;
+		if (!me) {
+			return 1;
+		}
+		const cost = FACTORIES[factory].cost;
+		const values = me.hand
+			.map((c) => c.v)
+			.filter((v) => v >= 0)
+			.sort((a, b) => b - a);
+		let groups = 0;
+		let total = 0;
+		for (const v of values) {
+			total += v;
+			if (total >= cost) {
+				groups++;
+				total = 0;
+			}
+		}
+		return groups;
+	}
+
 	bumpPendingCount(delta: number): void {
 		const me = this.me;
 		const pending = this.pending;
@@ -803,7 +831,14 @@ export class ViewerStore {
 		if (pending.kind === "factory" && FACTORIES[pending.factory].needsResearchCard) {
 			cap = Math.min(cap, me.hand.filter((c) => c.t === "research").length);
 		}
-		const affordable = Math.max(1, Math.floor(this.myHandValue / unit));
+		// One payment per copy, and a card pays for a single copy — a big card's
+		// leftover is lost as overpay, not spread across factories. So the real
+		// cap is how many copies the hand can cover by PARTITIONING its cards
+		// (each group must reach the cost), not floor(handValue / cost).
+		const affordable =
+			pending.kind === "factory"
+				? Math.max(1, this.maxFactoryCopies(pending.factory))
+				: Math.max(1, Math.floor(this.myHandValue / unit));
 		const max = Math.max(1, Math.min(cap, affordable));
 		const count = Math.min(max, Math.max(1, pending.count + delta));
 		this.pending = { ...pending, count, cost: count * unit };
