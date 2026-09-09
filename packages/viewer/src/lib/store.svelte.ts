@@ -780,34 +780,6 @@ export class ViewerStore {
 		this.suggestPayment(10);
 	}
 
-	/**
-	 * How many copies of a factory the hand can pay for at once: a card pays
-	 * for a single copy (its overpay is lost), so this is the number of groups
-	 * the cards partition into, each reaching the cost. Greedy by descending
-	 * value — fill a group from the top, close it, start the next.
-	 */
-	private maxFactoryCopies(factory: FactoryType): number {
-		const me = this.me;
-		if (!me) {
-			return 1;
-		}
-		const cost = FACTORIES[factory].cost;
-		const values = me.hand
-			.map((c) => c.v)
-			.filter((v) => v >= 0)
-			.sort((a, b) => b - a);
-		let groups = 0;
-		let total = 0;
-		for (const v of values) {
-			total += v;
-			if (total >= cost) {
-				groups++;
-				total = 0;
-			}
-		}
-		return groups;
-	}
-
 	bumpPendingCount(delta: number): void {
 		const me = this.me;
 		const pending = this.pending;
@@ -831,14 +803,9 @@ export class ViewerStore {
 		if (pending.kind === "factory" && FACTORIES[pending.factory].needsResearchCard) {
 			cap = Math.min(cap, me.hand.filter((c) => c.t === "research").length);
 		}
-		// One payment per copy, and a card pays for a single copy — a big card's
-		// leftover is lost as overpay, not spread across factories. So the real
-		// cap is how many copies the hand can cover by PARTITIONING its cards
-		// (each group must reach the cost), not floor(handValue / cost).
-		const affordable =
-			pending.kind === "factory"
-				? Math.max(1, this.maxFactoryCopies(pending.factory))
-				: Math.max(1, Math.floor(this.myHandValue / unit));
+		// One payment buys `count` copies at once, like colonists and robots — a
+		// big card's value covers count × cost and the overpay is lost.
+		const affordable = Math.max(1, Math.floor(this.myHandValue / unit));
 		const max = Math.max(1, Math.min(cap, affordable));
 		const count = Math.min(max, Math.max(1, pending.count + delta));
 		this.pending = { ...pending, count, cost: count * unit };
@@ -892,57 +859,17 @@ export class ViewerStore {
 		try {
 			const clone = JSON.parse(JSON.stringify(base)) as GameState;
 			const player = clone.players[seat] as PlayerState;
-			// Card indices are positional into the hand, which shrinks with every
-			// spend. Resolve each step against the evolving clone: match the
-			// picked cards by identity, split them into one paying group per copy
-			// (each step must clear the factory cost on its own), then translate
-			// to fresh positional indices. The resolved steps are exactly what is
-			// sent to the server and replayed.
-			const resolved: TurnBuy[] = [];
-			if (pending.kind === "factory") {
-				const picked = cards
-					.map((i) => base.players[seat]?.hand[i])
-					.filter((c): c is PlayerState["hand"][number] => !!c)
-					.sort((a, b) => b.v - a.v);
-				// Greedy: each step takes the highest-value picked cards up to cost.
-				let pool = [...picked];
-				for (let step = 0; step < pending.count; step++) {
-					const group: typeof picked = [];
-					let total = 0;
-					const rest: typeof picked = [];
-					for (const x of pool) {
-						if (total < pending.cost) {
-							group.push(x);
-							total += x.v;
-						} else {
-							rest.push(x);
-						}
-					}
-					pool = rest;
-					const indices: number[] = [];
-					const used = new Set<number>();
-					for (const x of group) {
-						const at = player.hand.findIndex((c, j) => !used.has(j) && c.t === x.t && c.v === x.v && c.m === x.m);
-						if (at < 0) {
-							throw new Error("picked card not in hand");
-						}
-						used.add(at);
-						indices.push(at);
-					}
-					const buy: TurnBuy = { buy: "factory", factory: pending.factory, cards: indices };
-					applyTurnBuy(clone, player, buy);
-					resolved.push(buy);
-				}
-			} else {
-				const buy: TurnBuy =
-					pending.kind === "population"
+			// One buy step per kind, with a count: "buy 4 ore factories" is a
+			// single payment, like colonists and robots.
+			const buy: TurnBuy =
+				pending.kind === "factory"
+					? { buy: "factory", factory: pending.factory, count: pending.count, cards }
+					: pending.kind === "population"
 						? { buy: "population", count: pending.count, cards }
 						: { buy: "robots", count: pending.count, cards };
-				applyTurnBuy(clone, player, buy);
-				resolved.push(buy);
-			}
+			applyTurnBuy(clone, player, buy);
 			this.draft = clone;
-			this.turnBuys = [...this.turnBuys, ...resolved];
+			this.turnBuys = [...this.turnBuys, buy];
 		} catch {
 			return;
 		}

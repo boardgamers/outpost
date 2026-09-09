@@ -57,7 +57,13 @@ function buyArray(value: unknown): TurnBuy[] {
 				if (typeof factory !== "string" || !FACTORY_TYPES.includes(factory as FactoryType)) {
 					fail("unknown factory type");
 				}
-				return { buy: "factory", factory: factory as FactoryType, cards: intArray(entry.cards, "cards") };
+				const count = entry.count === undefined ? undefined : int(entry.count, "count", 1, 100);
+				return {
+					buy: "factory",
+					factory: factory as FactoryType,
+					...(count !== undefined ? { count } : {}),
+					cards: intArray(entry.cards, "cards"),
+				};
 			}
 			case "population":
 				return { buy: "population", count: int(entry.count, "count", 1, 100), cards: intArray(entry.cards, "cards") };

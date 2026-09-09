@@ -149,7 +149,7 @@ export interface AuctionState {
  * as it stands when the step applies (earlier steps have removed their cards).
  */
 export type TurnBuy =
-	| { buy: "factory"; factory: FactoryType; cards: number[] }
+	| { buy: "factory"; factory: FactoryType; count?: number; cards: number[] }
 	| { buy: "population"; count: number; cards: number[] }
 	| { buy: "robots"; count: number; cards: number[] };
 

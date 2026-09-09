@@ -122,8 +122,10 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 				case "endTurn": {
 					const buys = (move.buys ?? []).map((buy) => {
 						switch (buy.buy) {
-							case "factory":
-								return `builds a ${FACTORIES[buy.factory] ? buy.factory : "?"} factory`;
+							case "factory": {
+								const count = buy.count ?? 1;
+								return `builds ${count === 1 ? "a" : count} ${FACTORIES[buy.factory] ? buy.factory : "?"} factor${count === 1 ? "y" : "ies"}`;
+							}
 							case "population":
 								return `recruits ${buy.count} colonist(s)`;
 							case "robots":

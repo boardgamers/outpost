@@ -936,12 +936,24 @@ export function applyTurnBuy(state: GameState, player: PlayerState, buy: TurnBuy
 			if (!canBuyFactory(player, buy.factory)) {
 				err(`cannot build ${buy.factory} factories`);
 			}
-			const indices = sanitizeIndices(buy.cards, player.hand.length, "buy factory");
-			if (spec.needsResearchCard && !indices.some((i) => player.hand[i]?.t === "research")) {
-				err("buying a New Chemicals factory requires spending a research card");
+			// Like colonists/robots: one payment buys `count` copies (default 1).
+			const count = buy.count ?? 1;
+			if (!Number.isInteger(count) || count < 1) {
+				err("invalid factory count");
 			}
-			const paid = spendCards(state, player, indices, spec.cost);
-			player.factories.push({ type: buy.factory, manned: false });
+			const indices = sanitizeIndices(buy.cards, player.hand.length, "buy factory");
+			if (spec.needsResearchCard) {
+				const research = indices.filter((i) => player.hand[i]?.t === "research").length;
+				if (research < count) {
+					err(
+						`buying ${count} New Chemicals factor${count === 1 ? "y requires" : "ies requires"} spending ${count === 1 ? "a" : count} research card${count === 1 ? "" : "s"}`
+					);
+				}
+			}
+			const paid = spendCards(state, player, indices, spec.cost * count);
+			for (let i = 0; i < count; i++) {
+				player.factories.push({ type: buy.factory, manned: false });
+			}
 			return paid;
 		}
 		case "population": {
