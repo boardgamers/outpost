@@ -44,7 +44,7 @@ export interface ReplayState {
 }
 
 export type PendingKind =
-	| { kind: "factory"; factory: FactoryType; cost: number }
+	| { kind: "factory"; factory: FactoryType; count: number; cost: number }
 	| { kind: "population"; count: number; cost: number }
 	| { kind: "robots"; count: number; cost: number };
 
@@ -749,7 +749,7 @@ export class ViewerStore {
 			return;
 		}
 		this.cancel();
-		this.pending = { kind: "factory", factory, cost: FACTORIES[factory].cost };
+		this.pending = { kind: "factory", factory, count: 1, cost: FACTORIES[factory].cost };
 		this.suggestPayment(FACTORIES[factory].cost, FACTORIES[factory].needsResearchCard === true);
 	}
 
@@ -783,16 +783,34 @@ export class ViewerStore {
 	bumpPendingCount(delta: number): void {
 		const me = this.me;
 		const pending = this.pending;
-		if (!me || !pending || pending.kind === "factory") {
+		if (!me || !pending) {
 			return;
 		}
-		const unit = pending.kind === "population" ? populationCost(me) : 10;
-		const cap = pending.kind === "population" ? populationMax(me) - me.population : robotMax(me) - me.robots;
+		// Factories have no ownership cap — the only limits are the wallet and,
+		// for New Chemicals, one research card per factory.
+		const unit =
+			pending.kind === "factory"
+				? FACTORIES[pending.factory].cost
+				: pending.kind === "population"
+					? populationCost(me)
+					: 10;
+		let cap =
+			pending.kind === "population"
+				? populationMax(me) - me.population
+				: pending.kind === "robots"
+					? robotMax(me) - me.robots
+					: Number.MAX_SAFE_INTEGER;
+		if (pending.kind === "factory" && FACTORIES[pending.factory].needsResearchCard) {
+			cap = Math.min(cap, me.hand.filter((c) => c.t === "research").length);
+		}
 		const affordable = Math.max(1, Math.floor(this.myHandValue / unit));
 		const max = Math.max(1, Math.min(cap, affordable));
 		const count = Math.min(max, Math.max(1, pending.count + delta));
 		this.pending = { ...pending, count, cost: count * unit };
-		this.suggestPayment(count * unit);
+		this.suggestPayment(
+			count * unit,
+			pending.kind === "factory" && FACTORIES[pending.factory].needsResearchCard === true
+		);
 	}
 
 	pendingValid(): boolean {
@@ -805,7 +823,8 @@ export class ViewerStore {
 			return false;
 		}
 		if (pending.kind === "factory" && FACTORIES[pending.factory].needsResearchCard) {
-			return this.cardPick.some((i) => me.hand[i]?.t === "research");
+			const research = this.cardPick.filter((i) => me.hand[i]?.t === "research").length;
+			return research >= pending.count;
 		}
 		return true;
 	}
@@ -826,25 +845,69 @@ export class ViewerStore {
 	// applies the steps in order.
 	confirmPending(): void {
 		const pending = this.pending;
-		if (!pending || !this.pendingValid() || this.playerIndex === undefined) {
+		const seat = this.playerIndex;
+		if (!pending || !this.pendingValid() || seat === undefined) {
 			return;
 		}
 		const cards = this.cardPick;
-		const buy: TurnBuy =
-			pending.kind === "factory"
-				? { buy: "factory", factory: pending.factory, cards }
-				: pending.kind === "population"
-					? { buy: "population", count: pending.count, cards }
-					: { buy: "robots", count: pending.count, cards };
 		const base = this.draft ?? this.liveState;
 		if (!base) {
 			return;
 		}
 		try {
 			const clone = JSON.parse(JSON.stringify(base)) as GameState;
-			applyTurnBuy(clone, clone.players[this.playerIndex] as PlayerState, buy);
+			const player = clone.players[seat] as PlayerState;
+			// Card indices are positional into the hand, which shrinks with every
+			// spend. Resolve each step against the evolving clone: match the
+			// picked cards by identity, split them into one paying group per copy
+			// (each step must clear the factory cost on its own), then translate
+			// to fresh positional indices. The resolved steps are exactly what is
+			// sent to the server and replayed.
+			const resolved: TurnBuy[] = [];
+			if (pending.kind === "factory") {
+				const picked = cards
+					.map((i) => base.players[seat]?.hand[i])
+					.filter((c): c is PlayerState["hand"][number] => !!c)
+					.sort((a, b) => b.v - a.v);
+				// Greedy: each step takes the highest-value picked cards up to cost.
+				let pool = [...picked];
+				for (let step = 0; step < pending.count; step++) {
+					const group: typeof picked = [];
+					let total = 0;
+					const rest: typeof picked = [];
+					for (const x of pool) {
+						if (total < pending.cost) {
+							group.push(x);
+							total += x.v;
+						} else {
+							rest.push(x);
+						}
+					}
+					pool = rest;
+					const indices: number[] = [];
+					const used = new Set<number>();
+					for (const x of group) {
+						const at = player.hand.findIndex((c, j) => !used.has(j) && c.t === x.t && c.v === x.v && c.m === x.m);
+						if (at < 0) {
+							throw new Error("picked card not in hand");
+						}
+						used.add(at);
+						indices.push(at);
+					}
+					const buy: TurnBuy = { buy: "factory", factory: pending.factory, cards: indices };
+					applyTurnBuy(clone, player, buy);
+					resolved.push(buy);
+				}
+			} else {
+				const buy: TurnBuy =
+					pending.kind === "population"
+						? { buy: "population", count: pending.count, cards }
+						: { buy: "robots", count: pending.count, cards };
+				applyTurnBuy(clone, player, buy);
+				resolved.push(buy);
+			}
 			this.draft = clone;
-			this.turnBuys = [...this.turnBuys, buy];
+			this.turnBuys = [...this.turnBuys, ...resolved];
 		} catch {
 			return;
 		}

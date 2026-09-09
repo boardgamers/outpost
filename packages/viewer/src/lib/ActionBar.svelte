@@ -190,9 +190,10 @@
 				<div class="flow">
 					<span class="hint">
 						{#if pending.kind === "factory"}
-							Building a <strong>{RESOURCE_LABELS[pending.factory]}</strong> factory (produces ◈ {MIN_CARD_VALUE[
+							Building <strong>{pending.count}</strong> <strong>{RESOURCE_LABELS[pending.factory]}</strong>
+							factor{pending.count === 1 ? "y" : "ies"} (produces ◈ {MIN_CARD_VALUE[pending.factory]}–{MAX_CARD_VALUE[
 								pending.factory
-							]}–{MAX_CARD_VALUE[pending.factory]} per round when manned):
+							]} per round when manned):
 						{:else if pending.kind === "population"}
 							Recruiting <strong>{pending.count}</strong> colonist{pending.count === 1 ? "" : "s"}:
 						{:else}
@@ -200,10 +201,14 @@
 						{/if}
 						selected <strong>◈ {total}</strong> / ◈ {pending.cost}.
 						{#if needsResearch && !hasResearch}
-							<span class="warn">Payment must include a research card.</span>
+							<span class="warn"
+								>Payment must include a research card{pending.kind === "factory" && pending.count > 1
+									? ` per factory (◈ ${pending.count} research)`
+									: ""}.</span
+							>
 						{/if}
 					</span>
-					{#if pending.kind === "population" || pending.kind === "robots"}
+					{#if pending.kind === "factory" || pending.kind === "population" || pending.kind === "robots"}
 						<button onclick={() => store.bumpPendingCount(-1)} disabled={pending.count <= 1}>−</button>
 						<button onclick={() => store.bumpPendingCount(1)}>+1</button>
 					{/if}
