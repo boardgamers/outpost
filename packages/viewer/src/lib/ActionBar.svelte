@@ -50,8 +50,14 @@
 				const seats = s.players.flatMap((p, i) => (p.mustDiscard ? [i] : []));
 				return `Waiting for ${seats.map(name).join(", ")} to discard…`;
 			}
-			case "exchange":
-				return `Wily Trader / Merchant House: waiting for ${name(s.exchange?.seat)} to trade…`;
+			case "exchange": {
+				const mySeat = store.playerIndex;
+				const parkedMine = mySeat !== undefined && (s.exchange?.parked.some((p) => p.seat === mySeat) ?? false);
+				const note = parkedMine
+					? " Your traded card is gone to them; the card you're owed is parked on your upgrade and returns to your hand when the exchange step ends."
+					: "";
+				return `Wily Trader / Merchant House: waiting for ${name(s.exchange?.seat)} to trade…${note}`;
+			}
 			case "actions":
 				return `Waiting for ${name(s.activeSeat)} to take their turn…`;
 			case "auction": {

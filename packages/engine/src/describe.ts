@@ -105,8 +105,11 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 					return `${name} buys ${cardName(info, "the upgrade")} (paid ${info?.paid ?? 0})`;
 				case "exchange": {
 					const target = playerName(state, move.target);
-					// Card values are masked to -1 for non-participants until the
-					// game ends (the wrapper hides them); -1 keeps the neutral text.
+					// The outcome is known the moment the exchange is offered (the
+					// target hands back their lowest-higher card, or returns the
+					// given card), so trade/decline shows at once. What stays
+					// hidden until the exchange step ends is the received card's
+					// VALUE: it is parked on the upgrade. -1 keeps neutral text.
 					const given = info?.exchangeGiven;
 					const givenText = given && given.v >= 0 ? `${resourceName(given.t)} ${given.v}` : "a card";
 					const backText =

@@ -107,7 +107,8 @@ function hideProduced(
 	fastBid: boolean,
 	hideOwnProduction = false,
 	sealedBidVisible = false,
-	gameEnded = false
+	gameEnded = false,
+	exchangeOngoing = false
 ): LogEntry {
 	if (entry.type === "init") {
 		// The seed derives every deck order; it must never reach a client.
@@ -133,10 +134,19 @@ function hideProduced(
 		return { ...entry, move: { ...entry.move, bid: -1 } };
 	}
 	if (entry.type === "move" && entry.move.action === "exchange" && entry.info) {
-		// The cards of an exchange are shown to the two participants only, until
-		// the game ends: the returned card joins the giver's hand (hidden from
-		// others), and the offered card's value is the giver's secret to keep.
+		// The received card is parked on the Wily Trader / Merchant House until
+		// the exchange step ends, so its value stays hidden from everyone while
+		// the step runs. The offered card's value and the received value are
+		// additionally the two participants' secret from the rest of the table
+		// until the game ends.
 		const participant = viewer !== undefined && (viewer === entry.player || viewer === entry.move.target);
+		if (exchangeOngoing) {
+			const info = { ...entry.info, exchangeValue: -1 };
+			if (!participant && !gameEnded && info.exchangeGiven) {
+				info.exchangeGiven = { ...info.exchangeGiven, v: -1 };
+			}
+			return { ...entry, info };
+		}
 		if (!participant && !gameEnded) {
 			const info = { ...entry.info, exchangeValue: -1 };
 			if (info.exchangeGiven) {
@@ -288,10 +298,21 @@ function maskLog(
 ): (LogEntry & { simple?: string })[] {
 	const revealed = revealedBidIndexes(data.log);
 	const hideOwn = hideOwnProduction(data, viewer);
+	// An exchange's received card is parked on the upgrade until the exchange
+	// step (end of the discard phase) closes, i.e. while data.exchange is set.
+	const exchangeOngoing = data.exchange != null && !data.ended;
 	return data.log
 		.slice(start, end)
 		.map((entry, i) =>
-			hideProduced(entry, viewer, data.options.fastBid === true, hideOwn, revealed.has(i + start), data.ended)
+			hideProduced(
+				entry,
+				viewer,
+				data.options.fastBid === true,
+				hideOwn,
+				revealed.has(i + start),
+				data.ended,
+				exchangeOngoing
+			)
 		);
 }
 

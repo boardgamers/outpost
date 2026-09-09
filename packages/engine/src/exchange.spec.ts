@@ -149,6 +149,49 @@ test("exchange: a taken card stays parked and untargetable while the phase runs"
 	);
 });
 
+test("exchange: the received card's value is masked from everyone until the exchange step ends", () => {
+	const state = kickerGame();
+	toExchange(state);
+	// Two owners, so the phase stays open after seat 0's trade (seat 1 can still
+	// trade with seat 2). Seat 0 takes seat 1's ore 9, parked on the Wily Trader.
+	(state.players[1] as PlayerState).kickers.wilyTrader = 1;
+	(state.players[2] as PlayerState).hand.push({ t: "ore", v: 7 });
+	enterMegaPhase(state);
+	applyMove(state, { action: "exchange", card: 0, target: 1 }, 0);
+	assert.equal(state.phase, "exchange");
+	// The index of seat 0's exchange entry (the AI may already have acted after).
+	const exchangeIdx = state.log.findIndex((e) => e.type === "move" && e.player === 0 && e.move.action === "exchange");
+	assert.ok(exchangeIdx >= 0);
+
+	// While the step runs, NO seat — not even the participants — sees the ore 9.
+	// The participants still see the offered ore 5; the bystander and a
+	// spectator get the fully neutral text.
+	const lineAt = (seat: number | undefined, i: number) =>
+		logSlice(state, { player: seat, start: i, end: i + 1 }).log[0]?.simple ?? "";
+	for (const seat of [0, 1]) {
+		const line = lineAt(seat, exchangeIdx);
+		assert.ok(line.includes("Ore 5"), `${seat}: ${line}`);
+		assert.ok(!line.includes("Ore 9"), `${seat}: ${line}`);
+		assert.ok(line.includes("a higher one"), `${seat}: ${line}`);
+	}
+	for (const seat of [2, undefined]) {
+		const line = lineAt(seat, exchangeIdx);
+		assert.ok(!line.includes("Ore 5"), `${seat}: ${line}`);
+		assert.ok(!line.includes("Ore 9"), `${seat}: ${line}`);
+		assert.ok(line.includes("a card"), `${seat}: ${line}`);
+	}
+
+	// Seat 1 passes, the step ends, and the received value is revealed to the
+	// two participants (bystanders still only see the neutral text).
+	applyMove(state, { action: "exchangePass" }, 1);
+	assert.equal(state.phase, "actions");
+	for (const seat of [0, 1]) {
+		const line = lineAt(seat, exchangeIdx);
+		assert.ok(line.includes("Ore 9"), `${seat}: ${line}`);
+	}
+	assert.ok(!lineAt(2, exchangeIdx).includes("Ore 9"), lineAt(2, exchangeIdx));
+});
+
 test("exchange: nothing higher returns the given card", () => {
 	const state = kickerGame();
 	toExchange(state);
