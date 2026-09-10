@@ -24,6 +24,11 @@ startDevBackend(emitter as never, { players, seed, auto, delayMs, gameOptions })
 	replayStart: () => emitter.emit("replay:start" as never),
 	replayTo: (to: number) => emitter.emit("replay:to" as never, to as never),
 	replayEnd: () => emitter.emit("replay:end" as never),
+	chatAppend: (author: string, text: string) =>
+		emitter.emit("chat:appended" as never, [{ _id: `manual-${Date.now()}`, author, text, type: "text" }] as never),
+	chatDisable: (disabled: boolean) => emitter.emit("chat:disabled" as never, disabled as never),
+	chatState: (canSend: boolean, reason?: string) =>
+		emitter.emit("chat:state" as never, { canSend, ...(reason ? { reason } : {}) } as never),
 };
 
 console.log(`[outpost dev] hot-seat vs bots: you are player 0 of ${players}, seed=${seed ?? "random"}`);
