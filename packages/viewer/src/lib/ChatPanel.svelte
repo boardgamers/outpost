@@ -14,13 +14,29 @@
 
 	let draft = $state("");
 	let feed = $state<HTMLDivElement | undefined>(undefined);
+	// Whether the feed has been scrolled into place once (initial load lands on
+	// the newest message regardless of where the scroll happens to start).
+	let scrolledOnce = false;
 
-	// Keep the feed pinned to the newest message — chat reads bottom-up
-	// (chronological, newest last).
+	// Chat reads bottom-up (chronological, newest last). Auto-scroll to the
+	// newest message on load and whenever a new one arrives while the user is
+	// already near the bottom — but never yank the view down when they've
+	// scrolled up to read history.
 	$effect(() => {
 		const el = feed;
-		if (el && messages.length > 0) {
-			el.scrollTop = el.scrollHeight;
+		if (!el) {
+			return;
+		}
+		// Depend on the message list so this re-runs on any append/update.
+		void messages.length;
+		const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+		const fitsWithoutScroll = el.scrollHeight <= el.clientHeight;
+		if (!scrolledOnce || nearBottom || fitsWithoutScroll) {
+			scrolledOnce = true;
+			// Wait a tick for the new message to render before measuring height.
+			requestAnimationFrame(() => {
+				el.scrollTop = el.scrollHeight;
+			});
 		}
 	});
 

@@ -913,11 +913,8 @@ function moveExchange(
 		target.hand.push(given);
 	}
 	exchange.parked.push({ seat, card: taken });
-	state.messages.push(
-		taken === given
-			? `${player.name} offered a ${given.t} card to ${target.name}, who had nothing higher`
-			: `${player.name} trades a ${given.t} card to ${target.name} for a higher one`
-	);
+	// Exchanges stay in the event log only — they are routine and would just
+	// spam the game chat, which is reserved for game-over and auction wins.
 	advanceExchange(state);
 	return { exchangeTake: takeIndex, exchangeGiven: { t: given.t, v: given.v }, exchangeValue: taken.v };
 }
