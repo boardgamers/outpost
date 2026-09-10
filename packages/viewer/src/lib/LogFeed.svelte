@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick, untrack } from "svelte";
 	import type { ViewerStore } from "./store.svelte";
 
 	interface Props {
@@ -7,17 +8,34 @@
 
 	let { store }: Props = $props();
 	const lines = $derived(store.logLines);
-	const recent = $derived(
-		lines
-			.map((line, index) => ({ line, index }))
-			.slice(-150)
-			.reverse()
-	);
+	const recent = $derived(lines.map((line, index) => ({ line, index })).slice(-150));
+	let feed = $state<HTMLDivElement>();
+	let follow = true;
+	$effect(() => {
+		void recent;
+		untrack(() => {
+			if (follow) {
+				void tick().then(() => {
+					if (feed) {
+						feed.scrollTop = feed.scrollHeight;
+					}
+				});
+			}
+		});
+	});
 </script>
 
 <div class="side">
 	<div class="caption">Recent events</div>
-	<div class="feed">
+	<div
+		class="feed"
+		bind:this={feed}
+		onscroll={() => {
+			if (feed) {
+				follow = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 32;
+			}
+		}}
+	>
 		{#each recent as item (item.index)}
 			{@const era = item.line.match(/^Era (II|III) begins/)?.[1]}
 			{#if era}

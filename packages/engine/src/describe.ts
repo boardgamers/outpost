@@ -12,6 +12,11 @@ function cardName(info: MoveInfo | undefined, fallback: string): string {
 	return fallback;
 }
 
+function sealedPrice(info: MoveInfo): number {
+	const floor = info.kicker ? KICKER_SPECS[info.kicker].price : info.upgrade ? UPGRADE_SPECS[info.upgrade].price : 0;
+	return Math.min(info.winningBid ?? 0, Math.max(floor, (info.secondBid ?? 0) + 1));
+}
+
 function playerName(state: GameState, seat: number): string {
 	return state.players[seat]?.name ?? `Player ${seat + 1}`;
 }
@@ -84,7 +89,7 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 					// fastBid: the resolving move carries the outcome in its info.
 					if (info?.winningBid !== undefined) {
 						const won = playerName(state, info.winner ?? entry.player);
-						return `${name} bids ${move.amount} (sealed) — ${won} wins at ${info.winningBid === info.secondBid ? info.winningBid : Math.min((info.secondBid ?? 0) + 1, info.winningBid)}`;
+						return `${name} bids ${move.amount} (sealed) — ${won} wins at ${sealedPrice(info)}`;
 					}
 					if (sealedQuiet(state) || move.amount < 0) {
 						return `${name} takes part in the sealed auction`;
@@ -95,7 +100,7 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 					// fastBid: a pass can be the resolving move — it carries the outcome.
 					if (info?.winningBid !== undefined) {
 						const won = playerName(state, info.winner ?? entry.player);
-						return `${name} passes — ${won} wins the sealed auction at ${info.winningBid === info.secondBid ? info.winningBid : Math.min((info.secondBid ?? 0) + 1, info.winningBid)}`;
+						return `${name} passes — ${won} wins the sealed auction at ${sealedPrice(info)}`;
 					}
 					if (sealedQuiet(state)) {
 						return `${name} takes part in the sealed auction`;

@@ -65,6 +65,7 @@
 				{@const spec = UPGRADE_SPECS[upgrade]}
 				{@const open = pick?.marketIndex === i && pick.kicker !== true}
 				{@const due = myDue(upgrade)}
+				{@const discount = store.playerIndex === undefined ? 0 : store.discountOf(store.playerIndex, upgrade)}
 				{@const blocked = store.turnBuys.length > 0}
 				<div class="slot">
 					<button
@@ -99,9 +100,17 @@
 					</button>
 					{#if open && pick}
 						<div class="bidbox">
+							<div class="payment-preview">
+								Bid ◈ {pick.bid}{#if discount > 0}
+									− discount ◈ {discount}{/if}<br /><strong
+									>{store.fastBid ? "Pay at most" : "Pay"} ◈ {Math.max(0, pick.bid - discount)}</strong
+								>
+								· you hold ◈ {store.myHandValue}
+							</div>
 							<div class="bidrow">
 								<button onclick={() => store.bumpAuctionBid(-1)} disabled={pick.bid <= spec.price}>−</button>
 								<input
+									aria-label="Opening bid before discount"
 									type="number"
 									min={spec.price}
 									max={store.maxAuctionPickBid}
@@ -116,7 +125,11 @@
 								>
 							</div>
 							<div class="bidrow">
-								<button class="confirm" onclick={() => store.confirmAuction()}>Auction at ◈ {pick.bid}</button>
+								<button
+									class="confirm"
+									disabled={pick.bid < spec.price || pick.bid > store.maxAuctionPickBid}
+									onclick={() => store.confirmAuction()}>Auction at ◈ {pick.bid}</button
+								>
 								<button class="cancel" onclick={() => store.cancel()}>Cancel</button>
 								<span class="maxhint">max ◈ {store.maxAuctionPickBid}</span>
 							</div>
@@ -181,9 +194,13 @@
 					</button>
 					{#if open && pick}
 						<div class="bidbox">
+							<div class="payment-preview">
+								<strong>{store.fastBid ? "Pay at most" : "Pay"} ◈ {pick.bid}</strong> · you hold ◈ {store.myHandValue}
+							</div>
 							<div class="bidrow">
 								<button onclick={() => store.bumpAuctionBid(-1)} disabled={pick.bid <= spec.price}>−</button>
 								<input
+									aria-label="Opening bid before discount"
 									type="number"
 									min={spec.price}
 									max={store.maxAuctionPickBid}
@@ -198,7 +215,11 @@
 								>
 							</div>
 							<div class="bidrow">
-								<button class="confirm" onclick={() => store.confirmAuction()}>Auction at ◈ {pick.bid}</button>
+								<button
+									class="confirm"
+									disabled={pick.bid < spec.price || pick.bid > store.maxAuctionPickBid}
+									onclick={() => store.confirmAuction()}>Auction at ◈ {pick.bid}</button
+								>
 								<button class="cancel" onclick={() => store.cancel()}>Cancel</button>
 								<span class="maxhint">max ◈ {store.maxAuctionPickBid}</span>
 							</div>
@@ -231,6 +252,15 @@
 </div>
 
 <style>
+	.payment-preview {
+		font-size: 13px;
+		line-height: 1.5;
+		padding: 4px 0;
+	}
+	.payment-preview strong {
+		color: var(--gold);
+		font-size: 15px;
+	}
 	.market {
 		display: flex;
 		flex-direction: column;

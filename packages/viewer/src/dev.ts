@@ -1,3 +1,4 @@
+import { mountSoundTests } from "./lib/sounds";
 import { startDevBackend } from "./dev-backend";
 import { launch } from "./viewer";
 
@@ -17,6 +18,7 @@ if (kicker) {
 }
 
 const emitter = launch("#app");
+mountSoundTests(emitter);
 startDevBackend(emitter as never, { players, seed, auto, delayMs, gameOptions });
 
 (window as unknown as { outpostDev?: unknown }).outpostDev = {

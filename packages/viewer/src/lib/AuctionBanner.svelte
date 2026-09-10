@@ -67,6 +67,7 @@
 								disabled={store.bidAmount <= minBid}>−1</button
 							>
 							<input
+								aria-label="Bid before discount"
 								type="number"
 								min={minBid}
 								max={maxBid}
@@ -87,6 +88,13 @@
 								onclick={() => store.confirmBid()}>Bid ◈ {store.bidAmount}</button
 							>
 							<button class="pass" onclick={() => store.passBid()}>Pass</button>
+						</div>
+						<div class="bid-cost">
+							<span>Bid <strong>◈ {store.bidAmount}</strong></span>
+							{#if discount > 0}<span>− discount <strong>◈ {discount}</strong></span>{/if}
+							<strong class="net-cost"
+								>= {fast ? "pay at most" : "pay"} ◈ {Math.max(0, store.bidAmount - discount)}</strong
+							>
 						</div>
 						<div class="hint">
 							<span class="maxline">
@@ -128,6 +136,7 @@
 								disabled={store.bidAmount <= minBid}>−1</button
 							>
 							<input
+								aria-label="Bid before discount"
 								type="number"
 								min={minBid}
 								max={maxBid}
@@ -149,6 +158,13 @@
 							>
 							<button class="pass" onclick={() => store.passBid()}>Pass</button>
 						</div>
+						<div class="bid-cost">
+							<span>Bid <strong>◈ {store.bidAmount}</strong></span>
+							{#if discount > 0}<span>− discount <strong>◈ {discount}</strong></span>{/if}
+							<strong class="net-cost"
+								>= {fast ? "pay at most" : "pay"} ◈ {Math.max(0, store.bidAmount - discount)}</strong
+							>
+						</div>
 						<div class="hint">
 							<span class="maxline">
 								You hold ◈ {store.myHandValue}
@@ -157,9 +173,7 @@
 								{/if}
 								<span class="maxeq">= max bid <strong>◈ {maxBid}</strong></span>
 							</span>
-							{#if store.bidAmount >= minBid && store.bidAmount <= maxBid}
-								Winning at {store.bidAmount} would cost you ◈ {Math.max(0, store.bidAmount - discount)} in cards.
-							{/if}
+							Cards must cover the payment; excess card value is not returned.
 						</div>
 					{/if}
 				{/if}
@@ -177,6 +191,21 @@
 {/if}
 
 <style>
+	.bid-cost {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 10px;
+		font-size: 14px;
+		padding: 8px 10px;
+		background: var(--bg-panel);
+		border-radius: 6px;
+	}
+	.net-cost {
+		color: var(--gold);
+		font-size: 16px;
+	}
+
 	.banner {
 		display: flex;
 		gap: 18px;

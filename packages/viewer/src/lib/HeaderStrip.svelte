@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { VICTORY_VP, colonyEra, type GameState } from "outpost-engine";
+	import { VICTORY_VP, MID_THRESHOLD, bigThreshold, scores, colonyEra, type GameState } from "outpost-engine";
 
 	interface Props {
 		state: GameState;
@@ -8,6 +8,9 @@
 	let { state }: Props = $props();
 
 	const era = $derived(state.ended ? null : (state.era ?? colonyEra(state)));
+
+	const nextThreshold = $derived(era === 1 ? MID_THRESHOLD : bigThreshold(state));
+	const remaining = $derived(Math.max(0, nextThreshold - Math.max(0, ...scores(state))));
 
 	const phaseLabel = $derived(
 		state.ended
@@ -42,6 +45,14 @@
 		>
 			Era {["", "I", "II", "III"][era]}
 		</span>
+		{#if era < 3}
+			<span
+				class="item"
+				title={`The leader needs ${nextThreshold} VP. The era changes when the next round begins. Exhausting the earlier upgrades for two consecutive rounds can also advance the era.`}
+			>
+				{colonyEra(state) > era ? "Next era next round" : `${remaining} VP to next era`}
+			</span>
+		{/if}
 	{/if}
 	<span class="item phase">{phaseLabel}</span>
 	<span class="item dim">First to {VICTORY_VP} VP wins</span>

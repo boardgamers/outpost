@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { describeLogEntry } from "./describe.js";
 import { UPGRADE_SPECS } from "./data.js";
 import { applyMove, initGame } from "./moves.js";
 import { replay } from "./replay.js";
@@ -161,6 +162,7 @@ test("fastBid: a sole bidder pays the list price", () => {
 	assert.equal(state.phase, "auctionPayment");
 	assert.equal(state.auction?.highBidder, opener);
 	assert.equal(state.auction?.highBid, 25);
+	assert.match(describeLogEntry(state, state.log.at(-1)!), /wins the sealed auction at 25$/);
 });
 
 test("fastBid: overbidding the opening still pays only the list price when everyone passes", () => {
@@ -175,6 +177,7 @@ test("fastBid: overbidding the opening still pays only the list price when every
 	assert.equal(state.phase, "auctionPayment");
 	assert.equal(state.auction?.highBidder, opener);
 	assert.equal(state.auction?.highBid, 25);
+	assert.match(describeLogEntry(state, state.log.at(-1)!), /wins the sealed auction at 25$/);
 });
 
 test("fastBid: bid below list price is rejected", () => {

@@ -1,3 +1,4 @@
+import { installActionSounds } from "./lib/sounds";
 import { mount } from "svelte";
 import App from "./App.svelte";
 import { launchBridge } from "./lib/bgs.svelte";
@@ -12,6 +13,7 @@ export function launch(selector: string): Emitter {
 	}
 
 	const bridge = launchBridge();
+	installActionSounds(bridge.events);
 	const store = createStore(bridge);
 
 	mount(App, {
