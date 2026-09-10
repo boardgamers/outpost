@@ -96,9 +96,10 @@ pnpm build    # engine dist/ + viewer dist/ (iife + css)
 pnpm check    # fmt:check + lint + tsc + test + build
 ```
 
-Run `pnpm check` before committing. Commit with clear messages. The repo has a
-GitHub remote (`origin` = github.com:boardgamers/outpost); push `main` directly
-(`git pull --rebase` first if behind), no PR workflow.
+Run `pnpm check` before committing. Commit with clear messages. The repo lives
+on Codeberg (`origin` = codeberg.org/boardgamers/outpost); push `main` directly
+(`git pull --rebase` first if behind), no PR workflow. CI runs as a Forgejo
+Actions workflow (`.forgejo/workflows/ci.yml`).
 
 The dev harness (`pnpm dev`) is a hot-seat vs bots: `?players=N&seed=S&auto=1&
 delay=ms&fastBid=1` (auto = bots also play your seat).

@@ -7,18 +7,17 @@ on:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: docker
+    # Image pinned so CI does not depend on the runner's default-image mapping
+    # for the "docker" label; node:24-bookworm ships node + corepack (pnpm).
+    container:
+      image: docker.io/library/node:24-bookworm
     steps:
-      - uses: actions/checkout@v4
+      - uses: https://data.forgejo.org/actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.11.0
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: pnpm
+      # Corepack fetches the pnpm version pinned by package.json's
+      # packageManager field.
+      - run: corepack enable
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
