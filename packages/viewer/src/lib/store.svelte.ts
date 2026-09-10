@@ -34,7 +34,7 @@ import {
 	type TurnBuy,
 	type Upgrade,
 } from "outpost-engine";
-import type { ViewerBridge } from "./bgs.svelte";
+import type { ViewerBridge, ViewerChatCanSend, ViewerChatMessage } from "./bgs.svelte";
 
 export interface ReplayState {
 	active: boolean;
@@ -207,6 +207,15 @@ export class ViewerStore {
 	logLines = $state<string[]>([]);
 	seenLog = $state(0);
 	lastMoveAt = $state<number>(0);
+	chatMessages = $state<ViewerChatMessage[]>([]);
+	chatDisabled = $state(false);
+	/** Write permission from `chat:state`; null = not yet told (assume allowed). */
+	chatCanSend = $state<ViewerChatCanSend | null>(null);
+	/** Error of the last refused send (from `chat:result` ok:false), to show by the composer. */
+	chatSendError = $state<string | undefined>(undefined);
+	private chatRequestSeq = 0;
+	private chatRequestDrafts = new Map<string, string>();
+	private lastChatReadId: string | undefined;
 
 	cardPick = $state<number[]>([]);
 	/** Mega cards to take per resource (rule 12.1 blind election). */
@@ -240,7 +249,53 @@ export class ViewerStore {
 		bridge.on("replay:start", () => this.startReplay());
 		bridge.on("replay:to", (to) => this.replayTo(to));
 		bridge.on("replay:end", () => this.endReplay());
+		bridge.on("chat:messages", (messages) => {
+			this.chatMessages = Array.isArray(messages) ? messages : [];
+			this.markChatRead();
+		});
+		bridge.on("chat:appended", (messages) => {
+			if (Array.isArray(messages) && messages.length > 0) {
+				this.chatMessages = [...this.chatMessages, ...messages];
+				this.markChatRead();
+			}
+		});
+		bridge.on("chat:updated", (messages) => {
+			if (!Array.isArray(messages)) {
+				return;
+			}
+			const byId = new Map(messages.flatMap((m) => (m._id ? [[m._id, m]] : [])));
+			if (byId.size > 0) {
+				this.chatMessages = this.chatMessages.map((m) => (m._id ? (byId.get(m._id) ?? m) : m));
+			}
+		});
+		bridge.on("chat:deleted", (ids) => {
+			if (Array.isArray(ids) && ids.length > 0) {
+				const drop = new Set(ids);
+				this.chatMessages = this.chatMessages.filter((m) => !m._id || !drop.has(m._id));
+			}
+		});
+		bridge.on("chat:disabled", (disabled) => (this.chatDisabled = disabled === true));
+		bridge.on("chat:state", (state) => {
+			this.chatCanSend = state && typeof state === "object" ? state : null;
+		});
+		bridge.on("chat:result", (result) => {
+			if (!result || typeof result !== "object") {
+				return;
+			}
+			const draft = this.chatRequestDrafts.get(result.requestId);
+			this.chatRequestDrafts.delete(result.requestId);
+			if (result.ok) {
+				this.chatSendError = undefined;
+			} else if (draft !== undefined) {
+				// Refused: nothing is echoed via chat:appended, so restore the draft to retry.
+				this.chatSendError = result.error;
+				this.chatRetryDraft = draft;
+			}
+		});
 	}
+
+	/** Draft restored after a refused send; the composer takes it back. */
+	chatRetryDraft = $state<string | undefined>(undefined);
 
 	get state(): GameState | null {
 		if (this.replay.active) {
@@ -979,6 +1034,50 @@ export class ViewerStore {
 		this.exchangeCard = null;
 		this.exchangeTarget = null;
 		this.autoSuggested = false;
+	}
+
+	get chatWritable(): boolean {
+		return !this.chatDisabled && this.chatCanSend?.canSend !== false;
+	}
+
+	sendChat(text: string): void {
+		const trimmed = text.trim();
+		if (!trimmed || !this.chatWritable) {
+			return;
+		}
+		const requestId = `chat-${Date.now().toString(36)}-${++this.chatRequestSeq}`;
+		this.chatRequestDrafts.set(requestId, trimmed);
+		this.chatSendError = undefined;
+		this.bridge.sendChat(trimmed, requestId);
+	}
+
+	/** Take the restored draft of a refused send (composer picks it up once). */
+	takeChatRetryDraft(): string | undefined {
+		const draft = this.chatRetryDraft;
+		this.chatRetryDraft = undefined;
+		return draft;
+	}
+
+	/** Read receipt: watermark the newest shown message so the platform clears its unread badge. */
+	private markChatRead(): void {
+		for (let i = this.chatMessages.length - 1; i >= 0; i--) {
+			const id = this.chatMessages[i]?._id;
+			// The platform's watermark derives from the ObjectId timestamp — only
+			// real ObjectIds advance it (dev "dev-N" ids are ignored server-side).
+			if (id && id !== this.lastChatReadId && /^[0-9a-f]{24}$/.test(id)) {
+				this.lastChatReadId = id;
+				this.bridge.readChat(id);
+				return;
+			}
+		}
+	}
+
+	/** Seat color for a chat author: playerIndex when given, else match by name. */
+	chatAuthorColor(message: ViewerChatMessage): string | undefined {
+		const seat =
+			message.playerIndex ??
+			(message.author !== undefined ? (this.liveState?.players.findIndex((p) => p.name === message.author) ?? -1) : -1);
+		return seat >= 0 ? playerColor(seat) : undefined;
 	}
 
 	private send(move: Move): void {

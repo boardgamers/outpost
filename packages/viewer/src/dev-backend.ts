@@ -95,6 +95,24 @@ export function startDevBackend(
 		}, delay);
 	}
 
+	// Viewer-chat harness: seed a short history and echo accepted posts back as
+	// chat:appended (the real platform rebroadcasts to everyone the same way).
+	// A requestId is answered with chat:result, like the platform's send-ack.
+	let chatSeq = 0;
+	const chatId = () => `dev-${++chatSeq}`;
+	emitter.on("chat:send", ((payload: { text?: string; requestId?: string }) => {
+		const text = typeof payload?.text === "string" ? payload.text.trim() : "";
+		const requestId = typeof payload?.requestId === "string" ? payload.requestId : undefined;
+		if (requestId) {
+			emitter.emit("chat:result", { requestId, ok: text.length > 0, ...(text ? {} : { error: "empty message" }) });
+		}
+		if (text) {
+			emitter.emit("chat:appended", [
+				{ _id: chatId(), author: NAMES[human], authorId: "dev-you", playerIndex: human, text, type: "text" },
+			]);
+		}
+	}) as never);
+
 	emitter.on("move", ((move: Move) => {
 		if (state.ended) {
 			return;
@@ -110,6 +128,20 @@ export function startDevBackend(
 	}) as never);
 
 	emitter.on("fetchState", (() => publish()) as never);
+
+	emitter.emit("chat:state", { canSend: true });
+	emitter.emit("chat:messages", [
+		{ _id: chatId(), text: "Game created. Good luck, everyone!", type: "system" },
+		{ _id: chatId(), author: NAMES[1], authorId: "dev-ada", playerIndex: 1, text: "gl hf!", type: "text" },
+		{
+			_id: chatId(),
+			author: NAMES[2],
+			authorId: "dev-cleo",
+			playerIndex: 2,
+			text: "First auction is always a steal.",
+			type: "text",
+		},
+	]);
 
 	window.setTimeout(publish, 50);
 }

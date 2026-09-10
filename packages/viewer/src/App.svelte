@@ -8,6 +8,7 @@
 	import GameEndBanner from "./lib/GameEndBanner.svelte";
 	import ReplayBar from "./lib/ReplayBar.svelte";
 	import LogFeed from "./lib/LogFeed.svelte";
+	import ChatPanel from "./lib/ChatPanel.svelte";
 	import SpaceScene from "./lib/SpaceScene.svelte";
 
 	interface Props {
@@ -36,6 +37,7 @@
 
 					<div class="side">
 						<ActionBar {store} />
+						<ChatPanel {store} />
 						<LogFeed {store} />
 					</div>
 
@@ -105,6 +107,9 @@
 	.side {
 		display: contents;
 	}
+	.side > :global(.chat) {
+		order: 9;
+	}
 	.side > :global(.side) {
 		order: 10;
 	}
@@ -158,6 +163,9 @@
 			position: sticky;
 			top: 16px;
 		}
+		.side > :global(.chat) {
+			order: 0;
+		}
 		.side > :global(.side) {
 			order: 0;
 		}
@@ -190,8 +198,11 @@
 		.side > :global(.actionbar) {
 			order: 2;
 		}
-		.side > :global(.side) {
+		.side > :global(.chat) {
 			order: 6;
+		}
+		.side > :global(.side) {
+			order: 7;
 		}
 	}
 	.loading {

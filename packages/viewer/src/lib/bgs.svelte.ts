@@ -17,6 +17,33 @@ function declone<T>(value: T): T {
 	}
 }
 
+export interface ViewerChatMessage {
+	_id?: string;
+	author?: string;
+	/** Author's stable user id — match identity on THIS, never on the name. */
+	authorId?: string;
+	/** Author's seat index in this game, when the author is one of its players. */
+	playerIndex?: number;
+	/** When the message was posted (ISO). */
+	createdAt?: string;
+	text: string;
+	type: "text" | "system";
+	editedAt?: string;
+}
+
+/** Write-permission state (the `chat:state` downlink); the api stays the authority on writes. */
+export interface ViewerChatCanSend {
+	canSend: boolean;
+	reason?: string;
+}
+
+/** Send-ack downlink, one per `chat:send` that carried a requestId. */
+export interface ViewerChatResult {
+	requestId: string;
+	ok: boolean;
+	error?: string;
+}
+
 export interface ViewerEvents {
 	state: GameState;
 	"state:updated": void;
@@ -28,6 +55,13 @@ export interface ViewerEvents {
 	"replay:start": void;
 	"replay:to": number;
 	"replay:end": void;
+	"chat:messages": ViewerChatMessage[];
+	"chat:appended": ViewerChatMessage[];
+	"chat:updated": ViewerChatMessage[];
+	"chat:deleted": string[];
+	"chat:disabled": boolean;
+	"chat:state": ViewerChatCanSend;
+	"chat:result": ViewerChatResult;
 }
 
 export interface UplinkEvents {
@@ -36,6 +70,10 @@ export interface UplinkEvents {
 	// so it must be the move object itself — not wrapped in { move } (that would
 	// double-wrap it and the engine would read move.action === undefined).
 	move: Move;
+	// No optimistic echo: accepted posts are rebroadcast via chat:appended.
+	"chat:send": { text: string; requestId?: string };
+	// Read receipt: watermark the latest shown message so the platform clears its unread badge.
+	"chat:read": { messageId: string };
 	fetchState: void;
 	fetchLog: { start: number; end?: number };
 	addLog: string[];
@@ -91,6 +129,14 @@ export class ViewerBridge {
 
 	fetchLog(start: number, end?: number): void {
 		this.emitUplink("fetchLog", { start, end });
+	}
+
+	sendChat(text: string, requestId?: string): void {
+		this.emitUplink("chat:send", requestId ? { text, requestId } : { text });
+	}
+
+	readChat(messageId: string): void {
+		this.emitUplink("chat:read", { messageId });
 	}
 }
 
