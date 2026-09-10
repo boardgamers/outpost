@@ -17,6 +17,7 @@ import {
 	handCapacity,
 	handValue,
 	megaEligible as megaEligibleEngine,
+	operators as availableOperators,
 	populationCost,
 	populationMax,
 	rankings,
@@ -135,7 +136,9 @@ export const UPGRADE_EFFECTS: Record<Upgrade, EffectToken[]> = {
 	nodule: ["+3 population limit (per copy)."],
 	scientists: ["Produces a ", { card: "research" }, ` (${cardRange("research")}) each round (per copy).`],
 	orbitalLab: ["Produces a ", { card: "microbiotics" }, ` (${cardRange("microbiotics")}) each round (per copy).`],
-	robots: ["Allows buying robots, operators that ignore the population limit (per copy: up to population)."],
+	robots: [
+		"Buy robots for 10 credits each. Each Robots upgrade lets you operate up to your current colonist count; excess robots stay idle.",
+	],
 	laboratory: ["Allows ", { f: "research", n: 1 }, ` (${cardRange("research")} cards); comes with a free one.`],
 	ecoplants: ["Colonists cost 5 instead of 10. −10 on ", { u: "outpost" }, " bids (per copy)."],
 	outpost: ["Free ", { f: "titanium", n: 1 }, ", +5 hand capacity, +5 population limit."],
@@ -827,7 +830,7 @@ export class ViewerStore {
 		if (!this.myActionTurn || !me) {
 			return;
 		}
-		if (me.upgrades.robots === 0 || me.robots >= robotMax(me) || this.myHandValue < 10) {
+		if (me.upgrades.robots === 0 || this.myHandValue < 10) {
 			return;
 		}
 		this.cancel();
@@ -849,12 +852,7 @@ export class ViewerStore {
 				: pending.kind === "population"
 					? populationCost(me)
 					: 10;
-		let cap =
-			pending.kind === "population"
-				? populationMax(me) - me.population
-				: pending.kind === "robots"
-					? robotMax(me) - me.robots
-					: Number.MAX_SAFE_INTEGER;
+		let cap = pending.kind === "population" ? populationMax(me) - me.population : Number.MAX_SAFE_INTEGER;
 		if (pending.kind === "factory" && FACTORIES[pending.factory].needsResearchCard) {
 			cap = Math.min(cap, me.hand.filter((c) => c.t === "research").length);
 		}
@@ -986,7 +984,7 @@ export class ViewerStore {
 		this.manning = true;
 		// Sensible default: keep last round's assignment, then fill any spare
 		// operators into the most productive unmanned factories (deck average).
-		const operators = me.population + me.robots;
+		const operators = availableOperators(me);
 		const pick = me.factories.flatMap((f, i) => (f.manned ? [i] : [])).slice(0, operators);
 		const spare = me.factories
 			.map((f, index) => ({ index, value: PRODUCTION_DECKS[f.type].average }))
@@ -1006,7 +1004,7 @@ export class ViewerStore {
 		if (!this.manning || !me) {
 			return;
 		}
-		const limit = me.population + me.robots;
+		const limit = availableOperators(me);
 		if (this.manningPick.includes(index)) {
 			this.manningPick = this.manningPick.filter((i) => i !== index);
 		} else if (this.manningPick.length < limit) {
@@ -1015,7 +1013,11 @@ export class ViewerStore {
 	}
 
 	confirmEndTurn(): void {
-		if (!this.manning) {
+		if (
+			!this.manning ||
+			!this.me ||
+			this.manningPick.length !== Math.min(availableOperators(this.me), this.me.factories.length)
+		) {
 			return;
 		}
 		const move: Move = { action: "endTurn", buys: this.turnBuys, manned: this.manningPick };

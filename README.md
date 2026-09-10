@@ -21,8 +21,8 @@ version Stronghold Games adopted as the base rules:
 - Research factories cost 30 and require a Laboratory; buying a New Chemicals factory
   requires spending a research card
 - Over-capacity players discard **before** actions (after production)
-- Robots don't count against the population limit; robot ownership is capped at
-  (Robots upgrades × population)
+- Robots don't count against the population limit; robots may be bought in advance, but only
+  (Robots upgrades × current population) may operate factories. All available operators must be assigned where possible
 - Victory: 75 VP (manned factories + upgrades); ties on VP in purchase order are broken
   by total credits spent
 - Market refill via d4 / d10 / d12+1 by game era (leader VP, per the v1.32 setup chart),

@@ -323,17 +323,6 @@
 			<ellipse class="crater" cx="1330" cy="104" rx="18" ry="5" />
 			<ellipse class="crater" cx="90" cy="112" rx="20" ry="6" />
 		</g>
-		<g class="outpost" transform="translate(340 0)">
-			<path d="M1152 58 a13 13 0 0 1 26 0 z" />
-			<path d="M1184 60 a9 9 0 0 1 18 0 z" />
-			<rect x="1150" y="57" width="54" height="3" rx="1" />
-			<rect x="1206" y="34" width="2.5" height="26" rx="1" />
-			<circle cx="1207.2" cy="32" r="3" class="beacon" />
-			<rect x="1128" y="52" width="12" height="8" rx="1" />
-			<rect x="1157" y="52" width="3" height="4" rx="0.5" class="win" />
-			<rect x="1164" y="52" width="3" height="4" rx="0.5" class="win" />
-			<rect x="1187" y="55" width="2.5" height="3.5" rx="0.5" class="win" />
-		</g>
 
 		{#each biospheres as dome}
 			<g class="biosphere" style="--bc: {dome.color}">
@@ -664,26 +653,6 @@
 		stroke-width: 1.2;
 		opacity: 0.6;
 	}
-	.moon .outpost {
-		fill: #2a2f3a;
-	}
-	.moon .outpost .win {
-		fill: rgba(240, 200, 120, 0.85);
-	}
-	.moon .outpost .beacon {
-		fill: rgba(88, 182, 220, 0.9);
-		animation: beacon 2.6s ease-in-out infinite;
-	}
-	@keyframes beacon {
-		0%,
-		100% {
-			opacity: 0.25;
-		}
-		50% {
-			opacity: 1;
-		}
-	}
-
 	/* Player buildings: factories and upgrades clustered per player.
 	   Player color is the outline/accent; unmanned factories are dimmer. */
 	.bldg {
@@ -767,8 +736,7 @@
 	@media (prefers-reduced-motion: reduce) {
 		.rock,
 		.station,
-		.comet,
-		.moon .outpost .beacon {
+		.comet {
 			animation: none;
 		}
 		.comet {

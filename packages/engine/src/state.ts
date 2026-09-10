@@ -196,7 +196,7 @@ export function robotMax(player: PlayerState): number {
 }
 
 export function operators(player: PlayerState): number {
-	return player.population + player.robots;
+	return player.population + Math.min(player.robots, robotMax(player));
 }
 
 /** Number of hand cards that count against hand capacity (a mega card counts as 4). */

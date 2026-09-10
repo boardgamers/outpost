@@ -7,6 +7,7 @@
 		MIN_CARD_VALUE,
 		UPGRADE_SPECS,
 		auctionCard,
+		operators,
 	} from "outpost-engine";
 	import ResourceIcon from "./ResourceIcon.svelte";
 	import { RESOURCE_LABELS, type ViewerStore } from "./store.svelte";
@@ -67,7 +68,7 @@
 				return "";
 		}
 	});
-	const idleOperators = $derived(me ? Math.max(0, me.population + me.robots - store.manningPick.length) : 0);
+	const idleOperators = $derived(me ? Math.max(0, operators(me) - store.manningPick.length) : 0);
 	const idleFactories = $derived(me ? me.factories.length - store.manningPick.length : 0);
 
 	// Preselect sensible cards when a payment or discard is asked of the player
@@ -176,14 +177,18 @@
 						<strong>{store.manningPick.length} / {me.factories.length}</strong> factories manned.
 						{#if idleOperators > 0 && idleFactories > 0}
 							<span class="warn">
-								{Math.min(idleOperators, idleFactories)} more could be manned.
+								Assign {Math.min(idleOperators, idleFactories)} more before ending your turn.
 							</span>
 						{/if}
 						{#if staged.length > 0}
 							Also confirms: {staged.join(", ")}.
 						{/if}
 					</span>
-					<button class="confirm" onclick={() => store.confirmEndTurn()}>End turn</button>
+					<button
+						class="confirm"
+						disabled={idleOperators > 0 && idleFactories > 0}
+						onclick={() => store.confirmEndTurn()}>End turn</button
+					>
 					<button class="cancel" onclick={() => store.cancel()}>Back</button>
 				</div>
 			{:else if pending}
@@ -249,7 +254,7 @@
 					{#if me.upgrades.robots > 0}
 						<button
 							class="buy"
-							disabled={me.robots >= store.robotMaxOf(store.playerIndex ?? -1) || store.myHandValue < 10}
+							disabled={store.myHandValue < 10}
 							title="Buy a robot: 10 credits"
 							onclick={() => store.startRobotsPayment()}
 						>

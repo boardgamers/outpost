@@ -9,6 +9,7 @@ import {
 	handCapacity,
 	handValue,
 	megaEligible,
+	operators as availableOperators,
 	populationCost,
 	populationMax,
 	upgradeDiscount,
@@ -192,7 +193,7 @@ function chooseTurn(player: PlayerState): Move {
 		const cash = handValue(sim);
 
 		// 2. Recruit population while there are factories to man.
-		const unmanned = sim.factories.length - (sim.population + sim.robots);
+		const unmanned = sim.factories.length - availableOperators(sim);
 		if (unmanned > 0 && sim.population < populationMax(sim) && cash >= populationCost(sim)) {
 			const cards = spend(populationCost(sim));
 			buys.push({ buy: "population", count: 1, cards });
@@ -220,7 +221,7 @@ function chooseTurn(player: PlayerState): Move {
 	}
 
 	// 4. Man the most valuable factories and end the turn.
-	const operators = sim.population + sim.robots;
+	const operators = availableOperators(sim);
 	const manned = sim.factories
 		.map((factory, index) => ({ index, value: PRODUCTION_DECKS[factory.type].average }))
 		.sort((a, b) => b.value - a.value)

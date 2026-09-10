@@ -17,7 +17,7 @@ test("buy factory: water factory costs 20, joins unmanned", () => {
 	];
 	applyMove(
 		state,
-		{ action: "endTurn", buys: [{ buy: "factory", factory: "water", cards: [0, 1] }], manned: [] },
+		{ action: "endTurn", buys: [{ buy: "factory", factory: "water", cards: [0, 1] }], manned: [0, 1, 2] },
 		state.activeSeat
 	);
 	assert.equal(player.factories.length, 4);
@@ -33,7 +33,7 @@ test("buy factory: titanium requires heavy equipment, research requires laborato
 	const player = activePlayer(state);
 	player.hand = [{ t: "water", v: 40 }];
 	const buyIn = (factory: "titanium" | "research") =>
-		({ action: "endTurn", buys: [{ buy: "factory", factory, cards: [0] }], manned: [] }) as const;
+		({ action: "endTurn", buys: [{ buy: "factory", factory, cards: [0] }], manned: [0, 1, 2] }) as const;
 	assert.throws(() => applyMove(state, buyIn("titanium"), state.activeSeat));
 	assert.throws(() => applyMove(state, buyIn("research"), state.activeSeat));
 	player.upgrades.heavyEquipment = 1;
@@ -48,7 +48,7 @@ test("buy factory: new chemicals requires a research card in the payment", () =>
 	assert.throws(() =>
 		applyMove(
 			state,
-			{ action: "endTurn", buys: [{ buy: "factory", factory: "newChemicals", cards: [0] }], manned: [] },
+			{ action: "endTurn", buys: [{ buy: "factory", factory: "newChemicals", cards: [0] }], manned: [0, 1, 2] },
 			state.activeSeat
 		)
 	);
@@ -58,7 +58,7 @@ test("buy factory: new chemicals requires a research card in the payment", () =>
 	];
 	applyMove(
 		state,
-		{ action: "endTurn", buys: [{ buy: "factory", factory: "newChemicals", cards: [0, 1] }], manned: [] },
+		{ action: "endTurn", buys: [{ buy: "factory", factory: "newChemicals", cards: [0, 1] }], manned: [0, 1, 2] },
 		state.activeSeat
 	);
 	assert.equal(player.factories.at(-1)?.type, "newChemicals");
@@ -77,7 +77,7 @@ test("population: costs 10 (5 with ecoplants), capped by population max", () => 
 	assert.throws(() =>
 		applyMove(
 			state,
-			{ action: "endTurn", buys: [{ buy: "population", count: 3, cards: [0, 1, 2] }], manned: [] },
+			{ action: "endTurn", buys: [{ buy: "population", count: 3, cards: [0, 1, 2] }], manned: [0, 1, 2] },
 			state.activeSeat
 		)
 	);
@@ -95,7 +95,7 @@ test("population: costs 10 (5 with ecoplants), capped by population max", () => 
 				{ buy: "population", count: 2, cards: [0] },
 				{ buy: "population", count: 1, cards: [0] },
 			],
-			manned: [],
+			manned: [0, 1, 2],
 		},
 		state.activeSeat
 	);
@@ -103,14 +103,14 @@ test("population: costs 10 (5 with ecoplants), capped by population max", () => 
 	assert.equal(player.hand.length, 1);
 });
 
-test("robots: require the upgrade and respect the robot limit", () => {
+test("robots: require the upgrade and expose the operating limit", () => {
 	const state = initGame(3, {}, "robot-spec");
 	const player = activePlayer(state);
 	player.hand = [
 		{ t: "water", v: 10 },
 		{ t: "water", v: 10 },
 	];
-	const buyRobot = { action: "endTurn", buys: [{ buy: "robots", count: 1, cards: [0] }], manned: [] } as const;
+	const buyRobot = { action: "endTurn", buys: [{ buy: "robots", count: 1, cards: [0] }], manned: [0, 1, 2] } as const;
 	assert.throws(() => applyMove(state, buyRobot, state.activeSeat));
 	player.upgrades.robots = 1;
 	assert.equal(robotMax(player), player.population);
@@ -178,6 +178,7 @@ test("end turn: mans the selected factories and passes the action turn on", () =
 	const state = initGame(3, {}, "turn-spec");
 	const first = state.activeSeat;
 	const player = activePlayer(state);
+	player.population = 2;
 	applyMove(state, { action: "endTurn", buys: [], manned: [0, 2] }, first);
 	assert.equal(player.factories[0]?.manned, true);
 	assert.equal(player.factories[1]?.manned, false);
@@ -290,4 +291,68 @@ test("bestPayment: exact sums beat overpay, more cards beat fewer at equal total
 	assert.deepEqual(bestPayment(player, 30, true), [1, 2]);
 	// Without the research constraint the same due is cheaper without one.
 	assert.deepEqual(bestPayment(player, 25, false), [3]);
+});
+
+test("robots: excess purchases stay idle and cannot staff factories", () => {
+	const state = initGame(3, {}, "robot-reserves");
+	const player = activePlayer(state);
+	player.upgrades.robots = 1;
+	player.hand = [{ t: "water", v: 60 }];
+	player.factories = Array.from({ length: 10 }, () => ({ type: "ore" as const, manned: false }));
+	const seat = state.activeSeat;
+	const before = JSON.stringify(state);
+	assert.throws(
+		() =>
+			applyMove(
+				state,
+				{ action: "endTurn", buys: [{ buy: "robots", count: 6, cards: [0] }], manned: [0, 1, 2, 3, 4, 5, 6] },
+				seat
+			),
+		/only 6 operators/
+	);
+	assert.equal(JSON.stringify(state), before);
+	applyMove(
+		state,
+		{ action: "endTurn", buys: [{ buy: "robots", count: 6, cards: [0] }], manned: [0, 1, 2, 3, 4, 5] },
+		seat
+	);
+	assert.equal(player.robots, 6);
+	assert.equal(player.factories.filter((f) => f.manned).length, 6);
+});
+
+test("staffing: rejects idle usable workers without mutating purchases", () => {
+	const state = initGame(3, {}, "idle-workers");
+	const player = activePlayer(state);
+	player.hand = [{ t: "water", v: 20 }];
+	const before = JSON.stringify(state);
+	assert.throws(
+		() =>
+			applyMove(
+				state,
+				{ action: "endTurn", buys: [{ buy: "factory", factory: "water", cards: [0] }], manned: [0, 1] },
+				state.activeSeat
+			),
+		/assign all available/
+	);
+	assert.equal(JSON.stringify(state), before);
+});
+
+test("staffing: multiple Robots upgrades and new colonists unlock reserved robots", () => {
+	const state = initGame(3, {}, "robot-supervision");
+	const player = activePlayer(state);
+	player.upgrades.robots = 2;
+	player.robots = 8;
+	player.factories = Array.from({ length: 12 }, () => ({ type: "ore" as const, manned: false }));
+	player.hand = [{ t: "water", v: 10 }];
+	applyMove(
+		state,
+		{
+			action: "endTurn",
+			buys: [{ buy: "population", count: 1, cards: [0] }],
+			manned: Array.from({ length: 12 }, (_, i) => i),
+		},
+		state.activeSeat
+	);
+	assert.equal(player.population, 4);
+	assert.equal(player.factories.filter((f) => f.manned).length, 12);
 });

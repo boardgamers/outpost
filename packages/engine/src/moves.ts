@@ -15,7 +15,7 @@ import {
 	populationCost,
 	populationMax,
 	publicMaxBid,
-	robotMax,
+	operators,
 	scores,
 	setup,
 	upgradeDiscount,
@@ -972,9 +972,6 @@ export function applyTurnBuy(state: GameState, player: PlayerState, buy: TurnBuy
 			if (!Number.isInteger(buy.count) || buy.count < 1) {
 				err("invalid robot count");
 			}
-			if (player.robots + buy.count > robotMax(player)) {
-				err(`robot limit is ${robotMax(player)}`);
-			}
 			const indices = sanitizeIndices(buy.cards, player.hand.length, "buy robots");
 			const paid = spendCards(state, player, indices, ROBOT_COST * buy.count);
 			player.robots += buy.count;
@@ -1004,8 +1001,12 @@ function runTurn(state: GameState, seat: number, move: Move & { action: "endTurn
 		paid += applyTurnBuy(state, player, buy);
 	}
 	const manned = sanitizeIndices(move.manned, player.factories.length, "endTurn");
-	if (manned.length > player.population + player.robots) {
-		err(`only ${player.population + player.robots} operators available`);
+	const available = operators(player);
+	if (manned.length > available) {
+		err(`only ${available} operators available`);
+	}
+	if (manned.length < Math.min(available, player.factories.length)) {
+		err("assign all available operators before ending your turn");
 	}
 	player.factories.forEach((factory, i) => {
 		factory.manned = manned.includes(i);

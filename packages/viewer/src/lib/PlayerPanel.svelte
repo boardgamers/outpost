@@ -11,6 +11,7 @@
 		handValueExpected,
 		handValueRange,
 		productionRange,
+		operators as availableOperators,
 		type GameState,
 		type Resource,
 	} from "outpost-engine";
@@ -75,7 +76,7 @@
 	// Trader / Merchant House. Shown in the hand with an unknown value until the
 	// step ends and they land.
 	const parkedMine = $derived((state.exchange?.parked ?? []).filter((p) => p.seat === index).map((p) => p.card));
-	const operators = $derived(player.population + player.robots);
+	const operators = $derived(availableOperators(player));
 	const pickTotal = $derived(isMe ? store.pickTotal() : 0);
 	const pickRequired = $derived(isMe ? store.pickRequired : null);
 	const pickCount = $derived(isMe ? store.cardPick.length : 0);
@@ -142,7 +143,9 @@
 	<div class="row stats">
 		<span title="colonists / population limit">👤 {player.population}/{store.popMaxOf(index)}</span>
 		{#if player.robots > 0 || player.upgrades.robots > 0}
-			<span title="robots / robot limit">🤖 {player.robots}/{store.robotMaxOf(index)}</span>
+			<span title="Robots owned / operating limit. Excess robots remain idle."
+				>🤖 {player.robots}/{store.robotMaxOf(index)}</span
+			>
 		{/if}
 		<span title="hand cards counting toward capacity / hand capacity (research and microbiotics are exempt)">
 			🂠 {store.countingOf(index)}/{store.handCapOf(index)}
