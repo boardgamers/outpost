@@ -2,6 +2,9 @@
 	import { onMount } from "svelte";
 	import {
 		FACTORIES,
+		KICKERS,
+		KICKER_SPECS,
+		type Kicker,
 		FACTORY_TYPES,
 		UPGRADE_SPECS,
 		upgradeNumber,
@@ -42,8 +45,8 @@
 		x: number;
 		y: number;
 		color: string;
-		kind: "factory" | "upgrade";
-		type: FactoryType | Upgrade;
+		kind: "factory" | "upgrade" | "kicker";
+		type: FactoryType | Upgrade | Kicker;
 		resource: Resource;
 		manned: boolean;
 		label: string;
@@ -52,6 +55,7 @@
 	interface Cluster {
 		color: string;
 		name: string;
+		biosphere: boolean;
 		buildings: Omit<Building, "x" | "y">[];
 	}
 
@@ -134,7 +138,22 @@
 						});
 					}
 				}
-				return { color: playerColor(i), name: p.name, buildings };
+				for (const k of KICKERS) {
+					if (k === "biosphere") {
+						continue;
+					}
+					for (let n = 0; n < p.kickers[k]; n++) {
+						buildings.push({
+							color: playerColor(i),
+							kind: "kicker",
+							type: k,
+							resource: "ore",
+							manned: true,
+							label: `${p.name}: ${KICKER_SPECS[k].name} (Kicker)`,
+						});
+					}
+				}
+				return { color: playerColor(i), name: p.name, biosphere: p.kickers.biosphere > 0, buildings };
 			})
 			.filter((c) => c.buildings.length > 0);
 	});
@@ -146,6 +165,9 @@
 		if (b.kind === "factory") {
 			return FACTORY_TYPES.indexOf(b.type as FactoryType);
 		}
+		if (b.kind === "kicker") {
+			return 200 + KICKERS.indexOf(b.type as Kicker);
+		}
 		return 100 + upgradeNumber(b.type as Upgrade);
 	}
 
@@ -155,23 +177,16 @@
 		if (n === 0) {
 			return [];
 		}
-		// Spread cluster centers across the moon, staying left of the
-		// decorative outpost at ~x=1128-1207.
-		const margin = 80;
-		const xMax = 1020;
-		const usableWidth = xMax - margin;
-		const spacing = 18; // horizontal gap between two buildings side by side
-		const familyGap = 12; // horizontal gap between two families
-		const rowGap = 16; // vertical gap: the front row sits this much lower (closer)
+
+		const margin = 35;
+		const usableWidth = 1470;
+		const spacing = 24;
+		const rowGap = 27;
 		for (let ci = 0; ci < n; ci++) {
 			const cluster = clusters[ci]!;
-			const cx = margin + (usableWidth / Math.max(n, 1)) * (ci + 0.5);
-
-			// Group the cluster's buildings into families (same factory type /
-			// same upgrade). Each family is laid out as its own little block:
-			// its members in rows of at most 2 (a family of 4 → two rows of 2,
-			// of 3 → 2 + 1), so a tall family reads as a small stack rather
-			// than one long line. Different families sit side by side.
+			const areaWidth = usableWidth / n;
+			const cx = margin + areaWidth * (ci + 0.5);
+			const columns = Math.max(2, Math.floor((areaWidth - 32) / spacing));
 			const families = new Map<number, Omit<Building, "x" | "y">[]>();
 			for (const b of cluster.buildings) {
 				const key = familyKey(b);
@@ -180,58 +195,49 @@
 				families.set(key, family);
 			}
 			const groups = [...families.entries()].sort((a, b) => a[0] - b[0]).map(([, members]) => members);
-
-			// Each family is laid out in at most 2 rows, split as evenly as
-			// possible (4 → 2+2, 5 → 3+2, 6 → 3+3). The back row sits on the
-			// ground; the front row is placed lower (closer to the viewer).
-			const toBlocks = (members: Omit<Building, "x" | "y">[]) => {
-				const count = members.length;
-				const perRow = count <= 2 ? count : Math.ceil(count / 2);
-				const rows = count <= 2 ? 1 : 2;
-				const cells: { b: Omit<Building, "x" | "y">; col: number; row: number }[] = [];
-				for (let i = 0; i < count; i++) {
-					const row = Math.floor(i / perRow);
-					const col = i % perRow;
-					cells.push({ b: members[i]!, col, row });
-				}
-				return { cells, rows, width: perRow };
-			};
-
-			// Factories form the top band; upgrades get their own band below it,
-			// so the cluster stays narrow and the two kinds never collide.
-			const factoryBlocks = groups.filter((g) => g[0]!.kind === "factory").map(toBlocks);
-			const upgradeBlocks = groups.filter((g) => g[0]!.kind === "upgrade").map(toBlocks);
-
-			// Place a band's family blocks left to right from a given left edge,
-			// with row 0 at baseRow rows below the ground line. Rows only ever
-			// come forward (down the screen), never up into the sky.
-			const bandWidth = (blocks: ReturnType<typeof toBlocks>[]) =>
-				blocks.reduce((sum, b) => sum + b.width * spacing, 0) + (blocks.length - 1) * familyGap;
-			const placeBand = (blocks: ReturnType<typeof toBlocks>[], left: number, baseRow: number) => {
-				let x = left;
-				let deepest = 0;
-				for (const block of blocks) {
-					deepest = Math.max(deepest, block.rows);
-					for (const cell of block.cells) {
-						const bx = x + cell.col * spacing + spacing / 2;
-						const forward = (baseRow + cell.row) * rowGap;
-						result.push({ ...cell.b, x: bx, y: surfaceY(bx) + 20 + forward });
+			const rows: Omit<Building, "x" | "y">[][] = [];
+			for (const kind of ["factory", "upgrade", "kicker"] as const) {
+				let row: Omit<Building, "x" | "y">[] = [];
+				for (const group of groups.filter((g) => g[0]!.kind === kind)) {
+					for (let offset = 0; offset < group.length; offset += columns) {
+						const chunk = group.slice(offset, offset + columns);
+						if (row.length && row.length + chunk.length > columns) {
+							rows.push(row);
+							row = [];
+						}
+						row.push(...chunk);
 					}
-					x += block.width * spacing + familyGap;
 				}
-				return deepest;
-			};
-
-			// The factory band is centered on the cluster; the upgrade band
-			// starts at the same left edge as the leftmost factory.
-			const left = cx - bandWidth(factoryBlocks.length > 0 ? factoryBlocks : upgradeBlocks) / 2;
-			const factoryDepth = placeBand(factoryBlocks, left, 0);
-			placeBand(upgradeBlocks, left, factoryDepth);
+				if (row.length) {
+					rows.push(row);
+				}
+			}
+			for (let ri = 0; ri < rows.length; ri++) {
+				const row = rows[ri]!;
+				row.forEach((b, col) =>
+					result.push({ ...b, x: cx + (col - (row.length - 1) / 2) * spacing, y: surfaceY(cx) + 24 + ri * rowGap })
+				);
+			}
 		}
+
 		// SVG paints in document order: sort by y so lower (closer) buildings
 		// render on top of higher ones.
 		return result.sort((a, b) => a.y - b.y);
 	});
+
+	const biospheres = $derived(
+		clusters
+			.filter((c) => c.biosphere)
+			.map((c) => {
+				const buildings = positioned.filter((b) => b.color === c.color);
+				const left = Math.min(...buildings.map((b) => b.x)) - 23;
+				const right = Math.max(...buildings.map((b) => b.x)) + 23;
+				const bottom = Math.max(...buildings.map((b) => b.y)) + 7;
+				const top = Math.min(...buildings.map((b) => b.y)) - 40;
+				return { ...c, left, right, bottom, top, cx: (left + right) / 2 };
+			})
+	);
+	const groundHeight = $derived(Math.max(160, ...positioned.map((b) => b.y + 18)));
 
 	let cometEl = $state<HTMLDivElement | null>(null);
 
@@ -287,7 +293,13 @@
 	<div class="comet" bind:this={cometEl}><span class="head"></span><span class="tail"></span></div>
 
 	<!-- The outpost's moon: a cratered limb along the bottom with player buildings. -->
-	<svg class="moon" viewBox="0 0 1600 160" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+	<svg
+		class="moon"
+		viewBox="0 0 1600 {groundHeight}"
+		style:height="{groundHeight}px"
+		preserveAspectRatio="xMidYMax slice"
+		aria-hidden="true"
+	>
 		<defs>
 			<linearGradient id="moonbody" x1="0" y1="0" x2="0" y2="1">
 				<stop offset="0" stop-color="#7a6a55" />
@@ -298,7 +310,7 @@
 		<path
 			class="surface"
 			fill="url(#moonbody)"
-			d="M0 70 Q 200 40 420 58 T 820 52 T 1220 62 T 1600 48 L1600 160 L0 160 Z"
+			d="M0 70 Q 200 40 420 58 T 820 52 T 1220 62 T 1600 48 L1600 {groundHeight} L0 {groundHeight} Z"
 		/>
 		<path class="rim" d="M0 70 Q 200 40 420 58 T 820 52 T 1220 62 T 1600 48" />
 		<g class="craters">
@@ -311,7 +323,7 @@
 			<ellipse class="crater" cx="1330" cy="104" rx="18" ry="5" />
 			<ellipse class="crater" cx="90" cy="112" rx="20" ry="6" />
 		</g>
-		<g class="outpost">
+		<g class="outpost" transform="translate(340 0)">
 			<path d="M1152 58 a13 13 0 0 1 26 0 z" />
 			<path d="M1184 60 a9 9 0 0 1 18 0 z" />
 			<rect x="1150" y="57" width="54" height="3" rx="1" />
@@ -322,129 +334,177 @@
 			<rect x="1164" y="52" width="3" height="4" rx="0.5" class="win" />
 			<rect x="1187" y="55" width="2.5" height="3.5" rx="0.5" class="win" />
 		</g>
+
+		{#each biospheres as dome}
+			<g class="biosphere" style="--bc: {dome.color}">
+				<title>{dome.name}: Biosphere</title>
+				<path
+					class="glass"
+					d="M{dome.left} {dome.bottom} C{dome.left} {dome.top}, {dome.left} {dome.top}, {dome.cx} {dome.top} S{dome.right} {dome.top}, {dome.right} {dome.bottom} Z"
+				/>
+				<path
+					class="rib"
+					d="M{dome.cx} {dome.top} Q{dome.left + 12} {dome.top} {dome.left +
+						18} {dome.bottom} M{dome.cx} {dome.top} Q{dome.right - 12} {dome.top} {dome.right - 18} {dome.bottom}"
+				/>
+				<ellipse class="seal" cx={dome.cx} cy={dome.bottom} rx={(dome.right - dome.left) / 2} ry="5" />
+			</g>
+		{/each}
 		{#each positioned as b, i (i)}
 			<g
 				class="bldg"
 				class:manned={b.manned}
-				class:upgrade={b.kind === "upgrade"}
+				class:upgrade={b.kind !== "factory"}
 				style="--bc: {b.color}; --rc: {RESOURCE_COLORS[b.resource]}"
 				transform="translate({b.x} {b.y})"
 			>
 				<title>{b.label}</title>
-				{#if b.kind === "factory"}
-					{#if b.type === "ore"}
-						<path class="body" d="M-8 0 a8 8 0 0 1 16 0 z" />
-						<rect class="base" x="-9" y="-1" width="18" height="2" rx="0.8" />
-					{:else if b.type === "water"}
-						<rect class="body" x="-6" y="-12" width="12" height="12" rx="3" />
-						<rect class="base" x="-8" y="-1" width="16" height="2" rx="0.8" />
-						<line class="detail" x1="6" y1="-6" x2="10" y2="-6" />
-					{:else if b.type === "titanium"}
-						<path class="body" d="M-7 0 L-4 -10 L4 -10 L7 0 z" />
-						<rect class="base" x="-8" y="-1" width="16" height="2" rx="0.8" />
-					{:else if b.type === "research"}
-						<path class="body" d="M-7 0 a7 7 0 0 1 14 0 z" />
-						<line class="detail" x1="0" y1="-7" x2="0" y2="-13" />
-						<circle class="detail" cx="0" cy="-14.5" r="1.8" />
-						<rect class="base" x="-8" y="-1" width="16" height="2" rx="0.8" />
-					{:else if b.type === "newChemicals"}
-						<path class="body" d="M-2 -14 L-2 -8 L-6 0 L6 0 L2 -8 L2 -14 z" />
-						<rect class="base" x="-7" y="-1" width="14" height="2" rx="0.8" />
-					{/if}
-				{:else}
-					{#if b.type === "laboratory"}
-						<path class="body" d="M-9 0 a9 9 0 0 1 18 0 z" />
-						<line class="detail" x1="0" y1="-9" x2="0" y2="-15" />
-						<circle class="detail" cx="0" cy="-16" r="2" />
-						<rect class="base" x="-10" y="-1" width="20" height="2" rx="0.8" />
-					{:else if b.type === "scientists"}
-						<path class="body" d="M-7 0 a7 7 0 0 1 14 0 z" />
-						<line class="detail" x1="3" y1="-5" x2="8" y2="-12" />
-						<circle class="detail" cx="9" cy="-13" r="1.5" />
-						<rect class="base" x="-8" y="-1" width="16" height="2" rx="0.8" />
-					{:else if b.type === "orbitalLab"}
-						<rect class="body" x="-5" y="-10" width="10" height="10" rx="1.5" />
-						<rect class="detail" x="-12" y="-7" width="6" height="3" rx="0.5" />
-						<rect class="detail" x="6" y="-7" width="6" height="3" rx="0.5" />
-						<rect class="base" x="-7" y="-1" width="14" height="2" rx="0.8" />
-					{:else if b.type === "spaceStation"}
-						<circle class="body" cx="0" cy="-7" r="5" />
-						<ellipse class="detail" cx="0" cy="-7" rx="10" ry="3" />
-						<rect class="base" x="-6" y="-1" width="12" height="2" rx="0.8" />
-					{:else if b.type === "planetaryCruiser"}
-						<path class="body" d="M-8 0 L0 -14 L8 0 z" />
-						<circle class="detail" cx="0" cy="-5" r="1.5" />
-						<rect class="base" x="-9" y="-1" width="18" height="2" rx="0.8" />
-					{:else if b.type === "moonBase"}
-						<path class="body" d="M-10 0 a5 5 0 0 1 10 0 z" />
-						<path class="body" d="M0 0 a6 6 0 0 1 12 0 z" />
-						<path class="body" d="M-4 0 a4 4 0 0 1 8 0 z" transform="translate(-2 -3)" />
-						<rect class="base" x="-11" y="-1" width="24" height="2" rx="0.8" />
-					{:else if b.type === "outpost"}
-						<rect class="body" x="-5" y="-14" width="10" height="14" rx="1" />
-						<line class="detail" x1="0" y1="-14" x2="0" y2="-19" />
-						<circle class="detail" cx="0" cy="-20" r="1.5" />
-						<rect class="base" x="-7" y="-1" width="14" height="2" rx="0.8" />
-					{:else if b.type === "dataLibrary"}
-						<rect class="body" x="-6" y="-8" width="12" height="8" rx="1" />
-						<line class="detail" x1="-3" y1="-5" x2="3" y2="-5" />
-						<line class="detail" x1="-3" y1="-3" x2="3" y2="-3" />
-						<rect class="base" x="-7" y="-1" width="14" height="2" rx="0.8" />
-					{:else if b.type === "warehouse"}
-						<rect class="body" x="-8" y="-7" width="16" height="7" rx="1" />
-						<line class="detail" x1="-4" y1="-7" x2="-4" y2="0" />
-						<line class="detail" x1="4" y1="-7" x2="4" y2="0" />
-						<rect class="base" x="-9" y="-1" width="18" height="2" rx="0.8" />
-					{:else if b.type === "heavyEquipment"}
-						<rect class="body" x="-7" y="-6" width="14" height="6" rx="1" />
-						<circle class="detail" cx="-4" cy="-8" r="2" />
-						<circle class="detail" cx="4" cy="-8" r="2" />
-						<rect class="base" x="-8" y="-1" width="16" height="2" rx="0.8" />
-					{:else if b.type === "nodule"}
-						<circle class="body" cx="0" cy="-5" r="5" />
-						<rect class="base" x="-6" y="-1" width="12" height="2" rx="0.8" />
-					{:else if b.type === "robots"}
-						<rect class="body" x="-4" y="-10" width="8" height="10" rx="2" />
-						<circle class="detail" cx="0" cy="-12" r="2.5" />
-						<rect class="base" x="-6" y="-1" width="12" height="2" rx="0.8" />
-					{:else if b.type === "ecoplants"}
-						<path class="body" d="M-6 0 a6 6 0 0 1 12 0 z" />
-						<line class="detail" x1="0" y1="-6" x2="0" y2="-10" />
-						<circle class="detail" cx="-2" cy="-11" r="1.5" />
-						<circle class="detail" cx="2" cy="-11" r="1.5" />
-						<rect class="base" x="-7" y="-1" width="14" height="2" rx="0.8" />
-					{:else}
-						<path class="body" d="M-7 0 a7 7 0 0 1 14 0 z" />
-						<rect class="base" x="-8" y="-1" width="16" height="2" rx="0.8" />
-					{/if}
+				<ellipse class="footprint" cx="2" cy="1.5" rx="11" ry="2.5" />
+				{#if b.type === "ore"}
+					<path class="body" d="M-8 0v-6h6v6M0 0l3-17h2L8 0z" /><path
+						class="detail"
+						d="M2-12h4M1-7h6M3-17l4 5-5 5 6 6"
+					/><path class="roof" d="M-9-6l3-3 5 3z" /><path class="signal" d="M-6-4h2" />
+				{:else if b.type === "water"}
+					<rect class="body" x="-8" y="-13" width="7" height="12" rx="3" /><rect
+						class="body"
+						x="2"
+						y="-17"
+						width="6"
+						height="16"
+						rx="3"
+					/><path class="roof" d="M-8-10h7M2-14h6" /><path class="detail" d="M-4-1v-2H5v-2M-8-6h7M2-7h6" /><path
+						class="signal"
+						d="M4-11h2"
+					/>
+				{:else if b.type === "titanium"}
+					<path class="body" d="M-8 0v-9l5-4 6 4v9zM4 0v-17h4V0" /><path class="roof" d="M-8-9l5-4 6 4M3-17h6" /><path
+						class="signal"
+						d="M-5-6h5v4h-5z"
+					/><path class="detail" d="M5-12h2M5-8h2" />
+				{:else if b.type === "research"}
+					<path class="body" d="M-8 0v-5a8 8 0 0 1 16 0v5z" /><path class="roof" d="M-8-5h16M-2-12v7" /><path
+						class="body"
+						d="M-1-13l7-6 2 3-7 6z"
+					/><path class="signal" d="M-5-3h3M2-3h3" />
+				{:else if b.type === "newChemicals"}
+					<path class="body" d="M-8 0v-11l2-2v-4h3v4l2 2V0M2 0v-8l2-3v-3h3v3l2 3v8z" /><path
+						class="roof"
+						d="M-8-8h7M2-5h7"
+					/><path class="detail" d="M-1-5H2M-6-14h3" /><path class="signal" d="M-6-5v3M5-3h2" />
+				{:else if b.type === "dataLibrary"}
+					<path class="body" d="M-8 0v-12h5V0M-2 0v-16h5V0M4 0v-10h4V0" /><path
+						class="roof"
+						d="M-8-12h5M-2-16h5M4-10h4"
+					/><path class="signal" d="M-6-9h1M-6-6h1M0-12h1M0-9h1M0-6h1M6-7h1" />
+				{:else if b.type === "warehouse"}
+					<path class="body" d="M-9 0v-10l9-5 9 5V0z" /><path class="roof" d="M-9-10h18L0-15z" /><path
+						class="detail"
+						d="M-5 0v-7H5v7M-5-4H5M-5-2H5"
+					/><path class="signal" d="M-3-9H3" />
+				{:else if b.type === "heavyEquipment"}
+					<rect class="body" x="-9" y="-4" width="18" height="4" rx="2" /><path
+						class="body"
+						d="M-6-4v-7h6v7M0-10l5-8 3 1 1 10-3 2-2-2h4L6-14l-4 6z"
+					/><path class="signal" d="M-4-9h2v3h-2z" /><path class="detail" d="M-6-2H6" />
+				{:else if b.type === "nodule"}
+					<path class="body" d="M-8-3v-9l4-4h8l4 4v9L4 0h-8z" /><path class="roof" d="M-8-12h16M-4-16v4M4-16v4" /><path
+						class="detail"
+						d="M-3 0v-5h6v5"
+					/><path class="signal" d="M-5-9h3M2-9h3" />
+				{:else if b.type === "scientists"}
+					<path class="body" d="M-8 0v-7h12v7" /><path class="body" d="M-3-15a7 7 0 0 0 10 7z" /><path
+						class="detail"
+						d="M2-10l6-7M7-18l2 2M1-7v-2"
+					/><path class="roof" d="M-8-7h12" /><path class="signal" d="M-5-4h5" />
+				{:else if b.type === "orbitalLab"}
+					<path class="body" d="M-3-3v-13l3-3 3 3v10L0-1z" /><path class="panel" d="M-9-13h5v8h-5zM4-13h5v8H4z" /><path
+						class="detail"
+						d="M-9-9h5M4-9h5M-3-8h-1M3-8h1M0-1v2"
+					/><path class="signal" d="M0-12v5" />
+				{:else if b.type === "robots"}
+					<path class="body" d="M-6-13v-6H6v6zM-5-11H5v7H-5z" /><path
+						class="detail"
+						d="M-2-13v2M2-13v2M-5-9h-3v5M5-9h3v5M-3-4v4h-3M3-4v4h3"
+					/><path class="signal" d="M-3-16h1M2-16h1" />
+				{:else if b.type === "laboratory"}
+					<path class="body" d="M-9 0v-6h5v-5h8v5h5v6z" /><path
+						class="body"
+						d="M0-11v-8M-4-15a4 4 0 1 1 8 0 4 4 0 1 1-8 0z"
+					/><path class="detail" d="M-4-15h8M0-19v8" /><path class="signal" d="M-6-3h3M3-3h3" />
+				{:else if b.type === "ecoplants"}
+					<path class="body" d="M-9 0v-4a9 10 0 0 1 18 0v4z" /><path
+						class="roof"
+						d="M-9-4H9M0-14C-5-10-5-4-5 0M0-14C5-10 5-4 5 0"
+					/><path class="signal" d="M0-2v-7M0-5q-5 0-3-4 3 0 3 4M0-7q0-4 3-4 2 4-3 4" />
+				{:else if b.type === "outpost"}
+					<path class="body" d="M-5 0v-12H5V0M-8-12v-5H8v5z" /><path class="roof" d="M-9-17l4-3H5l4 3z" /><path
+						class="detail"
+						d="M0-20v-4M0-23h4M-2 0v-5h4v5"
+					/><path class="signal" d="M-5-15H5" />
+				{:else if b.type === "spaceStation"}
+					<path class="body" d="M-2 0v-20h4V0" /><ellipse class="body" cx="0" cy="-11" rx="9" ry="6" /><ellipse
+						class="panel"
+						cx="0"
+						cy="-11"
+						rx="5"
+						ry="3"
+					/><path class="detail" d="M0-17v3M0-8v3M-9-11h4M5-11h4" /><path class="signal" d="M-6-15l2-1M4-6l2-1" />
+				{:else if b.type === "planetaryCruiser"}
+					<path class="body" d="M-3-5v-10l3-7 3 7v10l5 4v-8l-5-5M-3-14l-5 5v8z" /><path
+						class="roof"
+						d="M-3-5h6M-3-15h6"
+					/><path class="signal" d="M0-17v3M-1-3v3M2-3v3" />
+				{:else if b.type === "moonBase"}
+					<path class="body" d="M-9 0v-5a4 4 0 0 1 8 0v5M1 0v-5a4 4 0 0 1 8 0v5" /><path
+						class="body"
+						d="M-5-4v-7a5 5 0 0 1 10 0v7z"
+					/><path class="roof" d="M-5-10H5M-9-4h8M1-4h8" /><path class="detail" d="M0-16v-4l4 1-4 2" /><path
+						class="signal"
+						d="M-7-2h3M4-2h3M-2-7h4"
+					/>
+				{:else if b.type === "iceProspector"}
+					<path class="body" d="M-8-2v-6h9v6M1-6l4-8h3L5-2" /><path
+						class="detail"
+						d="M-6 0h6M-3-8v-5l-3-3M5-7l3 2-3 3"
+					/><path class="signal" d="M-6-5h3" />
+				{:else if b.type === "robotPrototype"}
+					<path class="body" d="M-7 0v-17h14V0M-3-10v-4h6v4z" /><path
+						class="detail"
+						d="M-7-5H7M-3-9h6v4M-1-5v3M2-5v3"
+					/><path class="signal" d="M-1-12h2" /><path class="roof" d="M-8-17H8" />
+				{:else if b.type === "smelter"}
+					<path class="body" d="M-8 0v-7h5l2-7h7l2 14z" /><path class="roof" d="M-2-14h9M-1-10h7" /><path
+						class="signal"
+						d="M0-6h5v4H0z"
+					/><path class="detail" d="M-6-4h2" />
+				{:else if b.type === "wilyTrader"}
+					<path class="body" d="M-8 0v-8H8V0" /><path class="roof" d="M-9-8l3-5H6l3 5z" /><path
+						class="detail"
+						d="M-6-13l-1 5M0-13v5M6-13l1 5"
+					/><path class="signal" d="M-4-5H4" />
+				{:else if b.type === "launchFacility"}
+					<path class="body" d="M-9 0v-20h4V0M0-3v-9l3-7 3 7v9z" /><path
+						class="detail"
+						d="M-9-15h9M-9-9h8M-7-20v20M0-3l-2 3M6-3l2 3"
+					/><path class="signal" d="M3-11v3" />
+				{:else if b.type === "merchantHouse"}
+					<path class="body" d="M-8 0v-12h16V0" /><path class="roof" d="M-9-12l9-6 9 6z" /><path
+						class="detail"
+						d="M-5-10v8M5-10v8M-2 0v-5h4v5"
+					/><path class="signal" d="M-1-10h2" />
+				{:else if b.type === "ncfPrototype"}
+					<path class="body" d="M-8 0v-15h16V0M-3-12v4l-2 5H5L3-8v-4z" /><path class="roof" d="M-9-15H9" /><path
+						class="signal"
+						d="M-2-5h4"
+					/>
+				{:else if b.type === "refinery"}
+					<path class="body" d="M-8 0v-17h4V0M0 0v-12h4V0M5 0v-7h4v7" /><path
+						class="detail"
+						d="M-8-13h4M-8-8h4M-4-5h4M0-9h4M4-3h1"
+					/><path class="signal" d="M-6-3v-2M2-5v-2" />
 				{/if}
-				{#if b.kind === "factory" && b.manned}
-					<g class="res" transform="translate(0 -5)">
-						{#if b.resource === "ore"}
-							<path d="M-2.5 1.5 L0 -2.5 L2.5 1.5 z" />
-						{:else if b.resource === "water"}
-							<path d="M0 -2.5 C1.5 -0.5 2 0.5 2 1.5 A2 2 0 1 1 -2 1.5 C-2 0.5 -1.5 -0.5 0 -2.5 z" />
-						{:else if b.resource === "titanium"}
-							<path d="M0 -2.5 L2 -1 L2 1.5 L0 2.5 L-2 1.5 L-2 -1 z" />
-						{:else if b.resource === "research"}
-							<circle cx="0" cy="0" r="1" />
-							<ellipse cx="0" cy="0" rx="3" ry="1.2" class="thin" />
-						{:else if b.resource === "microbiotics"}
-							<circle cx="-1" cy="-1" r="1.5" />
-							<circle cx="1" cy="1" r="1.8" class="thin" />
-						{:else if b.resource === "newChemicals"}
-							<path d="M-1 -2.5 L-1 -0.5 L-2.5 2 L2.5 2 L1 -0.5 L1 -2.5 z" />
-						{:else if b.resource === "orbitalMedicine"}
-							<circle cx="0" cy="0" r="2.5" class="thin" />
-							<path d="M0 -1.5 L0 1.5 M-1.5 0 L1.5 0" />
-						{:else if b.resource === "ringOre"}
-							<circle cx="0" cy="0" r="1.5" />
-							<ellipse cx="0" cy="0" rx="3.5" ry="1.2" transform="rotate(-18)" class="thin" />
-						{:else if b.resource === "moonOre"}
-							<path d="M2 1.5 A2.5 2.5 0 1 1 -1 -2 2 2 0 0 0 2 1.5 z" />
-						{/if}
-					</g>
-				{/if}
+				<path class="base" d="M-10 0H10l-2 2H-8z" />
 			</g>
 		{/each}
 	</svg>
@@ -629,64 +689,86 @@
 	.bldg {
 		pointer-events: all;
 	}
-	.bldg .body {
-		fill: #1a1e26;
-		stroke: var(--bc);
-		stroke-width: 1.2;
-		opacity: 0.5;
+
+	.biosphere .glass {
+		fill: color-mix(in srgb, var(--bc) 8%, transparent);
+		stroke: color-mix(in srgb, var(--bc) 65%, #e0fff5);
+		stroke-width: 0.9;
 	}
-	.bldg .base {
-		fill: #1a1e26;
+	.biosphere .rib {
+		fill: none;
 		stroke: var(--bc);
-		stroke-width: 0.8;
-		opacity: 0.5;
+		stroke-width: 0.6;
+		opacity: 0.3;
 	}
-	.bldg .detail {
+	.biosphere .seal {
+		fill: none;
 		stroke: var(--bc);
 		stroke-width: 1;
-		fill: none;
-		opacity: 0.5;
+		opacity: 0.55;
 	}
-	.bldg.manned .body {
-		fill: color-mix(in srgb, var(--bc) 35%, #1a1e26);
-		opacity: 0.9;
+	.bldg {
+		stroke-linecap: round;
+		stroke-linejoin: round;
 	}
-	.bldg.manned .base {
-		fill: color-mix(in srgb, var(--bc) 25%, #1a1e26);
-		opacity: 0.9;
+	.bldg .footprint {
+		fill: #17191c;
+		opacity: 0.4;
 	}
-	.bldg.manned .detail {
-		opacity: 0.9;
+	.bldg .body {
+		fill: #29343d;
+		stroke: color-mix(in srgb, var(--bc) 55%, #68747e);
+		stroke-width: 0.85;
 	}
-	.bldg.upgrade .body {
-		stroke-width: 1.4;
+	.bldg .roof {
+		fill: #414e57;
+		stroke: var(--bc);
+		stroke-width: 0.8;
 	}
-	.bldg .res {
-		fill: var(--rc);
-		stroke: none;
-		animation: domeGlow 3s ease-in-out infinite;
-	}
-	.bldg .res .thin {
-		fill: none;
-		stroke: var(--rc);
+	.bldg .base {
+		fill: #263038;
+		stroke: #637079;
 		stroke-width: 0.6;
 	}
-	@keyframes domeGlow {
-		0%,
-		100% {
-			opacity: 0.5;
-		}
-		50% {
-			opacity: 1;
-		}
+	.bldg .detail {
+		fill: none;
+		stroke: #81929c;
+		stroke-width: 0.8;
+	}
+	.bldg .panel {
+		fill: #182c3f;
+		stroke: var(--bc);
+		stroke-width: 0.7;
+	}
+	.bldg .signal {
+		fill: #34424b;
+		stroke: #34424b;
+		stroke-width: 1;
+	}
+	.bldg.manned .body {
+		fill: color-mix(in srgb, var(--bc) 18%, #27323b);
+		stroke: var(--bc);
+	}
+	.bldg.manned .roof {
+		fill: color-mix(in srgb, var(--bc) 38%, #53616a);
+	}
+	.bldg.manned .signal {
+		fill: var(--rc);
+		stroke: var(--rc);
+	}
+	.bldg.upgrade .signal {
+		fill: #e5dcb0;
+		stroke: #e5dcb0;
+	}
+	.bldg:hover {
+		filter: brightness(1.35);
 	}
 
 	@media (prefers-reduced-motion: reduce) {
 		.rock,
 		.station,
 		.comet,
-		.moon .outpost .beacon,
-		.bldg .res {
+		.moon .outpost .beacon {
 			animation: none;
 		}
 		.comet {
