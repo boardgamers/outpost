@@ -484,6 +484,9 @@
 	}
 	.fgroup {
 		display: inline-flex;
+		flex-wrap: wrap;
+		max-width: 100%;
+		box-sizing: border-box;
 		gap: 3px;
 		padding: 3px 4px;
 		border-radius: 6px;
