@@ -10,7 +10,24 @@
 	const lines = $derived(store.logLines);
 	const recent = $derived(lines.map((line, index) => ({ line, index })).slice(-150));
 	let feed = $state<HTMLDivElement>();
+	let content = $state<HTMLDivElement>();
 	let follow = true;
+	$effect(() => {
+		const viewport = feed;
+		const entries = content;
+		if (!viewport || !entries) {
+			return;
+		}
+		// BGS can reveal or resize the iframe after the first Svelte render.
+		const observer = new ResizeObserver(() => {
+			if (follow) {
+				viewport.scrollTop = viewport.scrollHeight;
+			}
+		});
+		observer.observe(viewport);
+		observer.observe(entries);
+		return () => observer.disconnect();
+	});
 	$effect(() => {
 		void recent;
 		untrack(() => {
@@ -36,20 +53,22 @@
 			}
 		}}
 	>
-		{#each recent as item (item.index)}
-			{@const era = item.line.match(/^Era (II|III) begins/)?.[1]}
-			{#if era}
-				<div class="eramark era-{era === 'II' ? 2 : 3}">Era {era} begins</div>
-				<div class="entry" class:latest={item.index === lines.length - 1}>
-					{item.line.replace(/^Era (II|III) begins — /, "")}
-				</div>
-			{:else}
-				<div class="entry" class:latest={item.index === lines.length - 1}>{item.line}</div>
+		<div class="entries" bind:this={content}>
+			{#each recent as item (item.index)}
+				{@const era = item.line.match(/^Era (II|III) begins/)?.[1]}
+				{#if era}
+					<div class="eramark era-{era === 'II' ? 2 : 3}">Era {era} begins</div>
+					<div class="entry" class:latest={item.index === lines.length - 1}>
+						{item.line.replace(/^Era (II|III) begins — /, "")}
+					</div>
+				{:else}
+					<div class="entry" class:latest={item.index === lines.length - 1}>{item.line}</div>
+				{/if}
+			{/each}
+			{#if recent.length === 0}
+				<div class="entry dim">No events yet</div>
 			{/if}
-		{/each}
-		{#if recent.length === 0}
-			<div class="entry dim">No events yet</div>
-		{/if}
+		</div>
 	</div>
 </div>
 
@@ -74,6 +93,8 @@
 		padding: 8px 12px;
 		max-height: 320px;
 		overflow-y: auto;
+	}
+	.entries {
 		display: flex;
 		flex-direction: column;
 		gap: 3px;
