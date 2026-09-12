@@ -374,3 +374,23 @@ test("fastBid: auto-pass replays identically from a stripped log", () => {
 	assert.equal(replayed.auction?.highBidder, strong);
 	assert.equal(replayed.auction?.highBid, 26);
 });
+
+test("fastBid: other bidders must exceed the base price", () => {
+	const state = fastGame();
+	const opener = open(state);
+	const second = seatAfter(state, opener);
+	const before = structuredClone(state);
+	assert.throws(() => applyMove(state, { action: "bid", amount: 25 }, second), /at least 26/);
+	assert.deepEqual(state, before);
+	applyMove(state, { action: "bid", amount: 26 }, second);
+	assert.equal(state.auction?.bids?.[second], 26);
+});
+
+test("fastBid: a public maximum equal to base price auto-passes", () => {
+	const state = fastGame();
+	const opener = state.activeSeat;
+	const second = seatAfter(state, opener);
+	state.players[second]!.hand = Array.from({ length: 5 }, () => ({ t: "ore", v: 5 }));
+	open(state);
+	assert.equal(state.auction?.bids?.[second], 0);
+});

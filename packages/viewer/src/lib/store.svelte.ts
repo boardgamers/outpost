@@ -769,7 +769,7 @@ export class ViewerStore {
 			return;
 		}
 		// fastBid: the floor is the list price, not the (hidden) high bid.
-		this.bidAmount = s.auction.bids ? auctionCard(s.auction).price : s.auction.highBid + 1;
+		this.bidAmount = s.auction.bids ? auctionCard(s.auction).price + 1 : s.auction.highBid + 1;
 	}
 
 	/** Clamp a typed bid into [min, maxBid] so the input never holds an unaffordable/illegal value. */
@@ -778,7 +778,7 @@ export class ViewerStore {
 		if (!s?.auction || !Number.isFinite(value)) {
 			return;
 		}
-		const min = s.auction.bids ? auctionCard(s.auction).price : s.auction.highBid + 1;
+		const min = s.auction.bids ? auctionCard(s.auction).price + 1 : s.auction.highBid + 1;
 		this.bidAmount = Math.min(this.maxBid, Math.max(min, Math.floor(value)));
 	}
 
@@ -788,7 +788,7 @@ export class ViewerStore {
 			return;
 		}
 		const amount = Math.floor(this.bidAmount);
-		const min = s.auction.bids ? auctionCard(s.auction).price : s.auction.highBid + 1;
+		const min = s.auction.bids ? auctionCard(s.auction).price + 1 : s.auction.highBid + 1;
 		if (!Number.isInteger(amount) || amount < min || amount > this.maxBid) {
 			return;
 		}

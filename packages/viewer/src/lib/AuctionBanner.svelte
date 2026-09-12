@@ -25,7 +25,7 @@
 	);
 	const due = $derived(store.auctionDue());
 	const fast = $derived(store.fastBid);
-	const minBid = $derived(fast ? (spec?.price ?? 0) : (auction?.highBid ?? 0) + 1);
+	const minBid = $derived(fast ? (spec?.price ?? 0) + 1 : (auction?.highBid ?? 0) + 1);
 	const maxBid = $derived(store.maxBid);
 	const pendingNames = $derived(store.fastBidPending.map(nameOf).join(", "));
 
@@ -56,7 +56,7 @@
 				{#if store.myBidTurn}
 					{#if maxBid < minBid}
 						<div class="controls">
-							<span class="cantbid">You can't match the list price (your max is ◈ {maxBid}).</span>
+							<span class="cantbid">Minimum bid is ◈ {minBid}; your maximum is ◈ {maxBid}.</span>
 							<button class="confirm" onclick={() => store.passBid()}>Pass</button>
 						</div>
 					{:else}

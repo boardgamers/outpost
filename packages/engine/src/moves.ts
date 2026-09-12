@@ -658,7 +658,7 @@ function moveBidPass(state: GameState, _move: Move & { action: "bidPass" }, seat
 }
 
 /**
- * Auto-pass the seats that cannot reach a fast auction's list price. The
+ * Auto-pass the seats that cannot exceed a fast auction's list price. The
  * public bound (each card worth its deck max — public information) always
  * applies; the true hand value is only consulted for seats that opted into
  * autoPassBids, and both are recorded in the move's info.autoPassed and
@@ -670,7 +670,7 @@ function fastAutoPass(state: GameState, auction: NonNullable<GameState["auction"
 	if (!bids) {
 		return [];
 	}
-	const price = auctionPrice(auction);
+	const price = auctionPrice(auction) + 1;
 	const seats = replayMode
 		? replayAutoPassed
 		: state.players.flatMap((p, seat) => {
@@ -719,8 +719,8 @@ function moveFastBid(
 	// placeholder (the resolution comes from the recorded MoveInfo) and skips
 	// validation, which the server already did live.
 	if (!replayMode) {
-		if (!Number.isInteger(move.amount) || move.amount < auctionPrice(auction)) {
-			err(`bid must be at least ${auctionPrice(auction)}`);
+		if (!Number.isInteger(move.amount) || move.amount < auctionPrice(auction) + 1) {
+			err(`bid must be at least ${auctionPrice(auction) + 1}`);
 		}
 		assertCanPayBidFor(player, auction, move.amount);
 	}

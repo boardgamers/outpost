@@ -35,11 +35,11 @@ export function chooseMove(state: GameState, seat: number): Move {
 			return chooseExchange(state, seat, player);
 		case "auction": {
 			const auction = state.auction;
-			// fastBid: bid the max affordable when the list price is reachable,
+			// fastBid: bid the max affordable when the list price can be exceeded,
 			// otherwise pass (the sealed bid keeps a weak hand hidden).
 			if (auction?.bids) {
 				const max = handValue(player) + (auction.upgrade ? upgradeDiscount(player, auction.upgrade) : 0);
-				if (max >= auctionCard(auction).price) {
+				if (max > auctionCard(auction).price) {
 					return { action: "bid", amount: max };
 				}
 			}
