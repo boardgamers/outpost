@@ -1,9 +1,11 @@
 <script lang="ts">
+	import { chatDateSeparators } from "@boardgamers/protocol/chat";
 	import type { ViewerStore } from "./store.svelte";
 	import type { ChatMessage } from "@boardgamers/protocol/chat";
 	import { bindChatComposer, bindChatViewport, type ChatSuggestions } from "@boardgamers/protocol/chat/dom";
 	let { store }: { store: ViewerStore } = $props();
 	const chat = $derived(store.chatState);
+	const dates = $derived(chatDateSeparators(chat.messages));
 	const messages = $derived(chat.messages);
 	let composer: HTMLInputElement | undefined = $state();
 	let feed: HTMLDivElement | undefined = $state();
@@ -55,6 +57,8 @@
 				{#each messages as message, index (message._id ?? index)}
 					{@const color = store.chatAuthorColor(message)}
 					{@const time = timeOf(message)}
+					{@const day = dates[index]}
+					{#if day}<div class="chat-day"><time datetime={day.dateTime}>{day.label}</time></div>{/if}
 					<div class="entry" class:system={message.type === "system"} data-message-id={message._id}>
 						{#if time}<span class="time">{time}</span>{/if}
 						{#if message.author}
@@ -116,6 +120,24 @@
 {/if}
 
 <style>
+	.chat-day {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin: 12px 0 8px;
+		font-size: 11px;
+		color: var(--text-dim);
+	}
+	.chat-day::before,
+	.chat-day::after {
+		content: "";
+		flex: 1;
+		border-top: 1px solid var(--line);
+	}
+	.chat-day time {
+		color: inherit;
+		font-size: inherit;
+	}
 	.chat {
 		display: flex;
 		flex-direction: column;

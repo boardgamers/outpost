@@ -50,6 +50,7 @@ try {
 					Array.from({ length: 35 }, (_, i) => ({
 						_id: (i + 1).toString(16).padStart(24, "0"),
 						text: `History ${i}`,
+						createdAt: new Date(2026, 8, i < 30 ? 12 : 13, 12).toISOString(),
 						type: "text",
 						author: "Other",
 						playerIndex: 2,
@@ -71,6 +72,10 @@ try {
 			await page.waitForTimeout(650);
 			assert.equal(await page.evaluate(() => events.filter((e) => e.name === "chat:read").length), 0);
 		}
+		assert.deepEqual(await page.locator(".chat-day time").evaluateAll((dates) => dates.map((date) => date.dateTime)), [
+			"2026-09-12",
+			"2026-09-13",
+		]);
 		const feed = page.getByRole("region", { name: "Chat messages" });
 		await feed.scrollIntoViewIfNeeded();
 		await page.waitForFunction(() => events.some((e) => e.name === "chat:read" && e.data.messageId.endsWith("23")));
