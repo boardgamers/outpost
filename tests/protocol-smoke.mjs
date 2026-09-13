@@ -83,16 +83,17 @@ try {
 		await input.fill("@");
 		assert.equal(await page.locator(".mention-choices").getByRole("button", { name: "@You", exact: true }).count(), 0);
 		await input.fill("@F");
-		await input.press("Enter");
-		assert.equal(await input.inputValue(), '@"Full Name" ');
+		await input.press("Tab");
+		await input.pressSequentially("hello");
+		assert.equal(await input.inputValue(), '@"Full Name" hello');
 		await input.press("Enter");
 		const request = await page.evaluate(() => events.findLast((e) => e.name === "chat:send").data);
-		assert.equal(request.text, '@"Full Name"');
+		assert.equal(request.text, '@"Full Name" hello');
 		await page.evaluate(
 			(request) => emitter.emit("chat:result", { requestId: request.requestId, ok: false, error: "Rate limited" }),
 			request
 		);
-		assert.equal(await input.inputValue(), '@"Full Name" ');
+		assert.equal(await input.inputValue(), '@"Full Name" hello');
 		await page.getByRole("alert").filter({ hasText: "Rate limited" }).waitFor();
 		await input.fill("Try again");
 		await input.press("Enter");
