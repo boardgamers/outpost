@@ -1,122 +1,17 @@
 <script lang="ts">
-	import { tick } from "svelte";
-	import { applyMention, mentionQueryAt, type ChatMessage } from "@boardgamers/protocol/chat";
 	import type { ViewerStore } from "./store.svelte";
-
+	import type { ChatMessage } from "@boardgamers/protocol/chat";
+	import { bindChatComposer, bindChatViewport, type ChatSuggestions } from "@boardgamers/protocol/chat/dom";
 	let { store }: { store: ViewerStore } = $props();
 	const chat = $derived(store.chatState);
 	const messages = $derived(chat.messages);
+	let composer: HTMLInputElement | undefined = $state();
 	let feed: HTMLDivElement | undefined = $state();
 	let contents: HTMLDivElement | undefined = $state();
-	let composer: HTMLInputElement | undefined = $state();
-	let caret = $state(0);
-	let choice = $state(0);
-	let dismissed = $state(false);
-	const query = $derived(dismissed ? null : mentionQueryAt(chat.draft, caret));
-	const candidates = $derived.by(() => {
-		void chat.mentions;
-		void chat.playerIndex;
-		return query ? store.chat.suggestions(query.query) : [];
-	});
-	let pinned = true;
-	let frame: number | undefined;
-
-	function visibleRead(): void {
-		if (!feed || document.visibilityState !== "visible" || !document.hasFocus()) {
-			return;
-		}
-		const bounds = feed.getBoundingClientRect();
-		if (!bounds.width || !bounds.height) {
-			return;
-		}
-		const rows = [...feed.querySelectorAll<HTMLElement>("[data-message-id]")];
-		const latest = rows.reverse().find((row) => {
-			const rect = row.getBoundingClientRect();
-			return rect.bottom <= Math.min(bounds.bottom, window.innerHeight) && rect.bottom > Math.max(bounds.top, 0);
-		});
-		if (latest?.dataset.messageId) {
-			store.chat.markRead(latest.dataset.messageId);
-		}
-	}
-	function followLatest(): void {
-		if (frame !== undefined) {
-			cancelAnimationFrame(frame);
-		}
-		frame = requestAnimationFrame(() => {
-			if (feed && pinned) {
-				feed.scrollTop = feed.scrollHeight;
-			}
-			frame = undefined;
-			visibleRead();
-		});
-	}
-	$effect(() => {
-		const element = feed;
-		void messages;
-		if (!element) {
-			return;
-		}
-		let disposed = false;
-		void tick().then(() => {
-			if (!disposed) {
-				followLatest();
-			}
-		});
-		const observer = new IntersectionObserver(visibleRead);
-		observer.observe(element);
-		const resize = new ResizeObserver(followLatest);
-		resize.observe(element);
-		if (contents) {
-			resize.observe(contents);
-		}
-		return () => {
-			disposed = true;
-			observer.disconnect();
-			resize.disconnect();
-			if (frame !== undefined) {
-				cancelAnimationFrame(frame);
-			}
-			frame = undefined;
-		};
-	});
-	async function chooseMention(name: string): Promise<void> {
-		if (!query) {
-			return;
-		}
-		const next = applyMention(chat.draft, query, name);
-		store.chat.setDraft(next.text);
-		caret = next.caret + 1;
-		dismissed = true;
-		await tick();
-		composer?.focus();
-		composer?.setSelectionRange(caret, caret);
-	}
-	function onKeydown(event: KeyboardEvent): void {
-		if (event.isComposing) {
-			return;
-		}
-		if (candidates.length) {
-			if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-				event.preventDefault();
-				choice = (choice + (event.key === "ArrowDown" ? 1 : candidates.length - 1)) % candidates.length;
-				return;
-			}
-			if (event.key === "Escape") {
-				event.preventDefault();
-				dismissed = true;
-				return;
-			}
-			if (event.key === "Enter" || event.key === "Tab") {
-				event.preventDefault();
-				void chooseMention(candidates[choice]?.name ?? candidates[0]!.name);
-				return;
-			}
-		}
-		if (event.key === "Enter" && !event.shiftKey) {
-			event.preventDefault();
-			store.chat.submit();
-		}
-	}
+	let inputBinding: ReturnType<typeof bindChatComposer> | undefined;
+	let suggestions: ChatSuggestions = $state.raw({ candidates: [], selected: 0 });
+	const candidates = $derived(suggestions.candidates);
+	const choice = $derived(suggestions.selected);
 	function timeOf(message: ChatMessage): string | undefined {
 		if (!message.createdAt) {
 			return undefined;
@@ -126,27 +21,36 @@
 			? undefined
 			: date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 	}
+	$effect(() => {
+		if (!composer) {
+			return;
+		}
+		const binding = bindChatComposer(composer, {
+			chat: store.chat,
+			onSuggestions: (next) => {
+				suggestions = next;
+			},
+		});
+		inputBinding = binding;
+		return () => {
+			binding.destroy();
+			inputBinding = undefined;
+		};
+	});
+	$effect(() => {
+		if (!feed || !contents) {
+			return;
+		}
+		const binding = bindChatViewport(feed, { chat: store.chat, contents });
+		return () => binding.destroy();
+	});
 </script>
 
-<svelte:window onfocus={visibleRead} onscroll={visibleRead} />
-<svelte:document onvisibilitychange={visibleRead} />
 {#if chat.enabled}
 	<div class="chat">
 		<div class="caption">Chat{chat.unreadIds.length ? ` · ${chat.unreadIds.length}` : ""}</div>
 		<!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard users must be able to scroll chat.) -->
-		<div
-			class="feed"
-			bind:this={feed}
-			role="region"
-			aria-label="Chat messages"
-			tabindex="0"
-			onscroll={() => {
-				if (feed && frame === undefined) {
-					pinned = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 40;
-				}
-				visibleRead();
-			}}
-		>
+		<div class="feed" bind:this={feed} role="region" aria-label="Chat messages" tabindex="0">
 			<div bind:this={contents}>
 				{#each messages as message, index (message._id ?? index)}
 					{@const color = store.chatAuthorColor(message)}
@@ -197,29 +101,11 @@
 							type="button"
 							class:selected={i === choice}
 							onmousedown={(event) => event.preventDefault()}
-							onclick={() => chooseMention(candidate.name)}>@{candidate.name}</button
+							onclick={() => inputBinding?.choose(i)}>@{candidate.name}</button
 						>{/each}
 				</div>{/if}
 			<div class="composer">
-				<input
-					type="text"
-					value={chat.draft}
-					bind:this={composer}
-					oninput={(event) => {
-						store.chat.setDraft(event.currentTarget.value);
-						caret = composer?.selectionStart ?? 0;
-						choice = 0;
-						dismissed = false;
-					}}
-					onclick={() => {
-						caret = composer?.selectionStart ?? 0;
-						dismissed = false;
-					}}
-					onkeydown={onKeydown}
-					placeholder="Message…"
-					maxlength="500"
-					aria-label="Chat message"
-				/>
+				<input type="text" bind:this={composer} placeholder="Message…" maxlength="500" aria-label="Chat message" />
 				<button type="button" onclick={() => store.chat.submit()} disabled={!chat.draft.trim() || !!chat.pending}
 					>{chat.pending ? "Sending…" : "Send"}</button
 				>
