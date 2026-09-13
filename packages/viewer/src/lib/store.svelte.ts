@@ -35,7 +35,8 @@ import {
 	type TurnBuy,
 	type Upgrade,
 } from "outpost-engine";
-import type { ViewerBridge, ViewerChatCanSend, ViewerChatMessage } from "./bgs.svelte";
+import type { ViewerCommands } from "@boardgamers/protocol/viewer";
+import { ChatController, type ChatMessage } from "@boardgamers/protocol/chat";
 
 export interface ReplayState {
 	active: boolean;
@@ -210,15 +211,11 @@ export class ViewerStore {
 	logLines = $state<string[]>([]);
 	seenLog = $state(0);
 	lastMoveAt = $state<number>(0);
-	chatMessages = $state<ViewerChatMessage[]>([]);
-	chatDisabled = $state(false);
-	/** Write permission from `chat:state`; null = not yet told (assume allowed). */
-	chatCanSend = $state<ViewerChatCanSend | null>(null);
-	/** Error of the last refused send (from `chat:result` ok:false), to show by the composer. */
-	chatSendError = $state<string | undefined>(undefined);
-	private chatRequestSeq = 0;
-	private chatRequestDrafts = new Map<string, string>();
-	private lastChatReadId: string | undefined;
+	chat = new ChatController();
+	chatState = $state.raw(this.chat.snapshot);
+	private unsubscribeChat = this.chat.subscribe((snapshot) => {
+		this.chatState = snapshot;
+	});
 
 	cardPick = $state<number[]>([]);
 	/** Mega cards to take per resource (rule 12.1 blind election). */
@@ -240,65 +237,16 @@ export class ViewerStore {
 	turnBuys = $state<TurnBuy[]>([]);
 	private draft = $state<GameState | null>(null);
 
-	constructor(private bridge: ViewerBridge) {
-		bridge.on("state", (state) => this.setState(state));
-		bridge.on("player", ({ index }) => {
-			this.playerIndex = typeof index === "number" && index >= 0 ? index : undefined;
-		});
-		bridge.on("avatars", (list) => (this.avatars = list ?? []));
-		bridge.on("preferences", (prefs) => (this.preferences = prefs ?? {}));
-		bridge.on("state:updated", () => bridge.fetchState());
-		bridge.on("gamelog", (payload) => this.onGamelog(payload));
-		bridge.on("replay:start", () => this.startReplay());
-		bridge.on("replay:to", (to) => this.replayTo(to));
-		bridge.on("replay:end", () => this.endReplay());
-		bridge.on("chat:messages", (messages) => {
-			this.chatMessages = Array.isArray(messages) ? messages : [];
-			this.markChatRead();
-		});
-		bridge.on("chat:appended", (messages) => {
-			if (Array.isArray(messages) && messages.length > 0) {
-				this.chatMessages = [...this.chatMessages, ...messages];
-				this.markChatRead();
-			}
-		});
-		bridge.on("chat:updated", (messages) => {
-			if (!Array.isArray(messages)) {
-				return;
-			}
-			const byId = new Map(messages.flatMap((m) => (m._id ? [[m._id, m]] : [])));
-			if (byId.size > 0) {
-				this.chatMessages = this.chatMessages.map((m) => (m._id ? (byId.get(m._id) ?? m) : m));
-			}
-		});
-		bridge.on("chat:deleted", (ids) => {
-			if (Array.isArray(ids) && ids.length > 0) {
-				const drop = new Set(ids);
-				this.chatMessages = this.chatMessages.filter((m) => !m._id || !drop.has(m._id));
-			}
-		});
-		bridge.on("chat:disabled", (disabled) => (this.chatDisabled = disabled === true));
-		bridge.on("chat:state", (state) => {
-			this.chatCanSend = state && typeof state === "object" ? state : null;
-		});
-		bridge.on("chat:result", (result) => {
-			if (!result || typeof result !== "object") {
-				return;
-			}
-			const draft = this.chatRequestDrafts.get(result.requestId);
-			this.chatRequestDrafts.delete(result.requestId);
-			if (result.ok) {
-				this.chatSendError = undefined;
-			} else if (draft !== undefined) {
-				// Refused: nothing is echoed via chat:appended, so restore the draft to retry.
-				this.chatSendError = result.error;
-				this.chatRetryDraft = draft;
-			}
-		});
+	constructor(private commands: ViewerCommands<Move>) {}
+
+	destroy(): void {
+		this.unsubscribeChat();
+		this.chat.destroy();
 	}
 
-	/** Draft restored after a refused send; the composer takes it back. */
-	chatRetryDraft = $state<string | undefined>(undefined);
+	openPlayer(index: number): void {
+		this.commands.openPlayer(index);
+	}
 
 	get state(): GameState | null {
 		if (this.replay.active) {
@@ -307,7 +255,7 @@ export class ViewerStore {
 		return this.draft ?? this.liveState;
 	}
 
-	private setState(state: GameState): void {
+	setState(state: GameState): void {
 		this.liveState = state;
 		this.seenLog = state.log.length;
 		this.logLines = describeLog(state);
@@ -316,7 +264,7 @@ export class ViewerStore {
 			this.lastMoveAt = Date.now();
 		}
 		this.rebuildDraft();
-		this.bridge.replaceLog(this.logLines);
+		this.commands.replaceLog([...this.logLines]);
 	}
 
 	// Re-apply the staged buys on top of the (new) live state; drop them when
@@ -345,48 +293,48 @@ export class ViewerStore {
 		}
 	}
 
-	private onGamelog(payload: { start: number; end?: number; data: unknown }): void {
+	onGamelog(payload: { start: number; end?: number; data: unknown }): void {
 		const data = payload?.data as { log?: unknown[] } | undefined;
 		const entries = Array.isArray(data?.log) ? (data.log as GameState["log"]) : [];
 		const base = this.liveState;
 		if (!base || entries.length === 0) {
-			this.bridge.fetchState();
+			this.commands.fetchState();
 			return;
 		}
 		if (payload.start >= this.logLines.length) {
 			const appended = entries.map((entry) => describeLogEntry(base, entry));
 			this.logLines = [...this.logLines, ...appended];
 			this.seenLog = base.log.length;
-			this.bridge.replaceLog(this.logLines);
+			this.commands.replaceLog([...this.logLines]);
 		} else {
-			this.bridge.fetchState();
+			this.commands.fetchState();
 		}
 	}
 
-	private startReplay(): void {
+	startReplay(): void {
 		const live = this.liveState;
 		if (!live) {
 			return;
 		}
 		this.replay = { active: true, current: 1, end: live.log.length, state: replayEngine(live, { to: 1 }) };
-		this.bridge.replayInfo({ start: 1, current: 1, end: live.log.length });
+		this.commands.setReplayInfo({ start: 1, current: 1, end: live.log.length });
 	}
 
-	private replayTo(to: number): void {
+	replayTo(to: number): void {
 		const live = this.liveState;
 		if (!live || !this.replay.active) {
 			return;
 		}
 		const clamped = Math.max(1, Math.min(to, live.log.length));
 		this.replay = { ...this.replay, current: clamped, state: replayEngine(live, { to: clamped }) };
-		this.bridge.replayInfo({ start: 1, current: clamped, end: this.replay.end });
+		this.commands.setReplayInfo({ start: 1, current: clamped, end: this.replay.end });
 	}
 
 	replayToEntry(to: number): void {
 		this.replayTo(to);
 	}
 
-	private endReplay(): void {
+	endReplay(): void {
 		this.replay = { active: false, current: 0, end: 0, state: null };
 	}
 
@@ -1038,44 +986,8 @@ export class ViewerStore {
 		this.autoSuggested = false;
 	}
 
-	get chatWritable(): boolean {
-		return !this.chatDisabled && this.chatCanSend?.canSend !== false;
-	}
-
-	sendChat(text: string): void {
-		const trimmed = text.trim();
-		if (!trimmed || !this.chatWritable) {
-			return;
-		}
-		const requestId = `chat-${Date.now().toString(36)}-${++this.chatRequestSeq}`;
-		this.chatRequestDrafts.set(requestId, trimmed);
-		this.chatSendError = undefined;
-		this.bridge.sendChat(trimmed, requestId);
-	}
-
-	/** Take the restored draft of a refused send (composer picks it up once). */
-	takeChatRetryDraft(): string | undefined {
-		const draft = this.chatRetryDraft;
-		this.chatRetryDraft = undefined;
-		return draft;
-	}
-
-	/** Read receipt: watermark the newest shown message so the platform clears its unread badge. */
-	private markChatRead(): void {
-		for (let i = this.chatMessages.length - 1; i >= 0; i--) {
-			const id = this.chatMessages[i]?._id;
-			// The platform's watermark derives from the ObjectId timestamp — only
-			// real ObjectIds advance it (dev "dev-N" ids are ignored server-side).
-			if (id && id !== this.lastChatReadId && /^[0-9a-f]{24}$/.test(id)) {
-				this.lastChatReadId = id;
-				this.bridge.readChat(id);
-				return;
-			}
-		}
-	}
-
 	/** Seat color for a chat author: playerIndex when given, else match by name. */
-	chatAuthorColor(message: ViewerChatMessage): string | undefined {
+	chatAuthorColor(message: ChatMessage): string | undefined {
 		const seat =
 			message.playerIndex ??
 			(message.author !== undefined ? (this.liveState?.players.findIndex((p) => p.name === message.author) ?? -1) : -1);
@@ -1083,7 +995,7 @@ export class ViewerStore {
 	}
 
 	private send(move: Move): void {
-		this.bridge.sendMove(move);
+		this.commands.move($state.snapshot(move));
 		this.cancel();
 		this.applyOptimistic(move);
 	}
@@ -1105,8 +1017,4 @@ export class ViewerStore {
 			// not applicable against the stripped view — wait for the server state
 		}
 	}
-}
-
-export function createStore(bridge: ViewerBridge): ViewerStore {
-	return new ViewerStore(bridge);
 }

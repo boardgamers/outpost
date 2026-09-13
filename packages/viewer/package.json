@@ -16,6 +16,7 @@
 		"preview": "vite preview"
 	},
 	"dependencies": {
+		"@boardgamers/protocol": "0.1.0",
 		"outpost-engine": "workspace:*"
 	},
 	"devDependencies": {

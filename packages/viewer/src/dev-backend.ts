@@ -1,3 +1,5 @@
+import { chatSegments } from "@boardgamers/protocol/chat";
+import type { ViewerEmitter } from "@boardgamers/protocol/viewer";
 import { applyMove, chooseMove, initGame, type GameState, type Move } from "outpost-engine";
 import { currentPlayer, stripSecret } from "outpost-engine/wrapper.js";
 
@@ -37,13 +39,7 @@ const AVATARS = [
 	"https://api.dicebear.com/9.x/bottts-neutral/svg?seed=Juno&backgroundColor=e8c0f0",
 ];
 
-export function startDevBackend(
-	emitter: {
-		emit: (event: string, payload?: unknown) => void;
-		on: (event: string, fn: (payload: never) => void) => void;
-	},
-	options: DevOptions = {}
-): void {
+export function startDevBackend(emitter: ViewerEmitter<GameState, Move>, options: DevOptions = {}): void {
 	const playerCount = options.players ?? 4;
 	const seed = options.seed ?? `dev-${Math.floor(Math.random() * 1e6)}`;
 	const delay = options.delayMs ?? 700;
@@ -98,9 +94,14 @@ export function startDevBackend(
 	// Viewer-chat harness: seed a short history and echo accepted posts back as
 	// chat:appended (the real platform rebroadcasts to everyone the same way).
 	// A requestId is answered with chat:result, like the platform's send-ack.
+	const mentions = state.players.map((player, playerIndex) => ({
+		id: `dev-${playerIndex}`,
+		name: player.name,
+		playerIndex,
+	}));
 	let chatSeq = 0;
-	const chatId = () => `dev-${++chatSeq}`;
-	emitter.on("chat:send", ((payload: { text?: string; requestId?: string }) => {
+	const chatId = () => (++chatSeq).toString(16).padStart(24, "0");
+	emitter.on("chat:send", (payload) => {
 		const text = typeof payload?.text === "string" ? payload.text.trim() : "";
 		const requestId = typeof payload?.requestId === "string" ? payload.requestId : undefined;
 		if (requestId) {
@@ -108,12 +109,20 @@ export function startDevBackend(
 		}
 		if (text) {
 			emitter.emit("chat:appended", [
-				{ _id: chatId(), author: NAMES[human], authorId: "dev-you", playerIndex: human, text, type: "text" },
+				{
+					_id: chatId(),
+					author: NAMES[human],
+					authorId: "dev-you",
+					playerIndex: human,
+					text,
+					segments: chatSegments(text, new Map(mentions.map((p) => [p.id, p.name])), true),
+					type: "text",
+				},
 			]);
 		}
-	}) as never);
+	});
 
-	emitter.on("move", ((move: Move) => {
+	emitter.on("move", (move) => {
 		if (state.ended) {
 			return;
 		}
@@ -125,11 +134,11 @@ export function startDevBackend(
 			return;
 		}
 		publish();
-	}) as never);
+	});
 
-	emitter.on("fetchState", (() => publish()) as never);
+	emitter.on("fetchState", () => publish());
 
-	emitter.emit("chat:state", { canSend: true });
+	emitter.emit("chat:state", { canSend: true, mentions });
 	emitter.emit("chat:messages", [
 		{ _id: chatId(), text: "Game created. Good luck, everyone!", type: "system" },
 		{ _id: chatId(), author: NAMES[1], authorId: "dev-ada", playerIndex: 1, text: "gl hf!", type: "text" },

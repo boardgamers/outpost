@@ -1,51 +1,59 @@
-import { installActionSounds } from "./lib/sounds";
-import { mount } from "svelte";
+import { mount, tick, unmount } from "svelte";
+import { registerViewer } from "@boardgamers/protocol/viewer";
+import type { GameState, Move } from "outpost-engine";
+import { createActionSounds } from "./lib/sounds";
 import App from "./App.svelte";
-import { launchBridge } from "./lib/bgs.svelte";
-import { createStore } from "./lib/store.svelte";
-import type { Emitter } from "./lib/emitter";
+import { ViewerStore } from "./lib/store.svelte";
 import "./lib/theme.css";
 
-export function launch(selector: string): Emitter {
-	const target = document.querySelector(selector);
-	if (!target) {
-		throw new Error(`outpost-viewer: no element matches "${selector}"`);
-	}
-
-	const bridge = launchBridge();
-	installActionSounds(bridge.events);
-	const store = createStore(bridge);
-
-	mount(App, {
-		target,
-		props: {
-			store,
-			onPlayerClick: (index: number) => bridge.playerClicked(index),
+registerViewer<GameState, Move>("outpost", (commands) => {
+	const store = new ViewerStore(commands);
+	const sounds = createActionSounds();
+	const app = mount(App, {
+		target: commands.target,
+		props: { store, onPlayerClick: commands.openPlayer },
+	});
+	return {
+		chat: store.chat,
+		async onState(state) {
+			sounds.onState(state);
+			store.setState(state);
+			await tick();
 		},
-	});
-	console.log("[outpost] viewer mounted");
+		onPlayer({ index }) {
+			store.playerIndex = index;
+		},
+		onAvatars(avatars) {
+			store.avatars = avatars;
+		},
+		onPreferences(preferences) {
+			store.preferences = preferences;
+			sounds.onPreferences(preferences);
+		},
+		onLog(log) {
+			store.onGamelog(log);
+		},
+		onReplayStart() {
+			sounds.onReplayStart();
+			store.startReplay();
+		},
+		onReplayTo(to) {
+			store.replayTo(to);
+		},
+		onReplayEnd() {
+			sounds.onReplayEnd();
+			store.endReplay();
+		},
+		destroy() {
+			store.destroy();
+			sounds.destroy();
+			void unmount(app);
+		},
+	};
+});
 
-	// Emit ready only after the FIRST state has arrived and rendered — that's when
-	// the game is actually shown. Emitting on mount (before state) makes the shim
-	// post displayReady while the viewer still shows "Waiting for game state…",
-	// and on a hard refresh that early displayReady can race ahead of the parent's
-	// listener and get dropped, leaving the spinner up forever. A macrotask after
-	// setState lets Svelte flush the DOM first (never rAF — hidden iframes skip it).
-	let readySent = false;
-	bridge.on("state", (s) => {
-		console.log("[outpost] state received", { players: s?.players?.length, round: s?.round, readySent });
-		if (readySent) {
-			return;
-		}
-		readySent = true;
-		setTimeout(() => {
-			console.log("[outpost] emitting ready (after first state)");
-			bridge.ready();
-		}, 0);
-	});
-	return bridge.events as unknown as Emitter;
-}
-
-if (typeof window !== "undefined") {
-	(window as unknown as { outpost?: unknown }).outpost = { launch };
+declare global {
+	interface Window {
+		outpost: ReturnType<typeof registerViewer<GameState, Move>>;
+	}
 }

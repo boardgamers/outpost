@@ -8,9 +8,10 @@ export default defineConfig(({ command }) => ({
 		emptyOutDir: true,
 		cssCodeSplit: false,
 		sourcemap: true,
+		// Vite requires a bundle name; registerViewer owns the outpost global.
 		lib: {
+			name: "outpostBundle",
 			entry: "src/viewer.ts",
-			name: "outpost",
 			formats: ["iife"],
 			fileName: () => "outpost-viewer.iife.js",
 		},

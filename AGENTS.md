@@ -65,10 +65,9 @@ data deviations (some production deck distributions are inferred, not confirmed)
 
 - **Svelte 5 runes mode only**: `$state`, `$derived`, `$props`, `$effect`. No legacy
   `export let`, no `$:` reactive statements.
-- The viewer must keep working both inside the BGS iframe (postMessage bridge in
-  `src/lib/bgs.svelte.ts`) and standalone (dev harness: `packages/viewer/index.html` +
-  `src/dev.ts`). Uplink events are emitted on the emitter returned by `launch()` as well as
-  posted to `window.parent`, so a local backend can subscribe the same way BGS does.
+- The viewer uses `@boardgamers/protocol` for registration, validated events, and chat.
+  `registerViewer` exposes `window.outpost.launch()`; its returned emitter is driven
+  by BGS or the standalone dev harness. Do not add another postMessage bridge.
 - Keep everything asset-free: cards and tokens are pure CSS. Theme tokens live in
   `src/lib/theme.css`.
 - The BGS host measures `body.scrollHeight` — normal top-down document flow, no vertical

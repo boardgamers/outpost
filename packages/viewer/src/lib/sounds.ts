@@ -1,3 +1,4 @@
+import type { GameState } from "outpost-engine";
 type Note = [number, number, number, number, number?];
 type Cue = { label: string; notes: Note[] };
 export const soundCues: Record<string, Cue> = {
@@ -97,43 +98,46 @@ export function playSound(name: string): void {
 		.catch(() => undefined);
 }
 
-export function installActionSounds(emitter: { on: (event: string, fn: (value: any) => void) => unknown }): void {
+export function createActionSounds() {
 	let previous: string[] | undefined;
 	let replaying = false;
-	emitter.on("preferences", (prefs) => {
-		if (typeof prefs?.sound === "boolean") {
-			setSoundEnabled(prefs.sound);
-		}
-	});
-	emitter.on("replay:start", () => {
-		replaying = true;
-	});
-	emitter.on("replay:end", () => {
-		replaying = false;
-		previous = undefined;
-	});
-	emitter.on("state", (state) => {
-		const entries = state?.log || [];
-		const next = entries.map((entry: any) => JSON.stringify(entry));
-		const extendsHistory = previous && previous.length < next.length && previous.every((entry, i) => entry === next[i]);
-		const from = previous?.length || 0;
-		previous = next;
-		if (!extendsHistory || replaying) {
-			return;
-		}
-		const cues = entries
-			.slice(from)
-			.map((entry: any) => cueForEntry(entry))
-			.filter(Boolean);
-		// Reconnection can deliver a whole round: play only the most recent event.
-		const cue = cues[cues.length - 1];
-		if (cue) {
-			playSound(cue);
-		}
-	});
+	return {
+		onPreferences(prefs: Record<string, unknown>) {
+			setSoundEnabled(prefs.sound !== false);
+		},
+		onReplayStart() {
+			replaying = true;
+		},
+		onReplayEnd() {
+			replaying = false;
+			previous = undefined;
+		},
+		onState(state: GameState) {
+			const entries = state.log;
+			const next = entries.map((entry) => JSON.stringify(entry));
+			const extendsHistory =
+				previous && previous.length < next.length && previous.every((entry, i) => entry === next[i]);
+			const from = previous?.length ?? 0;
+			previous = next;
+			if (!extendsHistory || replaying) {
+				return;
+			}
+			const cues = entries.slice(from).map(cueForEntry).filter(Boolean);
+			const cue = cues[cues.length - 1];
+			if (cue) {
+				playSound(cue);
+			}
+		},
+		destroy() {
+			if (context) {
+				void context.close();
+				context = undefined;
+			}
+		},
+	};
 }
 
-export function mountSoundTests(emitter: { emit: (event: string, value: any) => unknown }): void {
+export function mountSoundTests(onPreferenceChange: (sound: boolean) => void): void {
 	const panel = document.createElement("details");
 	panel.style.cssText =
 		"position:relative;z-index:5;padding:10px 16px;margin:8px;background:#172638;color:#f0f4f8;border:1px solid #56718a;border-radius:8px;font:14px system-ui";
@@ -147,7 +151,7 @@ export function mountSoundTests(emitter: { emit: (event: string, value: any) => 
 	toggle.checked = true;
 	toggle.onchange = () => {
 		setSoundEnabled(toggle.checked);
-		emitter.emit("preferences", { sound: toggle.checked });
+		onPreferenceChange(toggle.checked);
 	};
 	label.append(toggle, " Game sounds");
 	panel.append(label);
