@@ -96,6 +96,36 @@ Dev harness URL params: `?players=4&seed=xyz&delay=700&auto=1&fastBid=1&kicker=1
 
 Node >= 24, pnpm 11 (see `packageManager`). All dependencies pinned.
 
+## Tutorials
+
+The ordinary viewer bundle also exposes `window.outpost.launchTutorial(selector, { chapter })`.
+No second bundle is needed. Chapter metadata is exported as `tutorialChapters` from
+`packages/viewer/src/tutorial/lessons.ts` for the BGS version's `tutorial.chapters` field.
+
+| Chapter ID        | Lesson                                                    |
+| ----------------- | --------------------------------------------------------- |
+| `colony`          | Production cards, Water factories and operator transfers  |
+| `auctions`        | Open bidding, passing and paying for an upgrade           |
+| `sealed-bids`     | Maximum bids, second-price payment and personal discounts |
+| `staffing`        | Robot limits and choosing which factories to operate      |
+| `storage`         | Hand capacity and exempt Research/Microbiotics cards      |
+| `new-chemicals`   | Spending a Research card to build a New Chemicals factory |
+| `mega-production` | Blind production choices and Mega-card storage            |
+| `victory`         | Reaching 75 VP and finishing the round                    |
+
+Each chapter uses a prepared position and the real engine. Opponents' turns are scripted;
+the viewer still hides their private cards and unresolved sealed bids. The shared guide
+provides saved progress, previous-step navigation and replay.
+
+```bash
+pnpm build
+pnpm preview:tutorial # http://127.0.0.1:5198/?chapter=colony
+pnpm test:tutorial
+pnpm test:tutorial:browser # requires Playwright Chromium
+```
+
+Set `OUTPOST_CHROMIUM_EXECUTABLE` when using an existing Chromium installation.
+
 ## Deploying to BGS
 
 - Engine: `npm pack` the built `outpost-engine` (or publish) and register it as the game

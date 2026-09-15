@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { moveAI } from "./ai.js";
+import { describeLogEntry } from "./describe.js";
+import { UPGRADE_SPECS } from "./data.js";
 import { applyMove, initGame } from "./moves.js";
 import { replay } from "./replay.js";
 import { handValueRange } from "./state.js";
@@ -65,6 +67,37 @@ test("stripped state stays JSON-round-trippable", () => {
 	const state = play(initGame(3, {}, "json-spec"), 50);
 	const stripped = wrapper.stripSecret(state, 1);
 	assert.deepEqual(JSON.parse(JSON.stringify(stripped)), stripped);
+});
+
+test("open auction bids stay public in state and log slices during and after bidding", () => {
+	const state = initGame(3, { fastBid: false }, "open-bid-log");
+	for (const player of state.players) {
+		player.hand = Array.from({ length: 6 }, () => ({ t: "water", v: 10 }));
+	}
+	const marketIndex = state.market.findIndex((upgrade) => UPGRADE_SPECS[upgrade].price === 25);
+	applyMove(state, { action: "auction", marketIndex, bid: 25 }, state.activeSeat);
+	const bidder = state.auction!.activeBidder;
+	state.players[bidder]!.name = "Ada";
+	applyMove(state, { action: "bid", amount: 30 }, bidder);
+	const index = state.log.length - 1;
+	const source = structuredClone(state.log[index]);
+	const check = () => {
+		for (const viewer of [0, 1, 2, undefined]) {
+			const stripped = wrapper.stripSecret(state, viewer);
+			assert.deepEqual(stripped.log[index], source);
+			assert.equal(describeLogEntry(stripped, stripped.log[index]!), "Ada bids 30");
+			const slice = wrapper.logSlice(state, { player: viewer, start: index, end: index + 1 });
+			assert.deepEqual(slice.log, [{ ...source, simple: "Ada bids 30" }]);
+		}
+	};
+	assert.equal(state.phase, "auction");
+	check();
+	for (let i = 0; state.phase === "auction" && i < 3; i++) {
+		applyMove(state, { action: "bidPass" }, state.auction!.activeBidder);
+	}
+	assert.equal(state.phase, "auctionPayment");
+	check();
+	assert.deepEqual(state.log[index], source);
 });
 
 test("replay rebuilds the same public state from the log", () => {

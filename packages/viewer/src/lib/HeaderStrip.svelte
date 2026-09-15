@@ -55,7 +55,9 @@
 		{/if}
 	{/if}
 	<span class="item phase">{phaseLabel}</span>
-	<span class="item dim">First to {VICTORY_VP} VP wins</span>
+	<span class="item dim" title="Finish the round when someone reaches 75 VP. The player with the most VP wins.">
+		{VICTORY_VP} VP · finish the round
+	</span>
 </div>
 
 <style>

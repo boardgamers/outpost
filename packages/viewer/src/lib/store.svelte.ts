@@ -237,7 +237,10 @@ export class ViewerStore {
 	turnBuys = $state<TurnBuy[]>([]);
 	private draft = $state<GameState | null>(null);
 
-	constructor(private commands: ViewerCommands<Move>) {}
+	constructor(
+		private commands: ViewerCommands<Move>,
+		private optimistic = true
+	) {}
 
 	destroy(): void {
 		this.unsubscribeChat();
@@ -997,7 +1000,9 @@ export class ViewerStore {
 	private send(move: Move): void {
 		this.commands.move($state.snapshot(move));
 		this.cancel();
-		this.applyOptimistic(move);
+		if (this.optimistic) {
+			this.applyOptimistic(move);
+		}
 	}
 
 	// Apply my own move to the local (stripped) state right away so the UI feels

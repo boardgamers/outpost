@@ -55,7 +55,7 @@
 	}
 </script>
 
-<div class="market">
+<div class="market" data-tutorial="market">
 	<div class="caption">Colony upgrades for auction</div>
 	{#if state.market.length === 0}
 		<div class="empty">The market is empty. New upgrades arrive with the next colony ship.</div>

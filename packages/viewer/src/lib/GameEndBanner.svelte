@@ -15,7 +15,7 @@
 </script>
 
 {#if state?.ended}
-	<div class="banner">
+	<div class="banner" data-tutorial="result">
 		<h2>Game over</h2>
 		<p class="result">
 			{#if winners.length > 1}

@@ -96,6 +96,7 @@
 
 <div
 	class="panel"
+	data-tutorial={isMe ? "colony" : undefined}
 	class:active={isActive}
 	class:dropped={player.dropped}
 	class:me={isMe}
@@ -285,7 +286,7 @@
 			{/each}
 		</div>
 	{/if}
-	<div class="row hand">
+	<div class="row hand" data-tutorial={isMe ? "hand" : undefined}>
 		{#if isMe}
 			{#each player.hand as card, i (i)}
 				{#if store.myExchange}

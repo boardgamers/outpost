@@ -98,13 +98,13 @@
 	});
 </script>
 
-{#if state && !state.ended && !store.replay.active}
-	<div class="actionbar">
+{#if state && !state.ended && !store.replay.active && !store.myBidTurn}
+	<div class="actionbar" data-tutorial="actions">
 		{#if store.myMega && me}
 			<div class="flow mega-flow">
 				<span class="hint gold-hint">
-					Production: choose Mega cards <strong>before</strong> seeing your draws (rule 12.1). Each costs a group of 4 operated
-					factories; the rest of your draws are kept as singles.
+					Production: choose Mega cards <strong>before</strong> seeing your draws. Each costs a group of 4 operated factories;
+					the rest of your draws are kept as singles.
 				</span>
 				{#each Object.entries(store.megaEligible) as [resource, groups] (resource)}
 					{@const mega = MEGA_CARDS[resource as keyof typeof MEGA_CARDS]}
@@ -277,7 +277,7 @@
 					</span>
 				</div>
 			{/if}
-		{:else if !store.myBidTurn}
+		{:else}
 			<div class="flow">
 				<span class="hint dim">{waitingOn}</span>
 			</div>

@@ -114,11 +114,10 @@ function hideProduced(
 		// The seed derives every deck order; it must never reach a client.
 		return { ...entry, seed: "" };
 	}
-	if (entry.type === "move" && entry.move.action === "bid" && entry.player !== viewer && !sealedBidVisible) {
+	if (fastBid && entry.type === "move" && entry.move.action === "bid" && entry.player !== viewer && !sealedBidVisible) {
 		// fastBid: another player's sealed bid stays hidden while its auction
-		// runs; once the auction resolves every bid is revealed (even losing
-		// ones), like Powergrid. Masking a sequential bid too is harmless — the
-		// amount is already public via auction.highBid for the seats it concerns.
+		// runs; once the auction resolves every bid is revealed, including
+		// losing ones. Sequential auctions keep every bid public throughout.
 		return { ...entry, move: { action: "bid", amount: -1 } };
 	}
 	if (

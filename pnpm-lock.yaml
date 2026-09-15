@@ -40,8 +40,8 @@ importers:
   packages/viewer:
     dependencies:
       '@boardgamers/protocol':
-        specifier: 0.2.2
-        version: 0.2.2
+        specifier: 0.3.1
+        version: 0.3.1
       outpost-engine:
         specifier: workspace:*
         version: link:../engine
@@ -67,8 +67,8 @@ importers:
 
 packages:
 
-  '@boardgamers/protocol@0.2.2':
-    resolution: {integrity: sha512-5o5nPZW6CN6PysF0i90OR+B30djiFhAGutCZe5RKJV6h3RgqE36HA7l0pOpvhdHz8uYtqE0nmaPlc+2ZtYiM/A==}
+  '@boardgamers/protocol@0.3.1':
+    resolution: {integrity: sha512-FF8OUEvAZ+BKjZZ3Ab8Dw7oQh6TJOKMNkmRHqoabeE4clSp8lMRnHGGEakZdi7DplDJpstnya2fgBk2hX82UrA==}
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -772,7 +772,7 @@ packages:
 
 snapshots:
 
-  '@boardgamers/protocol@0.2.2':
+  '@boardgamers/protocol@0.3.1':
     dependencies:
       zod: 4.6.2
 

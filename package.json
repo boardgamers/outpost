@@ -8,13 +8,16 @@
 	"scripts": {
 		"dev": "pnpm --filter outpost-viewer dev",
 		"build": "pnpm --filter outpost-engine build && pnpm --filter outpost-viewer build",
-		"test": "pnpm --filter outpost-engine test",
+		"test": "pnpm --filter outpost-engine test && pnpm test:tutorial",
 		"tsc": "pnpm --filter outpost-engine tsc && pnpm --filter outpost-viewer tsc",
 		"fmt": "oxfmt",
 		"fmt:check": "oxfmt --check",
 		"lint": "oxlint",
 		"check": "pnpm fmt:check && pnpm lint && pnpm tsc && pnpm test && pnpm build",
-		"test:browser": "node tests/protocol-smoke.mjs"
+		"test:browser": "node tests/protocol-smoke.mjs",
+		"test:tutorial": "pnpm --filter outpost-engine build && node --test tests/tutorial.spec.mjs",
+		"test:tutorial:browser": "node tests/tutorial-browser.mjs",
+		"preview:tutorial": "node tests/tutorial-preview.mjs"
 	},
 	"devDependencies": {
 		"oxfmt": "0.61.0",

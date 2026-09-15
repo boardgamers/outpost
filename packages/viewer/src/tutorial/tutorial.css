@@ -1,0 +1,109 @@
+.outpost-tutorial {
+	--tutorial-height: 180px;
+}
+.tutorial-top {
+	position: sticky;
+	top: 0;
+	z-index: 50;
+	padding: 8px 16px;
+	background: var(--bg);
+}
+.bgs-tutorial-guide {
+	max-width: 1368px;
+	margin: auto;
+	border: 1px solid var(--gold);
+	border-radius: var(--radius);
+	background: var(--bg-panel);
+	padding: 12px 16px;
+}
+.bgs-tutorial-heading {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	color: var(--gold);
+}
+.bgs-tutorial-body p {
+	margin: 8px 0 12px;
+	max-width: 1050px;
+}
+.bgs-tutorial-controls,
+.bgs-tutorial-playback,
+.bgs-tutorial-help {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+.bgs-tutorial-controls {
+	flex-wrap: wrap;
+}
+.bgs-tutorial-playback,
+.bgs-tutorial-help {
+	flex-wrap: nowrap;
+}
+.bgs-tutorial-transport {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	flex: 0 0 36px;
+	padding: 0;
+}
+.bgs-tutorial-guide small {
+	display: block;
+	margin-top: 8px;
+	color: var(--text-dim);
+	font-size: 11px;
+}
+.bgs-tutorial-guide [role="alert"] {
+	color: #ffc8ad;
+}
+.outpost-tutorial [hidden] {
+	display: none;
+}
+.tutorial-choices {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 12px auto 4px;
+	width: fit-content;
+	max-width: 100%;
+}
+.tutorial-choices button {
+	border-color: var(--gold);
+	padding: 8px 12px;
+	font-weight: 600;
+}
+.bgs-tutorial-highlight {
+	outline: 2px solid var(--gold);
+	outline-offset: 4px;
+}
+.outpost-tutorial [data-tutorial] {
+	scroll-margin-top: calc(var(--tutorial-height) + 24px);
+	scroll-margin-bottom: 24px;
+}
+.outpost-tutorial .side {
+	top: calc(var(--tutorial-height) + 12px);
+}
+.outpost-tutorial .actionbar {
+	position: static;
+}
+@media (max-width: 720px) {
+	.tutorial-top {
+		padding: 6px 8px;
+	}
+	.bgs-tutorial-guide {
+		padding: 8px 10px;
+		font-size: 13px;
+	}
+	.bgs-tutorial-guide small {
+		display: none;
+	}
+	.bgs-tutorial-body p {
+		margin: 6px 0 8px;
+	}
+	.tutorial-choices {
+		margin-top: 8px;
+	}
+}

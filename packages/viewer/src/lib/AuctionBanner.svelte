@@ -37,7 +37,7 @@
 </script>
 
 {#if auction && spec}
-	<div class="banner">
+	<div class="banner" data-tutorial="auction">
 		<div class="block">
 			<span class="label">On the block</span>
 			<span class="uname">{spec.name}</span>
