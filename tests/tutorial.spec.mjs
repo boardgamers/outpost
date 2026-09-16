@@ -122,9 +122,17 @@ for (const lesson of lessons) {
 			assert.equal(controller.snapshot.step, index + 1);
 			validateState(controller.snapshot.state.game);
 			const after = structuredClone(controller.snapshot.state);
+			const feedback = controller.snapshot.feedback;
+			if (entry?.kind === "answer") {
+				assert.match(feedback, /^Correct! /);
+				assert.equal(lesson.steps[index].target, undefined);
+			} else {
+				assert.equal(feedback, "");
+			}
 			controller.destroy();
 			controller = await createTutorial(options);
 			assert.deepEqual(controller.snapshot.state, after);
+			assert.equal(controller.snapshot.feedback, feedback);
 			assert.equal(controller.snapshot.step, index + 1);
 			await controller.previousStep();
 			assert.deepEqual(controller.snapshot.state, before);
@@ -179,7 +187,7 @@ test("wrong answers and unrelated moves leave the lesson unchanged", async () =>
 	await controller.continue();
 	const before = structuredClone(controller.snapshot.state);
 	await controller.play(answer("1"));
-	assert.equal(controller.snapshot.error, "Not quite. Try another answer.");
+	assert.match(controller.snapshot.error, /^Not quite\. You receive no change/);
 	assert.deepEqual(controller.snapshot.state, before);
 	await controller.play(answer("0"));
 	await controller.play(move({ action: "endTurn", buys: [], manned: [0, 1, 2] }));

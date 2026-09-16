@@ -277,18 +277,25 @@ function actionStep(
 			allowed(action, state) ? undefined : "Follow this step’s instructions. Use Replay step to start it again.",
 	};
 }
-function question(id: string, title: string, text: string, answer: string): TutorialStep<LessonState, LessonAction> {
+function question(
+	id: string,
+	title: string,
+	text: string,
+	answer: string,
+	explanation: string
+): TutorialStep<LessonState, LessonAction> {
 	return {
-		...actionStep(
-			id,
-			title,
-			text,
-			(action) => action.kind === "answer" && action.answer === answer,
-			(state) => state.answer === answer,
-			"lesson-choices"
-		),
+		id,
+		title,
+		text,
+		success: `Correct! ${explanation}`,
+		complete: (state) => state.answer === answer,
 		validateMove: (_state, action) =>
-			action.kind === "answer" && action.answer === answer ? undefined : "Not quite. Try another answer.",
+			action.kind !== "answer"
+				? "Choose one of the answers below."
+				: action.answer === answer
+					? undefined
+					: `Not quite. ${explanation}`,
 	};
 }
 const isMove = (action: Move["action"]) => (value: LessonAction) =>
@@ -315,7 +322,8 @@ export const lessons: Lesson[] = [
 				"credits",
 				"Cards are your money",
 				"You have 21 credits in four cards. Purchases consume whole cards and give no change. If you spend all 21 on a Water factory costing 20, how many credits come back?",
-				"0"
+				"0",
+				"You receive no change. All 21 credits are spent, even though the factory costs 20."
 			),
 			actionStep(
 				"build",
@@ -418,7 +426,8 @@ export const lessons: Lesson[] = [
 				"price",
 				"How much do you owe?",
 				"You bid 60, Leo bid 50 and Ada bid 40. The price is the second-highest bid plus 1, here 51. Subtract your two Data Libraries’ 20-credit discount. How much do you pay?",
-				"31"
+				"31",
+				"The auction price is 51. Your 20-credit discount reduces your payment to 31."
 			),
 			actionStep(
 				"pay",
@@ -450,7 +459,8 @@ export const lessons: Lesson[] = [
 				"limit",
 				"How many robots can operate?",
 				"Each Robots upgrade lets you operate as many robots as you have colonists. With three colonists and one Robots upgrade, how many robots could work? Robots do not use your colonist capacity.",
-				"3"
+				"3",
+				"One Robots upgrade and three colonists let you operate up to three robots. They use no colonist capacity."
 			),
 			actionStep(
 				"assign",
@@ -498,7 +508,8 @@ export const lessons: Lesson[] = [
 				"count",
 				"Which cards use space?",
 				"You hold fourteen cards: ten Ore, two Water and two Research. Research and Microbiotics use no hand capacity. How many of your cards count toward the limit?",
-				"12"
+				"12",
+				"The ten Ore and two Water cards use 12 spaces. Both Research cards use none."
 			),
 			actionStep(
 				"discard",
@@ -536,7 +547,8 @@ export const lessons: Lesson[] = [
 				"requirement",
 				"What must the payment include?",
 				"A New Chemicals factory costs 60. Is having a Research card enough, or must you spend it as part of those 60 credits?",
-				"Spend one Research card per factory"
+				"Spend one Research card per factory",
+				"Spend a Research card as part of each factory’s 60-credit payment. Keeping it in hand is not enough."
 			),
 			actionStep(
 				"build",
@@ -591,7 +603,8 @@ export const lessons: Lesson[] = [
 				"space",
 				"How much storage does it use?",
 				"Mega Water is one physical card, but it replaces four ordinary cards. How many spaces does it count toward your hand limit?",
-				"4"
+				"4",
+				"One Mega card uses four spaces, just like the four production cards it replaces."
 			),
 		],
 		choices: { space: answers("1", "4", "30") },
@@ -616,7 +629,8 @@ export const lessons: Lesson[] = [
 				"score",
 				"Does saving money score points?",
 				"You also hold a 60-credit Moon Ore card. Does keeping it in your hand add 60 VP?",
-				"No, only staffed factories and upgrades score"
+				"No, only staffed factories and upgrades score",
+				"Unspent cards add no VP. Points come from staffed factories and upgrades."
 			),
 			actionStep(
 				"open",
@@ -641,7 +655,8 @@ export const lessons: Lesson[] = [
 				"round",
 				"Is the game over immediately?",
 				"You now have 75 VP, but Ada and Leo still have turns this round. Could another player still finish with more VP and win?",
-				"Yes, finish the round first"
+				"Yes, finish the round first",
+				"Everyone finishes the round. Another player can still overtake you; the highest final VP wins."
 			),
 			actionStep(
 				"finish",

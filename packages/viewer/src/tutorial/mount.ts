@@ -8,7 +8,7 @@ import { ViewerStore } from "../lib/store.svelte";
 import { lessons, type LessonAction } from "./lessons";
 import "./tutorial.css";
 
-export const mountTutorial: TutorialMount = async (target, { chapter, onProgress }) => {
+export const mountTutorial: TutorialMount = async (target, { chapter, onProgress, nextChapter }) => {
 	const lesson = lessons.find((entry) => entry.id === chapter);
 	if (!lesson) {
 		throw Error("Unknown Outpost chapter");
@@ -124,7 +124,7 @@ export const mountTutorial: TutorialMount = async (target, { chapter, onProgress
 		choices.hidden = !choices.childElementCount;
 	});
 	await tick();
-	const cleanupGuide = mountTutorialGuide(guide, controller);
+	const cleanupGuide = mountTutorialGuide(guide, controller, { nextChapter });
 	const resize = new ResizeObserver(() => {
 		target.style.setProperty("--tutorial-height", `${top.getBoundingClientRect().height}px`);
 	});

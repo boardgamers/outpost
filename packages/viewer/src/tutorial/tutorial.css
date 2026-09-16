@@ -107,3 +107,24 @@
 		margin-top: 8px;
 	}
 }
+
+.bgs-tutorial-feedback {
+	margin: 0 0 12px;
+	padding: 10px 12px;
+	border-left: 3px solid #54c584;
+	background: #193b2c;
+	color: #c1f3d4;
+	font-weight: 600;
+}
+
+.bgs-tutorial-guide .bgs-tutorial-next-chapter {
+	height: 36px;
+	padding: 0 10px;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	white-space: nowrap;
+}
+.bgs-tutorial-guide [hidden] {
+	display: none;
+}

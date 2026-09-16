@@ -42,7 +42,10 @@ try {
 					const answer = lesson.choices[entry.id].find(
 						(choice) => !entry.validateMove(lesson.initialState(), { kind: "answer", answer: choice.answer })
 					);
+					assert.equal(await guide.getByRole("button", { name: "Show area", exact: true }).isVisible(), false);
 					await button(answer.label).click();
+					await guide.locator(".bgs-tutorial-feedback").waitFor();
+					assert.match(await guide.locator(".bgs-tutorial-feedback").innerText(), /^Correct! /);
 				} else if (lesson.watch?.[entry.id]) {
 					await button(lesson.watch[entry.id]).click();
 				} else if (entry.id === "open") {
