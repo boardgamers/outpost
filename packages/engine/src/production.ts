@@ -3,6 +3,14 @@ import { drawCard, megaGroupsFor } from "./state.js";
 import { UPGRADES } from "./types.js";
 import type { GameState, PlayerState, ProductionCard } from "./types.js";
 
+export function dealStartingHand(state: GameState, player: PlayerState): ProductionCard[] {
+	const resources = ["ore", "ore", "ore", "ore", "water", "water"] as const;
+	const cards = resources.map((t) => ({ t, v: drawCard(state, t) }));
+	player.pendingMega = cards;
+	player.megaGroups = {};
+	return cards;
+}
+
 /**
  * Draw production for one player: one card per manned factory plus upgrade
  * freebies. The draws are staged in `pendingMega` (not yet in the hand) so the

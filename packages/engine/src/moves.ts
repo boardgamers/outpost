@@ -1,6 +1,6 @@
 import { FACTORIES, KICKER_SPECS, MEGA_CARDS, ROBOT_COST, UPGRADE_SPECS, VICTORY_VP } from "./data.js";
 import { colonyEra, refillKickers, refillMarket, updateEraStreaks } from "./market.js";
-import { producePlayer } from "./production.js";
+import { dealStartingHand, producePlayer } from "./production.js";
 import {
 	canBuyFactory,
 	computePurchaseOrder,
@@ -100,7 +100,8 @@ export function beginRound(state: GameState): void {
 	const megaGroups: { player: number; groups: Partial<Record<Resource, number>> }[] = [];
 	for (const seat of state.purchaseOrder) {
 		const player = state.players[seat] as PlayerState;
-		produced.push({ player: seat, cards: producePlayer(state, player) });
+		const cards = state.round === 1 ? dealStartingHand(state, player) : producePlayer(state, player);
+		produced.push({ player: seat, cards });
 		megaGroups.push({ player: seat, groups: { ...(player.megaGroups ?? {}) } });
 	}
 
