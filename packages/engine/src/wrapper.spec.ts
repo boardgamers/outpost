@@ -207,3 +207,30 @@ test("handValueRange brackets the true value on stripped hands, collapses on vis
 	assert.equal(own.min, ownTruth);
 	assert.equal(own.max, ownTruth);
 });
+
+test("analysis restores authoritative decks and RNG across round boundaries", () => {
+	const source = initGame(3, { kicker: true }, "analysis-rounds");
+	const snapshots: GameState[] = [];
+	for (let i = 0; i < 180 && !source.ended; i++) {
+		play(source, 1);
+		if (i === 15 || i === 70 || i === 130) {
+			snapshots.push(structuredClone(source));
+		}
+	}
+	const original = structuredClone(source);
+	for (const expected of snapshots) {
+		const copy = wrapper.createAnalysis(source, { to: expected.log.length, sourceEnded: true });
+		assert.deepEqual(copy.decks, expected.decks);
+		assert.equal(copy.rngCounter, expected.rngCounter);
+		assert.deepEqual(copy.log, expected.log);
+		assert.deepEqual(
+			copy.players.map((p) => p.hand),
+			expected.players.map((p) => p.hand)
+		);
+		play(copy, 5);
+		play(expected, 5);
+		assert.deepEqual(copy.decks, expected.decks);
+		assert.deepEqual(copy.log, expected.log);
+	}
+	assert.deepEqual(source, original);
+});

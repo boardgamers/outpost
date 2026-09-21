@@ -162,6 +162,42 @@ try {
 		await page.getByText("Edited", { exact: true }).waitFor();
 		assert.equal(await page.evaluate(() => events.filter((e) => e.name === "fetchState").length), 2);
 		assert.equal(await page.evaluate(() => events.filter((e) => e.name === "replay:info").length), 2);
+
+		await page.evaluate(() => {
+			window.translationsRequested = [];
+			emitter.on("chat:translate", (request) => {
+				translationsRequested.push(request);
+				emitter.emit("chat:translation", { ...request, ok: true, text: "Bonjour <img src=x>", language: "en" });
+			});
+			emitter.emit("chat:state", {
+				canSend: true,
+				translationTarget: "fr",
+				translationLabels: {
+					translate: "Traduire",
+					translating: "Traduction…",
+					translated: "Traduit",
+					original: "Voir l’original",
+					error: "Indisponible",
+					retry: "Réessayer",
+				},
+			});
+			emitter.emit("chat:messages", [{ _id: "000000000000000000000070", type: "text", text: "Hello", language: "en" }]);
+		});
+		await page.locator(".chat-translate").click();
+		await page.getByRole("button", { name: "Traduit · Voir l’original", exact: true }).waitFor();
+		assert.equal(await page.evaluate(() => translationsRequested.length), 1);
+		assert.equal(await page.locator('[data-message-id="000000000000000000000070"] img').count(), 0);
+		assert.match(
+			await page.locator('[data-message-id="000000000000000000000070"]').textContent(),
+			/Bonjour <img src=x>/
+		);
+		await page.locator(".chat-translate").click();
+		assert.match(await page.locator('[data-message-id="000000000000000000000070"]').textContent(), /Hello/);
+		assert.equal(await page.evaluate(() => translationsRequested.length), 1, "showing original needs no new request");
+		await page.evaluate(() => emitter.emit("preferences", { sound: false, analysis: true }));
+		await page.waitForFunction(() => !document.querySelector(".chat-translate")?.getBoundingClientRect().height);
+		await page.screenshot({ path: "/tmp/outpost-analysis-" + width + ".png", fullPage: true });
+		await page.evaluate(() => emitter.emit("preferences", { sound: false, analysis: false }));
 		await page.screenshot({ path: `/tmp/outpost-protocol-${width}.png`, fullPage: true });
 		await page.evaluate(() => emitter.emit("chat:disabled", true));
 		assert.equal(await input.count(), 0);

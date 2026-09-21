@@ -37,6 +37,7 @@ export const mountTutorial: TutorialMount = async (target, { chapter, onProgress
 			},
 			openPlayer: () => false,
 			updatePreference: () => false,
+			updateSetting: () => false,
 			fetchState: () => false,
 			fetchLog: () => false,
 			addLog: () => false,

@@ -1,10 +1,20 @@
 <script lang="ts">
-	import { chatDateSeparators } from "@boardgamers/protocol/chat";
+	import { chatDateSeparators, chatTranslationTitle } from "@boardgamers/protocol/chat";
 	import type { ViewerStore } from "./store.svelte";
 	import type { ChatMessage } from "@boardgamers/protocol/chat";
 	import { bindChatComposer, bindChatViewport, type ChatSuggestions } from "@boardgamers/protocol/chat/dom";
 	let { store }: { store: ViewerStore } = $props();
 	const chat = $derived(store.chatState);
+	const labels = $derived(
+		chat.translationLabels ?? {
+			translate: "Translate",
+			translating: "Translating…",
+			translated: "Translated",
+			original: "Show original",
+			retry: "Retry",
+			error: "Translation unavailable",
+		}
+	);
 	const dates = $derived(chatDateSeparators(chat.messages));
 	const messages = $derived(chat.messages);
 	let composer: HTMLInputElement | undefined = $state();
@@ -48,13 +58,17 @@
 	});
 </script>
 
-{#if chat.enabled}
+{#if chat.enabled && !store.preferences.analysis}
 	<div class="chat">
 		<div class="caption">Chat{chat.unreadIds.length ? ` · ${chat.unreadIds.length}` : ""}</div>
 		<!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard users must be able to scroll chat.) -->
 		<div class="feed" bind:this={feed} role="region" aria-label="Chat messages" tabindex="0">
 			<div bind:this={contents}>
 				{#each messages as message, index (message._id ?? index)}
+					{@const translation = message._id ? chat.translations[message._id] : undefined}
+					{@const displayed = translation?.shown
+						? { text: translation.text ?? message.text, segments: translation.segments }
+						: message}
 					{@const color = store.chatAuthorColor(message)}
 					{@const time = timeOf(message)}
 					{@const day = dates[index]}
@@ -70,7 +84,7 @@
 							{:else}<span class="author" style:color>{message.author}</span>{/if}
 						{/if}
 						<span class="text">
-							{#each message.segments ?? [{ kind: "text" as const, text: message.text }] as segment}
+							{#each displayed.segments ?? [{ kind: "text" as const, text: displayed.text }] as segment}
 								{#if segment.kind === "link"}<a href={segment.url} target="_blank" rel="noopener noreferrer"
 										>{segment.text}</a
 									>
@@ -89,6 +103,23 @@
 								{:else}{segment.text}{/if}
 							{/each}
 						</span>
+
+						{#if message._id && message.type === "text" && chat.translationTarget}
+							<button
+								type="button"
+								class="chat-translate"
+								disabled={!!translation?.pending}
+								title={chatTranslationTitle(translation?.language ?? message.language, chat.translationTarget)}
+								onclick={() => store.chat.toggleTranslation(message._id!)}
+								>{translation?.pending
+									? labels.translating
+									: translation?.shown
+										? `${labels.translated} · ${labels.original}`
+										: translation?.error
+											? `${labels.error} · ${labels.retry}`
+											: labels.translate}</button
+							>
+						{/if}
 						{#if message.editedAt}<span class="edited" title="Edited {message.editedAt}">(edited)</span>{/if}
 					</div>
 				{/each}
@@ -120,6 +151,22 @@
 {/if}
 
 <style>
+	.chat-translate {
+		min-height: 24px;
+		padding: 2px 4px;
+		margin-left: 4px;
+		border: 0;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		font-size: 11px;
+		text-decoration: underline;
+		cursor: pointer;
+	}
+	.chat-translate:disabled {
+		opacity: 0.65;
+		cursor: wait;
+	}
 	.chat-day {
 		display: flex;
 		align-items: center;

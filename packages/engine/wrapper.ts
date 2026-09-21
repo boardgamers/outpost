@@ -405,3 +405,32 @@ export function cancelled(data: GameState): boolean {
 export function factions(data: GameState): string[] {
 	return data.players.map((p) => p.name);
 }
+
+export function createAnalysis(data: GameState, { to }: { to: number; sourceEnded: boolean }): GameState {
+	if (!Number.isInteger(to) || to < 0 || to > data.log.length) {
+		throw new Error("Invalid history position");
+	}
+	const first = data.log[0];
+	if (!first || first.type !== "init") {
+		throw new Error("Missing initial state");
+	}
+	const copy = to === data.log.length ? structuredClone(data) : initGame(first.players, first.options, first.seed);
+	if (to !== data.log.length) {
+		for (const entry of data.log.slice(0, to)) {
+			if (entry.type !== "move") {
+				continue;
+			}
+			copy.players.forEach((player, seat) => {
+				player.settings = { autoPassBids: entry.info?.autoPassed?.includes(seat) ?? false };
+			});
+			applyMove(copy, entry.move, entry.player);
+		}
+	}
+	copy.players.forEach((player, seat) => {
+		player.name = data.players[seat]!.name;
+		player.dropped = false;
+		player.settings = { autoPassBids: false };
+	});
+	copy.messages = [];
+	return copy;
+}
