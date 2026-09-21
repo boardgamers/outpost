@@ -1,20 +1,15 @@
 <script lang="ts">
-	import { chatDateSeparators, chatTranslationTitle } from "@boardgamers/protocol/chat";
+	import {
+		chatDateSeparators,
+		chatTranslationTitle,
+		chatTranslationLabel,
+		chatTranslationIconPath,
+	} from "@boardgamers/protocol/chat";
 	import type { ViewerStore } from "./store.svelte";
 	import type { ChatMessage } from "@boardgamers/protocol/chat";
 	import { bindChatComposer, bindChatViewport, type ChatSuggestions } from "@boardgamers/protocol/chat/dom";
 	let { store }: { store: ViewerStore } = $props();
 	const chat = $derived(store.chatState);
-	const labels = $derived(
-		chat.translationLabels ?? {
-			translate: "Translate",
-			translating: "Translating…",
-			translated: "Translated",
-			original: "Show original",
-			retry: "Retry",
-			error: "Translation unavailable",
-		}
-	);
 	const dates = $derived(chatDateSeparators(chat.messages));
 	const messages = $derived(chat.messages);
 	let composer: HTMLInputElement | undefined = $state();
@@ -105,20 +100,29 @@
 						</span>
 
 						{#if message._id && message.type === "text" && chat.translationTarget}
+							{@const label = chatTranslationLabel(translation, chat.translationLabels)}
 							<button
 								type="button"
 								class="chat-translate"
 								disabled={!!translation?.pending}
-								title={chatTranslationTitle(translation?.language ?? message.language, chat.translationTarget)}
+								aria-label={label}
+								aria-pressed={!!translation?.shown}
+								aria-busy={!!translation?.pending}
+								title={`${label} (${chatTranslationTitle(translation?.language ?? message.language, chat.translationTarget)})`}
 								onclick={() => store.chat.toggleTranslation(message._id!)}
-								>{translation?.pending
-									? labels.translating
-									: translation?.shown
-										? `${labels.translated} · ${labels.original}`
-										: translation?.error
-											? `${labels.error} · ${labels.retry}`
-											: labels.translate}</button
 							>
+								<svg
+									width="14"
+									height="14"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="1.7"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									aria-hidden="true"><path d={chatTranslationIconPath} /></svg
+								>
+							</button>
 						{/if}
 						{#if message.editedAt}<span class="edited" title="Edited {message.editedAt}">(edited)</span>{/if}
 					</div>
@@ -152,19 +156,31 @@
 
 <style>
 	.chat-translate {
-		min-height: 24px;
-		padding: 2px 4px;
-		margin-left: 4px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		vertical-align: middle;
+		width: 24px;
+		height: 24px;
+		min-height: 0;
+		padding: 4px;
+		margin-left: 3px;
 		border: 0;
+		border-radius: 3px;
 		background: transparent;
 		color: inherit;
-		font: inherit;
-		font-size: 11px;
-		text-decoration: underline;
+		opacity: 0.55;
 		cursor: pointer;
 	}
+	.chat-translate:hover,
+	.chat-translate:focus-visible {
+		opacity: 1;
+	}
+	.chat-translate[aria-pressed="true"] {
+		opacity: 1;
+		background: var(--line);
+	}
 	.chat-translate:disabled {
-		opacity: 0.65;
 		cursor: wait;
 	}
 	.chat-day {
