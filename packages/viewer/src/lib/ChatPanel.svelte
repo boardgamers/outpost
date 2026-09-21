@@ -4,12 +4,15 @@
 		chatTranslationTitle,
 		chatTranslationLabel,
 		chatTranslationIconPath,
+		chatEditIconPath,
+		defaultChatEditLabels,
 	} from "@boardgamers/protocol/chat";
 	import type { ViewerStore } from "./store.svelte";
 	import type { ChatMessage } from "@boardgamers/protocol/chat";
 	import { bindChatComposer, bindChatViewport, type ChatSuggestions } from "@boardgamers/protocol/chat/dom";
 	let { store }: { store: ViewerStore } = $props();
 	const chat = $derived(store.chatState);
+	const editLabels = $derived(chat.editLabels ?? defaultChatEditLabels);
 	const dates = $derived(chatDateSeparators(chat.messages));
 	const messages = $derived(chat.messages);
 	let composer: HTMLInputElement | undefined = $state();
@@ -99,6 +102,29 @@
 							{/each}
 						</span>
 
+						{#if message._id && chat.canEdit && store.chat.canEdit(message)}
+							<button
+								type="button"
+								class="chat-edit"
+								title={editLabels.edit}
+								aria-label={editLabels.edit}
+								aria-pressed={chat.editingId === message._id}
+								disabled={!!chat.pending}
+								onclick={() => inputBinding?.edit(message._id!)}
+							>
+								<svg
+									width="14"
+									height="14"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="1.7"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									aria-hidden="true"><path d={chatEditIconPath} /></svg
+								>
+							</button>
+						{/if}
 						{#if message._id && message.type === "text" && chat.translationTarget}
 							{@const label = chatTranslationLabel(translation, chat.translationLabels)}
 							<button
@@ -135,6 +161,21 @@
 		{:else if !chat.canSend}
 			<div class="disabled-note">Chat is read-only here ({chat.reason || "not-a-player"}).</div>
 		{:else}
+			{#if chat.editingId}
+				<div class="chat-editing">
+					<span role="status">{editLabels.edit}</span><button
+						class="chat-edit-cancel"
+						type="button"
+						title={editLabels.cancel}
+						aria-label={editLabels.cancel}
+						disabled={!!chat.pending}
+						onclick={() => {
+							store.chat.cancelEditing();
+							composer?.focus();
+						}}>×</button
+					>
+				</div>
+			{/if}
 			{#if candidates.length}<div class="mention-choices" aria-label="Mention a player">
 					{#each candidates as candidate, i}<button
 							type="button"
@@ -146,7 +187,11 @@
 			<div class="composer">
 				<input type="text" bind:this={composer} placeholder="Message…" maxlength="500" aria-label="Chat message" />
 				<button type="button" onclick={() => store.chat.submit()} disabled={!chat.draft.trim() || !!chat.pending}
-					>{chat.pending ? "Sending…" : "Send"}</button
+					>{chat.editingId
+						? `${editLabels.save}${chat.pending ? "…" : ""}`
+						: chat.pending
+							? "Sending…"
+							: "Send"}</button
 				>
 			</div>
 		{/if}
@@ -155,7 +200,48 @@
 {/if}
 
 <style>
+	.chat-editing {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		font-size: 12px;
+		opacity: 0.85;
+		padding: 3px 0;
+		flex-shrink: 0;
+	}
+	.chat-edit-cancel {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 24px;
+		height: 24px;
+		min-height: 0;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		color: inherit;
+		cursor: pointer;
+	}
+
 	.chat-translate {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		vertical-align: middle;
+		width: 24px;
+		height: 24px;
+		min-height: 0;
+		padding: 4px;
+		margin-left: 3px;
+		border: 0;
+		border-radius: 3px;
+		background: transparent;
+		color: inherit;
+		opacity: 0.55;
+		cursor: pointer;
+	}
+	.chat-edit {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -176,11 +262,22 @@
 	.chat-translate:focus-visible {
 		opacity: 1;
 	}
+	.chat-edit:hover,
+	.chat-edit:focus-visible {
+		opacity: 1;
+	}
 	.chat-translate[aria-pressed="true"] {
 		opacity: 1;
 		background: var(--line);
 	}
+	.chat-edit[aria-pressed="true"] {
+		opacity: 1;
+		background: var(--line);
+	}
 	.chat-translate:disabled {
+		cursor: wait;
+	}
+	.chat-edit:disabled {
 		cursor: wait;
 	}
 	.chat-day {
