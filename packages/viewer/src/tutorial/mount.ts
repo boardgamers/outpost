@@ -36,6 +36,9 @@ export const mountTutorial: TutorialMount = async (target, { chapter, onProgress
 				return true;
 			},
 			openPlayer: () => false,
+			hoverPlayer: () => false,
+			leavePlayer: () => false,
+			openBoardgame: () => false,
 			updatePreference: () => false,
 			updateSetting: () => false,
 			fetchState: () => false,

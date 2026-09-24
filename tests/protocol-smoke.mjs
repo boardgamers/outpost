@@ -1,3 +1,4 @@
+import { checkHostPresentation } from "./host-presentation-smoke.mjs";
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { initGame } from "../packages/engine/dist/index.js";
@@ -215,6 +216,12 @@ try {
 		assert.equal(await page.locator(".board").count(), 1);
 		assert.equal(await page.getByText("Stale chat", { exact: true }).count(), 0);
 		assert.equal(await page.evaluate(() => oldEmitter.emit("state:updated")), false);
+		assert.deepEqual(errors, []);
+		await page.evaluate((state) => {
+			emitter.emit("player", {});
+			emitter.emit("state", state);
+		}, stripSecret(state));
+		await checkHostPresentation(page, "emitter", `/tmp/outpost-board-thumbnail-${width}.png`);
 		assert.deepEqual(errors, []);
 		await page.close();
 	}

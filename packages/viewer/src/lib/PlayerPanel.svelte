@@ -113,7 +113,7 @@
 		></button>
 	{/if}
 	<div class="head">
-		<button class="identity" onclick={() => onNameClick?.(index)} title={player.name}>
+		<button data-bgs-player={index} class="identity" onclick={() => onNameClick?.(index)} title={player.name}>
 			{#if orderPos > 0}
 				<span
 					class="order"

@@ -1,3 +1,4 @@
+import { installPlayerCards, createBoardThumbnail } from "./host-presentation";
 import { mount, tick, unmount } from "svelte";
 import { registerViewer } from "@boardgamers/protocol/viewer";
 import type { GameState, Move } from "outpost-engine";
@@ -16,8 +17,14 @@ registerViewer<GameState, Move>(
 			target: commands.target,
 			props: { store, onPlayerClick: commands.openPlayer },
 		});
+		const removeCards = installPlayerCards(commands.target, commands);
+		const thumbnail = createBoardThumbnail(commands.target);
 		return {
 			chat: store.chat,
+			async onThumbnail(size) {
+				await tick();
+				return thumbnail.render(commands.target.querySelector(".main"), size, "#0a1421", ".side");
+			},
 			async onState(state) {
 				sounds.onState(state);
 				store.setState(state);
@@ -48,6 +55,8 @@ registerViewer<GameState, Move>(
 				store.endReplay();
 			},
 			destroy() {
+				removeCards();
+				thumbnail.destroy();
 				store.destroy();
 				sounds.destroy();
 				void unmount(app);
