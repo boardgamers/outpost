@@ -115,16 +115,7 @@
 	<div class="head">
 		<button data-bgs-player={index} class="identity" onclick={() => onNameClick?.(index)} title={player.name}>
 			{#if orderPos > 0}
-				<span
-					class="order"
-					title="purchase order: buys {orderPos}{orderPos === 1
-						? 'st'
-						: orderPos === 2
-							? 'nd'
-							: orderPos === 3
-								? 'rd'
-								: 'th'} this round">{orderPos}</span
-				>
+				<span class="order" title="Purchase order this round: {orderPos}">{orderPos}</span>
 			{/if}
 			{#if avatar}
 				<img class="avatar" src={avatar} alt="" referrerpolicy="no-referrer" />

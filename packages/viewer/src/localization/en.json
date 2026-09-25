@@ -1171,5 +1171,7 @@
 	"← Assign operators: {p0}": "← Assign operators: {p0}",
 	"Selected cards: {p0} · ◈ {p1}": "Selected cards: {p0} · ◈ {p1}",
 	"{p0} cards: {p1}": "{p0} cards: {p1}",
-	"Factories staffed: {p0}/{p1}.": "Factories staffed: {p0}/{p1}."
+	"Factories staffed: {p0}/{p1}.": "Factories staffed: {p0}/{p1}.",
+	"Production: choose Mega cards before drawing. Each Mega replaces the production of 4 staffed factories; other factories produce single cards.": "Production: choose Mega cards before drawing. Each Mega replaces the production of 4 staffed factories; other factories produce single cards.",
+	"Purchase order this round: {p0}": "Purchase order this round: {p0}"
 }

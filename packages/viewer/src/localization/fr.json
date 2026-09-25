@@ -721,7 +721,7 @@
 	"left in the supply — Era": "restants dans la réserve — Ère",
 	"limit": "limite",
 	"link": "lien",
-	"list": "liste",
+	"list": "prix de base",
 	"listbox": "liste déroulante",
 	"loading": "chargement",
 	"log": "journal",
@@ -1171,5 +1171,7 @@
 	"← Assign operators: {p0}": "← Affecter les opérateurs : {p0}",
 	"Selected cards: {p0} · ◈ {p1}": "Cartes sélectionnées : {p0} · ◈ {p1}",
 	"{p0} cards: {p1}": "Cartes {p0} : {p1}",
-	"Factories staffed: {p0}/{p1}.": "Usines avec opérateur : {p0}/{p1}."
+	"Factories staffed: {p0}/{p1}.": "Usines avec opérateur : {p0}/{p1}.",
+	"Production: choose Mega cards before drawing. Each Mega replaces the production of 4 staffed factories; other factories produce single cards.": "Production : choisissez les cartes Mega avant de piocher. Chaque Mega remplace la production de 4 usines avec opérateur ; les autres usines produisent des cartes individuelles.",
+	"Purchase order this round: {p0}": "Ordre d’achat ce round : {p0}"
 }

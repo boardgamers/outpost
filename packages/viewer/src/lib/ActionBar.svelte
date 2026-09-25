@@ -103,8 +103,8 @@
 		{#if store.myMega && me}
 			<div class="flow mega-flow">
 				<span class="hint gold-hint">
-					Production: choose Mega cards before seeing your draws. Each costs a group of 4 operated factories; the rest
-					of your draws are kept as singles.
+					Production: choose Mega cards before drawing. Each Mega replaces the production of 4 staffed factories; other
+					factories produce single cards.
 				</span>
 				{#each Object.entries(store.megaEligible) as [resource, groups] (resource)}
 					{@const mega = MEGA_CARDS[resource as keyof typeof MEGA_CARDS]}
