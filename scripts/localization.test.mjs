@@ -103,3 +103,37 @@ test("complete card effects preserve icons and allow localized word order", asyn
 	assert.ok(produced.includes("6–10"));
 	assert.ok(produced.join("").includes("pro Exemplar"));
 });
+
+test("colony ship lists translate each upgrade without rewriting player names", async () => {
+	const actual = Object.fromEntries(
+		await Promise.all(
+			["en", "zh-TW", "fr"].map(async (locale) => [
+				locale,
+				JSON.parse(
+					await readFile(new URL(`../packages/viewer/src/localization/${locale}.json`, import.meta.url), "utf8")
+				),
+			])
+		)
+	);
+	const t = createTranslator(actual, "zh-TW");
+	t.setNames(["Heavy Equipment", "Heavy Equipment, Data Library"]);
+	const actions = t.translate(
+		"Heavy Equipment builds 2 water factories, recruits 1 colonist(s) (paid 25) and mans 3 factories"
+	);
+	assert.ok(!actions.includes("builds"), actions);
+	assert.ok(!actions.includes("recruits"), actions);
+	assert.ok(actions.includes("Heavy Equipment"), actions);
+	const input = "Round 1: colony ship arrives: Heavy Equipment, Nodule, Data Library";
+	const translated = t.translate(input);
+	assert.ok(translated.includes(actual["zh-TW"]["Heavy Equipment"]));
+	assert.ok(translated.includes(actual["zh-TW"]["Data Library"]));
+	assert.equal(t.translate("Heavy Equipment, Data Library"), "Heavy Equipment, Data Library");
+	assert.equal(
+		t.translate("Heavy Equipment bids 25"),
+		actual["zh-TW"]["{p0} bids {p1}"].replace("{p0}", "Heavy Equipment").replace("{p1}", "25")
+	);
+	t.setLocale("fr");
+	assert.ok(t.translate(input).includes(actual.fr["Heavy Equipment"]));
+	t.setLocale("en");
+	assert.equal(t.translate(input), input);
+});

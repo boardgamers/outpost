@@ -84,11 +84,17 @@ export function createTranslator(catalogs, initialLocale = "en") {
 				for (let i = 1; i < pieces.length; i += 2) {
 					const delimiter = pieces[i + 1];
 					const last = i + 2 >= pieces.length;
-					const end = last
+					let end = last
 						? text.endsWith(delimiter)
 							? text.length - delimiter.length
 							: -1
 						: text.indexOf(delimiter, offset);
+					if (i === 1 && source === "{p0} {p1} (paid {p2}) and {p3}") {
+						const player = [...names].sort((a, b) => b.length - a.length).find((name) => text.startsWith(name + " "));
+						if (player) {
+							end = player.length;
+						}
+					}
 					if (end < 0 || end - offset > 500) {
 						matches = false;
 						break;
@@ -99,7 +105,22 @@ export function createTranslator(catalogs, initialLocale = "en") {
 				if (!matches || offset !== text.length) {
 					continue;
 				}
-				translated = catalog[source].replace(/\{p\d+\}/g, (key) => translate(parameters[key] ?? key, depth + 1));
+				translated = catalog[source].replace(/\{p\d+\}/g, (key) => {
+					const parameter = parameters[key] ?? key;
+					if (source === "{p0}Round {p1}: colony ship arrives: {p2}" && key === "{p2}") {
+						return parameter
+							.split(", ")
+							.map((name) => catalog[name] ?? name)
+							.join(", ");
+					}
+					if (source === "{p0} {p1} (paid {p2}) and {p3}" && key === "{p1}") {
+						return parameter
+							.split(", ")
+							.map((action) => translate(action, depth + 1))
+							.join(", ");
+					}
+					return translate(parameter, depth + 1);
+				});
 				break;
 			}
 		}
