@@ -1,45 +1,52 @@
 <script lang="ts">
 	import { KICKER_SPECS, UPGRADE_SPECS, upgradeEra } from "outpost-engine";
 	import ResourceIcon from "./ResourceIcon.svelte";
+	import { translateText, resolveLocale } from "../localization";
+	import { localizeEffect } from "./localized-effect";
 	import { RESOURCE_LABELS, type EffectToken } from "./store.svelte";
 
 	interface Props {
 		tokens: EffectToken[];
+		locale?: unknown;
 	}
 
-	let { tokens }: Props = $props();
+	let { tokens, locale }: Props = $props();
+	const localizedTokens = $derived(localizeEffect(tokens, (source) => translateText(source, resolveLocale(locale))));
+	const text = (value: string) => translateText(value, resolveLocale(locale));
 </script>
 
-{#each tokens as token, i (i)}
-	{#if typeof token === "string"}
-		{token}
-	{:else if "r" in token}
-		<span class="chip rchip res-{token.r}" title={RESOURCE_LABELS[token.r]}>
-			<ResourceIcon resource={token.r} size={11} />
-		</span>
-	{:else if "card" in token}
-		<span class="chip rchip res-{token.card}" title="{RESOURCE_LABELS[token.card]} card">
-			<ResourceIcon resource={token.card} size={11} />
-		</span>
-	{:else if "f" in token}
-		<span class="chip fchip res-{token.f}" title="{token.n} {RESOURCE_LABELS[token.f]} factories (manned)">
-			<span class="fdots">
-				{#each Array.from({ length: token.n }) as _, j (j)}
-					<span class="fdot"><ResourceIcon resource={token.f} size={9} /></span>
-				{/each}
+<span translate="no">
+	{#each localizedTokens as token, i (i)}
+		{#if typeof token === "string"}
+			{token}
+		{:else if "r" in token}
+			<span class="chip rchip res-{token.r}" title={text(RESOURCE_LABELS[token.r] ?? token.r)}>
+				<ResourceIcon resource={token.r} size={11} />
 			</span>
-		</span>
-	{:else if "u" in token}
-		<span
-			class="chip uchip era-{upgradeEra(token.u)}"
-			title="{UPGRADE_SPECS[token.u].name} (Era {['', 'I', 'II', 'III'][upgradeEra(token.u)]})"
-		>
-			<span class="chip-era">{["", "I", "II", "III"][upgradeEra(token.u)]}</span>{UPGRADE_SPECS[token.u].name}
-		</span>
-	{:else}
-		<span class="chip kchip">{KICKER_SPECS[token.k].name}</span>
-	{/if}
-{/each}
+		{:else if "card" in token}
+			<span class="chip rchip res-{token.card}" title={text(`${RESOURCE_LABELS[token.card]} card`)}>
+				<ResourceIcon resource={token.card} size={11} />
+			</span>
+		{:else if "f" in token}
+			<span class="chip fchip res-{token.f}" title={text(`${token.n} ${RESOURCE_LABELS[token.f]} factories (manned)`)}>
+				<span class="fdots">
+					{#each Array.from({ length: token.n }) as _, j (j)}
+						<span class="fdot"><ResourceIcon resource={token.f} size={9} /></span>
+					{/each}
+				</span>
+			</span>
+		{:else if "u" in token}
+			<span
+				class="chip uchip era-{upgradeEra(token.u)}"
+				title={text(`${UPGRADE_SPECS[token.u].name} (Era ${["", "I", "II", "III"][upgradeEra(token.u)]})`)}
+			>
+				<span class="chip-era">{["", "I", "II", "III"][upgradeEra(token.u)]}</span>{text(UPGRADE_SPECS[token.u].name)}
+			</span>
+		{:else}
+			<span class="chip kchip">{text(KICKER_SPECS[token.k].name)}</span>
+		{/if}
+	{/each}
+</span>
 
 <style>
 	.chip {

@@ -45,7 +45,7 @@
 			{#if auction.upgrade}
 				<UpgradeBadges upgrade={auction.upgrade} />
 			{/if}
-			<span class="ueffect"><CardEffect tokens={effectTokens} /></span>
+			<span class="ueffect"><CardEffect locale={store.preferences.locale} tokens={effectTokens} /></span>
 		</div>
 		<div class="status">
 			{#if fast && state.phase === "auction"}

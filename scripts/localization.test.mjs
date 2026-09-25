@@ -61,3 +61,45 @@ test("decorative arrows and attached currency values keep their meaning", () => 
 	assert.equal(t.translate("Draw →"), "Tekenen →");
 	assert.equal(t.translate("Your cash: $20"), "Je geld: $20");
 });
+
+test("complete card effects preserve icons and allow localized word order", async () => {
+	const { localizeEffect } = await import("../packages/viewer/src/lib/localized-effect.ts");
+	const locales = ["en", "fr", "de", "nl", "da", "pl", "ro", "el", "hi", "ru", "pt-BR", "ko", "zh-TW", "vi", "it"];
+	const actual = Object.fromEntries(
+		await Promise.all(
+			locales.map(async (locale) => [
+				locale,
+				JSON.parse(
+					await readFile(new URL(`../packages/viewer/src/localization/${locale}.json`, import.meta.url), "utf8")
+				),
+			])
+		)
+	);
+	const robot = { u: "robots" },
+		card = { card: "ore" },
+		factories = { f: "ore", n: 2 };
+	const tokens = ["−5 on ", robot, " bids. Draw 1 extra ", card, " per ", factories, "."];
+	for (const locale of locales) {
+		const translator = createTranslator(actual, locale);
+		const result = localizeEffect(tokens, (source) => translator.translate(source));
+		assert.equal(result.filter((token) => typeof token !== "string").length, 3);
+		for (const icon of [robot, card, factories]) {
+			assert.ok(result.includes(icon));
+		}
+		assert.ok(!result.some((token) => typeof token === "string" && /\{p\d+\}/.test(token)), locale);
+		if (locale !== "en") {
+			assert.notEqual(result.join(""), tokens.join(""), locale);
+		}
+	}
+	const hindi = createTranslator(actual, "hi");
+	const reordered = localizeEffect(tokens, (source) => hindi.translate(source));
+	assert.ok(reordered.indexOf(factories) < reordered.indexOf(card));
+	const research = { card: "research" };
+	const german = createTranslator(actual, "de");
+	const produced = localizeEffect(["Produces a ", research, " (6–10) each round (per copy)."], (source) =>
+		german.translate(source)
+	);
+	assert.ok(produced.includes(research));
+	assert.ok(produced.includes("6–10"));
+	assert.ok(produced.join("").includes("pro Exemplar"));
+});

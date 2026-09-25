@@ -103,8 +103,8 @@
 		{#if store.myMega && me}
 			<div class="flow mega-flow">
 				<span class="hint gold-hint">
-					Production: choose Mega cards <strong>before</strong> seeing your draws. Each costs a group of 4 operated factories;
-					the rest of your draws are kept as singles.
+					Production: choose Mega cards before seeing your draws. Each costs a group of 4 operated factories; the rest
+					of your draws are kept as singles.
 				</span>
 				{#each Object.entries(store.megaEligible) as [resource, groups] (resource)}
 					{@const mega = MEGA_CARDS[resource as keyof typeof MEGA_CARDS]}
@@ -135,8 +135,7 @@
 		{:else if store.iMustDiscard && me}
 			<div class="flow">
 				<span class="hint warn">
-					Over hand capacity: discard {store.discardExcess} more card{store.discardExcess === 1 ? "" : "s"}
-					(selected {pickCount}; research and microbiotics don't count).
+					{`Hand limit exceeded. Cards still to discard: ${store.discardExcess} (selected: ${pickCount}; Research and Microbiotics do not count).`}
 				</span>
 				<button class="confirm" disabled={pickCount === 0} onclick={() => store.confirmDiscard()}>
 					Discard selected
@@ -145,8 +144,8 @@
 		{:else if store.myPayment && me}
 			<div class="flow">
 				<span class="hint gold-hint">
-					You won <strong>{auctionName}</strong>: select hand cards worth at least ◈ {store.myPaymentDue}
-					(selected <strong>◈ {total}</strong>).
+					You won {auctionName}: select hand cards worth at least ◈ {store.myPaymentDue}
+					(selected ◈ {total}).
 				</span>
 				<button class="confirm" disabled={!store.paymentValid()} onclick={() => store.confirmPayment()}>
 					Pay ◈ {store.myPaymentDue}
@@ -156,7 +155,7 @@
 			<div class="flow">
 				<span class="hint gold-hint">
 					Wily Trader / Merchant House: click one of your
-					<strong>{store.exchangeOfferTypes.map((t) => RESOURCE_LABELS[t] ?? t).join("/")}</strong>
+					{store.exchangeOfferTypes.map((t) => RESOURCE_LABELS[t] ?? t).join("/")}
 					cards to offer, then a player to trade with. They must hand back a higher-valued card of the same type if they have
 					one.
 				</span>
@@ -174,7 +173,7 @@
 				<div class="flow">
 					<span class="hint gold-hint">
 						Assign operators — click the glowing factory chips in your panel to toggle them.
-						<strong>{store.manningPick.length} / {me.factories.length}</strong> factories manned.
+						<span>{`Factories staffed: ${store.manningPick.length}/${me.factories.length}.`}</span>
 						{#if idleOperators > 0 && idleFactories > 0}
 							<span class="warn">
 								Assign {Math.min(idleOperators, idleFactories)} more before ending your turn.
@@ -195,16 +194,13 @@
 				<div class="flow">
 					<span class="hint">
 						{#if pending.kind === "factory"}
-							Building <strong>{pending.count}</strong> <strong>{RESOURCE_LABELS[pending.factory]}</strong>
-							factor{pending.count === 1 ? "y" : "ies"} (produces ◈ {MIN_CARD_VALUE[pending.factory]}–{MAX_CARD_VALUE[
-								pending.factory
-							]} per round when manned):
+							{`Building ${pending.count} ${RESOURCE_LABELS[pending.factory]} ${pending.count === 1 ? "factory" : "factories"} (produces ◈ ${MIN_CARD_VALUE[pending.factory]}–${MAX_CARD_VALUE[pending.factory]} per round when manned):`}
 						{:else if pending.kind === "population"}
-							Recruiting <strong>{pending.count}</strong> colonist{pending.count === 1 ? "" : "s"}:
+							{`Colonists to recruit: ${pending.count}`}
 						{:else}
-							Buying <strong>{pending.count}</strong> robot{pending.count === 1 ? "" : "s"}:
+							{`Robots to buy: ${pending.count}`}
 						{/if}
-						selected <strong>◈ {total}</strong> / ◈ {pending.cost}.
+						selected ◈ {total} / ◈ {pending.cost}.
 						{#if needsResearch && !hasResearch}
 							<span class="warn"
 								>Payment must include a research card{pending.kind === "factory" && pending.count > 1

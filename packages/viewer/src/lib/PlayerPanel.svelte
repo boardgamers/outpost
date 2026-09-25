@@ -219,7 +219,7 @@
 			<span class="none">no factories</span>
 		{/if}
 		{#if manning}
-			<span class="assign">← click to assign your {operators} operator{operators === 1 ? "" : "s"}</span>
+			<span class="assign">{`← Assign operators: ${operators}`}</span>
 		{/if}
 	</div>
 
@@ -268,7 +268,7 @@
 				{/if}
 			{:else}
 				<span class="total">
-					{pickCount} card{pickCount === 1 ? "" : "s"} selected · ◈ {pickTotal}
+					{`Selected cards: ${pickCount} · ◈ ${pickTotal}`}
 				</span>
 			{/if}
 		</div>
@@ -316,7 +316,7 @@
 				<ProductionCardView {card} />
 			{/each}
 			{#each hiddenCounts as [res, n] (res)}
-				<span class="hcount res-{res}" title="{n} {RESOURCE_LABELS[res]} card{n === 1 ? '' : 's'}">{n}</span>
+				<span class="hcount res-{res}" title={`${RESOURCE_LABELS[res]} cards: ${n}`}>{n}</span>
 			{/each}
 			{#each parkedMine as card, i (i)}
 				<ProductionCardView {card} />

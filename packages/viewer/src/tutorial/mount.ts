@@ -50,6 +50,7 @@ export const mountTutorial: TutorialMount = async (target, { chapter, onProgress
 		false
 	);
 	store.playerIndex = 0;
+	store.preferences = { locale: target.lang };
 	store.chat.setDisabled(true);
 	let storage: Storage | undefined;
 	try {

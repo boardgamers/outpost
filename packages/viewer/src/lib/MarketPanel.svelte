@@ -96,7 +96,9 @@
 								· you pay ◈ {due}{/if}
 						</span>
 						<UpgradeBadges {upgrade} />
-						<span class="ueffect"><CardEffect tokens={UPGRADE_EFFECTS[upgrade]} /></span>
+						<span class="ueffect"
+							><CardEffect locale={store.preferences.locale} tokens={UPGRADE_EFFECTS[upgrade]} /></span
+						>
 					</button>
 					{#if open && pick}
 						<div class="bidbox">
@@ -190,7 +192,8 @@
 						</span>
 						<span class="uvp">{spec.vp} VP</span>
 						<span class="uprice">min ◈ {spec.price}</span>
-						<span class="ueffect"><CardEffect tokens={KICKER_EFFECTS[kicker]} /></span>
+						<span class="ueffect"><CardEffect locale={store.preferences.locale} tokens={KICKER_EFFECTS[kicker]} /></span
+						>
 					</button>
 					{#if open && pick}
 						<div class="bidbox">
