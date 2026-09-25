@@ -1,3 +1,4 @@
+import { mountLocalization, localizeTutorial } from "./localization";
 import { installPlayerCards, createBoardThumbnail } from "./host-presentation";
 import { mount, tick, unmount } from "svelte";
 import { registerViewer } from "@boardgamers/protocol/viewer";
@@ -19,6 +20,7 @@ registerViewer<GameState, Move>(
 		});
 		const removeCards = installPlayerCards(commands.target, commands);
 		const thumbnail = createBoardThumbnail(commands.target);
+		const localization = mountLocalization(commands.target);
 		return {
 			chat: store.chat,
 			async onThumbnail(size) {
@@ -26,6 +28,7 @@ registerViewer<GameState, Move>(
 				return thumbnail.render(commands.target.querySelector(".main"), size, "#0a1421", ".side");
 			},
 			async onState(state) {
+				localization.setState(state);
 				sounds.onState(state);
 				store.setState(state);
 				await tick();
@@ -37,6 +40,7 @@ registerViewer<GameState, Move>(
 				store.avatars = avatars;
 			},
 			onPreferences(preferences) {
+				localization.setLocale(preferences.locale);
 				store.preferences = preferences;
 				sounds.onPreferences(preferences);
 			},
@@ -55,6 +59,7 @@ registerViewer<GameState, Move>(
 				store.endReplay();
 			},
 			destroy() {
+				localization.destroy();
 				removeCards();
 				thumbnail.destroy();
 				store.destroy();
@@ -63,7 +68,7 @@ registerViewer<GameState, Move>(
 			},
 		};
 	},
-	{ tutorial: mountTutorial }
+	{ tutorial: localizeTutorial(mountTutorial) }
 );
 
 declare global {

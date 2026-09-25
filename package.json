@@ -13,11 +13,12 @@
 		"fmt": "oxfmt",
 		"fmt:check": "oxfmt --check",
 		"lint": "oxlint",
-		"check": "pnpm fmt:check && pnpm lint && pnpm tsc && pnpm test && pnpm build",
+		"check": "pnpm test:locales && pnpm fmt:check && pnpm lint && pnpm tsc && pnpm test && pnpm build",
 		"test:browser": "node tests/protocol-smoke.mjs",
 		"test:tutorial": "pnpm --filter outpost-engine build && node --test tests/tutorial.spec.mjs",
 		"test:tutorial:browser": "node tests/tutorial-browser.mjs",
-		"preview:tutorial": "node tests/tutorial-preview.mjs"
+		"preview:tutorial": "node tests/tutorial-preview.mjs",
+		"test:locales": "node scripts/check-locales.mjs packages/viewer/src/localization && node --test scripts/localization.test.mjs"
 	},
 	"devDependencies": {
 		"oxfmt": "0.61.0",
