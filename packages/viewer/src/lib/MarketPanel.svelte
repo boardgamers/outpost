@@ -67,7 +67,7 @@
 				{@const due = myDue(upgrade)}
 				{@const discount = store.playerIndex === undefined ? 0 : store.discountOf(store.playerIndex, upgrade)}
 				{@const blocked = store.turnBuys.length > 0}
-				<div class="slot">
+				<div class="slot" class:expanded={open}>
 					<button
 						class="ucard"
 						class:open
@@ -171,7 +171,7 @@
 				{@const spec = KICKER_SPECS[kicker]}
 				{@const open = pick?.marketIndex === i && pick.kicker === true}
 				{@const blocked = store.turnBuys.length > 0}
-				<div class="slot">
+				<div class="slot" class:expanded={open}>
 					<button
 						class="ucard kcard era-{spec.era}"
 						class:open
@@ -383,6 +383,7 @@
 	}
 	.bidrow {
 		display: flex;
+		flex-wrap: wrap;
 		gap: 4px;
 		align-items: center;
 	}
@@ -455,5 +456,28 @@
 	.kcount {
 		font-weight: 800;
 		color: var(--text);
+	}
+	@media (max-width: 720px) {
+		.cards {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 8px;
+		}
+		.slot {
+			min-width: 0;
+		}
+		.slot.expanded {
+			grid-column: 1 / -1;
+		}
+		.ucard {
+			width: 100%;
+			min-width: 0;
+			padding: 10px 9px;
+			overflow-wrap: anywhere;
+			flex: 1;
+		}
+		.bidbox {
+			width: 100%;
+		}
 	}
 </style>
