@@ -245,6 +245,18 @@ try {
 		await page.getByRole("region", { name: "Chat messages" }).scrollIntoViewIfNeeded();
 		await page.waitForFunction(() => restoredReceipts.length > 0);
 		assert.equal(await page.locator(".chat .caption").textContent(), "Chat", "opening chat clears restored unread");
+		const stacks = page.locator(".hcount");
+		assert.ok((await stacks.count()) > 0, "opponent hands show resource stacks");
+		assert.equal(
+			await stacks.locator(".res-icon").count(),
+			await stacks.count(),
+			"every stack identifies its resource without color"
+		);
+		for (const stack of await stacks.all()) {
+			const count = Number((await stack.textContent()).trim());
+			assert.match(await stack.getAttribute("title"), new RegExp(`cards: ${count}$`));
+		}
+		await page.screenshot({ path: `/tmp/outpost-resource-icons-${width}.png`, fullPage: true });
 		await checkHostPresentation(page, "emitter", `/tmp/outpost-board-thumbnail-${width}.png`);
 		assert.deepEqual(errors, []);
 		await page.close();

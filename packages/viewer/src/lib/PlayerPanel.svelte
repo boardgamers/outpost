@@ -307,7 +307,10 @@
 				<ProductionCardView {card} />
 			{/each}
 			{#each hiddenCounts as [res, n] (res)}
-				<span class="hcount res-{res}" title={`${RESOURCE_LABELS[res]} cards: ${n}`}>{n}</span>
+				<span class="hcount res-{res}" title={`${RESOURCE_LABELS[res]} cards: ${n}`}>
+					<ResourceIcon resource={res} size={14} />
+					{n}
+				</span>
 			{/each}
 			{#each parkedMine as card, i (i)}
 				<ProductionCardView {card} />
@@ -603,6 +606,7 @@
 	}
 	.hcount {
 		display: inline-flex;
+		gap: 3px;
 		align-items: center;
 		justify-content: center;
 		min-width: 20px;
