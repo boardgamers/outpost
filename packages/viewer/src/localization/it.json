@@ -1173,5 +1173,9 @@
 	"{p0} cards: {p1}": "Carte {p0}: {p1}",
 	"Factories staffed: {p0}/{p1}.": "Fabbriche con operatori: {p0}/{p1}.",
 	"Production: choose Mega cards before drawing. Each Mega replaces the production of 4 staffed factories; other factories produce single cards.": "Produzione: scegli le carte Mega prima di pescare. Ogni Mega sostituisce la produzione di 4 fabbriche con operatore; le altre fabbriche producono carte singole.",
-	"Purchase order this round: {p0}": "Ordine di acquisto in questo round: {p0}"
+	"Purchase order this round: {p0}": "Ordine di acquisto in questo round: {p0}",
+	"New factory": "New factory",
+	"How to buy": "How to buy",
+	"Remaining upgrades": "Remaining upgrades",
+	"Remaining Kicker cards": "Remaining Kicker cards"
 }

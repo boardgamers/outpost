@@ -14,6 +14,7 @@ export const languages = {
 	vi: "Tiếng Việt",
 	it: "Italiano",
 	nl: "Nederlands",
+	fa: "فارسی",
 };
 
 export function resolveLocale(value) {
@@ -203,7 +204,9 @@ export function mountLocalization(target, catalogs, initialLocale = "en") {
 		const key = attribute ?? "text";
 		const previous = record.get(key);
 		const source = previous?.output === value ? previous.source : value;
-		const output = translator.translate(source);
+		const translated = translator.translate(source);
+		const output =
+			translator.locale === "fa" && /[\u0600-\u06ff]/.test(translated) ? `\u2067${translated}\u2069` : translated;
 		record.set(key, { source, output });
 		if (value !== output) {
 			if (attribute) {

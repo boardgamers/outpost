@@ -1173,5 +1173,9 @@
 	"{p0} cards: {p1}": "{p0} कार्ड: {p1}",
 	"Factories staffed: {p0}/{p1}.": "कार्यरत फ़ैक्ट्रियाँ: {p0}/{p1}।",
 	"Production: choose Mega cards before drawing. Each Mega replaces the production of 4 staffed factories; other factories produce single cards.": "उत्पादन: कार्ड खींचने से पहले मेगा कार्ड चुनें। हर मेगा कार्ड 4 संचालक वाले कारखानों के उत्पादन की जगह लेता है; बाकी कारखाने अलग-अलग कार्ड बनाते हैं।",
-	"Purchase order this round: {p0}": "इस दौर में खरीद का क्रम: {p0}"
+	"Purchase order this round: {p0}": "इस दौर में खरीद का क्रम: {p0}",
+	"New factory": "New factory",
+	"How to buy": "How to buy",
+	"Remaining upgrades": "Remaining upgrades",
+	"Remaining Kicker cards": "Remaining Kicker cards"
 }

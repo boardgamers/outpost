@@ -9,3 +9,5 @@ The rendering adapter translates text and accessible labels, including tooltips,
 For rich text that is split into icons and spans, call `translateText` on the complete sentence before splitting it; localize the tokenizer's resource labels too. This preserves sentence grammar. Avoid relying on rendered labels to identify an action—use action IDs or data attributes.
 
 Run `node scripts/check-locales.mjs packages/viewer/src/localization` to verify catalogue coverage and placeholders. The viewer's normal build and browser tests should also cover language switching, action controls, translated tutorial progression and narrow layouts. Browser text must remain readable if a translation is missing; English is the fallback.
+
+Persian (`fa`, including `fa-IR`) uses RTL text isolates. Board and control layout remains unchanged. Technical extraction identifiers are retained verbatim.

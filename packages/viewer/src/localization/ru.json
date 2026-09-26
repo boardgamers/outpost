@@ -1173,5 +1173,9 @@
 	"{p0} cards: {p1}": "Карты {p0}: {p1}",
 	"Factories staffed: {p0}/{p1}.": "Заводы с операторами: {p0}/{p1}.",
 	"Production: choose Mega cards before drawing. Each Mega replaces the production of 4 staffed factories; other factories produce single cards.": "Производство: выберите мегакарты до добора карт. Каждая мегакарта заменяет продукцию 4 фабрик с операторами; остальные фабрики производят отдельные карты.",
-	"Purchase order this round: {p0}": "Порядок покупок в этом раунде: {p0}"
+	"Purchase order this round: {p0}": "Порядок покупок в этом раунде: {p0}",
+	"New factory": "New factory",
+	"How to buy": "How to buy",
+	"Remaining upgrades": "Remaining upgrades",
+	"Remaining Kicker cards": "Remaining Kicker cards"
 }

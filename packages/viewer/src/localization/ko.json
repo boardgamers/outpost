@@ -1173,5 +1173,9 @@
 	"{p0} cards: {p1}": "{p0} 카드: {p1}",
 	"Factories staffed: {p0}/{p1}.": "작업자가 배치된 공장: {p0}/{p1}.",
 	"Production: choose Mega cards before drawing. Each Mega replaces the production of 4 staffed factories; other factories produce single cards.": "생산: 카드를 뽑기 전에 메가 카드를 선택하세요. 메가 카드 1장은 인력이 배치된 공장 4곳의 생산을 대체합니다. 나머지 공장은 개별 카드를 생산합니다.",
-	"Purchase order this round: {p0}": "이번 라운드 구매 순서: {p0}"
+	"Purchase order this round: {p0}": "이번 라운드 구매 순서: {p0}",
+	"New factory": "New factory",
+	"How to buy": "How to buy",
+	"Remaining upgrades": "Remaining upgrades",
+	"Remaining Kicker cards": "Remaining Kicker cards"
 }

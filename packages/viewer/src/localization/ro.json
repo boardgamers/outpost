@@ -1173,5 +1173,9 @@
 	"{p0} cards: {p1}": "Cărți {p0}: {p1}",
 	"Factories staffed: {p0}/{p1}.": "Fabrici cu operatori: {p0}/{p1}.",
 	"Production: choose Mega cards before drawing. Each Mega replaces the production of 4 staffed factories; other factories produce single cards.": "Producție: alege cărțile Mega înainte de a trage. Fiecare carte Mega înlocuiește producția a 4 fabrici cu operatori; celelalte fabrici produc cărți individuale.",
-	"Purchase order this round: {p0}": "Ordinea cumpărăturilor în această rundă: {p0}"
+	"Purchase order this round: {p0}": "Ordinea cumpărăturilor în această rundă: {p0}",
+	"New factory": "New factory",
+	"How to buy": "How to buy",
+	"Remaining upgrades": "Remaining upgrades",
+	"Remaining Kicker cards": "Remaining Kicker cards"
 }

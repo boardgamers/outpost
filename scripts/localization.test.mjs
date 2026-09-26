@@ -137,3 +137,8 @@ test("colony ship lists translate each upgrade without rewriting player names", 
 	t.setLocale("en");
 	assert.equal(t.translate(input), input);
 });
+
+test("Persian regional tags select Farsi", () => {
+	assert.equal(resolveLocale("fa-IR"), "fa");
+	assert.equal(resolveLocale("fa_IR"), "fa");
+});

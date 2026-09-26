@@ -1173,5 +1173,9 @@
 	"{p0} cards: {p1}": "Thẻ {p0}: {p1}",
 	"Factories staffed: {p0}/{p1}.": "Nhà máy có người vận hành: {p0}/{p1}.",
 	"Production: choose Mega cards before drawing. Each Mega replaces the production of 4 staffed factories; other factories produce single cards.": "Sản xuất: chọn thẻ Mega trước khi rút bài. Mỗi thẻ Mega thay thế sản lượng của 4 nhà máy có người vận hành; các nhà máy còn lại sản xuất các thẻ riêng lẻ.",
-	"Purchase order this round: {p0}": "Thứ tự mua trong vòng này: {p0}"
+	"Purchase order this round: {p0}": "Thứ tự mua trong vòng này: {p0}",
+	"New factory": "New factory",
+	"How to buy": "How to buy",
+	"Remaining upgrades": "Remaining upgrades",
+	"Remaining Kicker cards": "Remaining Kicker cards"
 }
