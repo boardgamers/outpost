@@ -221,6 +221,30 @@ try {
 			emitter.emit("player", {});
 			emitter.emit("state", state);
 		}, stripSecret(state));
+
+		await page.locator(".board").evaluate((el) => {
+			el.style.display = "none";
+		});
+		await page.evaluate(() => {
+			window.restoredReceipts = [];
+			emitter.on("chat:read", (payload) => restoredReceipts.push(payload));
+			emitter.emit("chat:state", { canSend: true, readState: { userId: "self", lastReadAt: 500000 } });
+			emitter.emit("chat:messages", [
+				{ _id: "000001f40000000000000001", type: "text", authorId: "other", text: "Already read" },
+				{ _id: "000001f50000000000000001", type: "text", authorId: "other", text: "Unread after reload" },
+				{ _id: "000001f60000000000000001", type: "text", authorId: "self", text: "My own message" },
+				{ _id: "000001f70000000000000001", type: "system", text: "Game started" },
+			]);
+		});
+		await page.waitForFunction(() => document.querySelector(".chat .caption")?.textContent === "Chat · 1");
+		await page.waitForTimeout(650);
+		assert.equal(await page.evaluate(() => restoredReceipts.length), 0, "hidden chat preserves unread history");
+		await page.locator(".board").evaluate((el) => {
+			el.style.display = "";
+		});
+		await page.getByRole("region", { name: "Chat messages" }).scrollIntoViewIfNeeded();
+		await page.waitForFunction(() => restoredReceipts.length > 0);
+		assert.equal(await page.locator(".chat .caption").textContent(), "Chat", "opening chat clears restored unread");
 		await checkHostPresentation(page, "emitter", `/tmp/outpost-board-thumbnail-${width}.png`);
 		assert.deepEqual(errors, []);
 		await page.close();
