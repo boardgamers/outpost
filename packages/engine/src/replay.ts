@@ -14,7 +14,7 @@ import type { GameState, LogEntry } from "./types.js";
  * Rounds are applied from the "round" log entries (market + production draws),
  * so a secret-stripped log replays into a secret-stripped state.
  */
-export function replay(state: GameState, options?: { to?: number }): GameState {
+export function replay(state: GameState, options?: { to?: number; trackKnowledge?: boolean }): GameState {
 	const init = state.log[0];
 	if (!init || init.type !== "init") {
 		throw new Error("log does not start with an init entry");
@@ -49,6 +49,20 @@ export function replay(state: GameState, options?: { to?: number }): GameState {
 					const received = replayed.players[entry.move.target]?.hand[entry.info?.exchangeTake ?? -1];
 					if (received && (entry.info?.exchangeValue ?? -1) >= 0) {
 						received.v = entry.info!.exchangeValue!;
+					}
+					if (options?.trackKnowledge && given && given.v >= 0) {
+						const take = entry.info?.exchangeTake ?? -1;
+						for (const [index, card] of replayed.players[entry.move.target]!.hand.entries()) {
+							if (card.t !== given.t || card.m || index === take) {
+								continue;
+							}
+							card.analysisBounds ??= {};
+							if (take < 0) {
+								card.analysisBounds.max = Math.min(card.analysisBounds.max ?? Infinity, given.v);
+							} else if (received && received.v >= 0) {
+								(card.analysisBounds.excluded ??= []).push([given.v, received.v]);
+							}
+						}
 					}
 				}
 				setReplayExchangeTake(entry.info?.exchangeTake ?? -1);

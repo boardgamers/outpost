@@ -91,3 +91,42 @@ test("revealed sealed bids constrain every simulated hand and survive resampling
 		}
 	}
 });
+
+test("completed exchanges retain the lowest-higher-card inference across resampling", async () => {
+	const source = await init(3, ["kicker"], {}, "0");
+	for (let i = 0; i < 15; i++) {
+		const active = currentPlayer(source);
+		await moveAI(source, Array.isArray(active) ? active[0]! : active!);
+	}
+	const entry = source.log.at(-1)!;
+	assert.equal(entry.type, "move");
+	if (entry.type !== "move" || entry.move.action !== "exchange") {
+		assert.fail("Expected exchange fixture");
+	}
+	assert.equal(entry.info!.exchangeGiven!.v, 3);
+	assert.equal(entry.info!.exchangeValue, 5);
+	const target = entry.move.target;
+	const scenario = createAnalysisScenario(source, { player: entry.player, seed: "known-exchange" });
+	for (let i = 0; i < 10; i++) {
+		const sample = createAnalysisScenario(scenario, { player: entry.player, seed: String(i) });
+		assert.ok(sample.players[target]!.hand.some((card) => card.t === "ore" && card.v === 3));
+		assert.ok(sample.players[target]!.hand.every((card) => card.t !== "ore" || card.v !== 4));
+	}
+});
+
+test("bounced exchanges constrain the target's retained resource values", async () => {
+	const source = await init(3, ["kicker"], {}, "0");
+	for (let i = 0; i < 14; i++) {
+		const active = currentPlayer(source);
+		await moveAI(source, Array.isArray(active) ? active[0]! : active!);
+	}
+	assert.equal(source.exchange!.seat, 2);
+	await move(source, { action: "exchange", card: 2, target: 0 }, 2);
+	const entry = source.log.at(-1)!;
+	assert.ok(entry.type === "move" && entry.info!.exchangeTake === -1);
+	const scenario = createAnalysisScenario(source, { player: 2, seed: "bounce" });
+	for (let i = 0; i < 5; i++) {
+		const sample = createAnalysisScenario(scenario, { player: 2, seed: String(i) });
+		assert.ok(sample.players[0]!.hand.every((card) => card.t !== "water" || card.v <= 9));
+	}
+});

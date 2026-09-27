@@ -52,6 +52,7 @@ export type Kicker = (typeof KICKERS)[number];
 export type MarketCard = Upgrade | Kicker;
 
 export interface ProductionCard {
+	analysisBounds?: { max?: number; excluded?: [number, number][] };
 	/** Resource type. */
 	t: Resource;
 	/** Credit value. -1 when hidden by stripSecret. */

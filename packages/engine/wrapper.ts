@@ -444,11 +444,14 @@ export function createAnalysisScenario(
 	data: GameState,
 	{ player, seed }: { player?: number; seed: string }
 ): GameState {
+	if (!canLaunchAnalysisMode(data)) {
+		throw new Error("Finish the current exchange before starting analysis");
+	}
 	const observed = structuredClone(stripSecret(data, player));
 	const knowledge =
 		data.analysisKnowledge ??
 		(() => {
-			const replayed = observed.log[0]?.type === "init" ? replayCore(observed) : undefined;
+			const replayed = observed.log[0]?.type === "init" ? replayCore(observed, { trackKnowledge: true }) : undefined;
 			const bidFloors = observed.players.map(() => 0);
 			if (observed.auction) {
 				let start = observed.log.length;
@@ -551,6 +554,20 @@ export function createAnalysisScenario(
 		for (const era of [1, 2, 3] as const) {
 			shuffle(copy, copy.kickerPiles[era]);
 		}
+		if (
+			knowledge.hands.some((hand, seat) =>
+				hand.some((card, index) => {
+					const value = copy.players[seat]!.hand[index]!.v;
+					const bounds = card.analysisBounds;
+					return (
+						(bounds?.max !== undefined && value > bounds.max) ||
+						bounds?.excluded?.some(([low, high]) => value > low && value < high)
+					);
+				})
+			)
+		) {
+			continue;
+		}
 		const a = copy.auction;
 		if (a) {
 			if (knowledge.bidFloors.some((amount, seat) => amount > maxBid(copy, seat, a.upgrade))) {
@@ -589,4 +606,14 @@ export function createAnalysisScenario(
 		return copy;
 	}
 	throw new Error("Cannot simulate a production allocation compatible with the current auction");
+}
+
+export function canLaunchAnalysisMode(data: GameState): boolean {
+	if (!data.exchange || !data.exchange.parked.length) {
+		return true;
+	}
+	return !data.log
+		.filter((e) => e.type === "move" && e.move.action === "exchange")
+		.slice(-data.exchange.parked.length)
+		.some((e) => e.type === "move" && (e.info?.exchangeTake ?? -1) >= 0);
 }
