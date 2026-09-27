@@ -99,7 +99,7 @@
 </script>
 
 {#if state && !state.ended && !store.replay.active && !store.myBidTurn}
-	<div class="actionbar" data-tutorial="actions">
+	<div class="actionbar" class:browsing={store.myActionTurn && !pending} data-tutorial="actions">
 		{#if store.myMega && me}
 			<div class="flow mega-flow">
 				<span class="hint gold-hint">
@@ -219,45 +219,51 @@
 					<button class="cancel" onclick={() => store.cancel()}>Cancel</button>
 				</div>
 			{:else}
-				<div class="flow wrap">
+				<div class="flow wrap purchase-options">
 					<span class="hint">Your turn. Credits: <strong class="cash">◈ {store.myHandValue}</strong></span>
-					<span class="group-label">New factory:</span>
-					{#each FACTORY_TYPES as type (type)}
-						{@const spec = FACTORIES[type]}
-						{@const reason = factoryReason[type]}
-						<button
-							class="buy res-{type}"
-							disabled={!store.canAffordFactory(type)}
-							title={reason ??
-								`${RESOURCE_LABELS[type]} factory: ◈ ${spec.cost}, ${spec.vp} VP manned, produces a ◈ ${MIN_CARD_VALUE[type]}–${MAX_CARD_VALUE[type]} card each round when manned`}
-							onclick={() => store.startFactoryPayment(type)}
-						>
-							<ResourceIcon resource={type} size={13} />
-							{RESOURCE_LABELS[type]} · ◈ {spec.cost}
-						</button>
-					{/each}
-					<span class="group-label">Operators:</span>
-					<button
-						class="buy"
-						disabled={me.population >= store.popMaxOf(store.playerIndex ?? -1) || store.myHandValue < store.popCost}
-						title="Recruit a colonist: {store.popCost} credits{me.upgrades.ecoplants > 0
-							? ' (Ecoplants discount)'
-							: ''}"
-						onclick={() => store.startPopulationPayment()}
-					>
-						Colonist · ◈ {store.popCost}
-					</button>
-					{#if me.upgrades.robots > 0}
+					<div class="factory-options">
+						<div class="factory-label">New factory</div>
+						<div class="factory-buttons">
+							{#each FACTORY_TYPES as type (type)}
+								{@const spec = FACTORIES[type]}
+								{@const reason = factoryReason[type]}
+								<button
+									class="buy res-{type}"
+									disabled={!store.canAffordFactory(type)}
+									title={reason ??
+										`${RESOURCE_LABELS[type]} factory: ◈ ${spec.cost}, ${spec.vp} VP manned, produces a ◈ ${MIN_CARD_VALUE[type]}–${MAX_CARD_VALUE[type]} card each round when manned`}
+									onclick={() => store.startFactoryPayment(type)}
+								>
+									<ResourceIcon resource={type} size={13} />
+									{RESOURCE_LABELS[type]} · ◈ {spec.cost}
+								</button>
+							{/each}
+						</div>
+					</div>
+					<div class="operator-options">
+						<span class="group-label">Operators:</span>
 						<button
 							class="buy"
-							disabled={store.myHandValue < 10}
-							title="Buy a robot: 10 credits"
-							onclick={() => store.startRobotsPayment()}
+							disabled={me.population >= store.popMaxOf(store.playerIndex ?? -1) || store.myHandValue < store.popCost}
+							title="Recruit a colonist: {store.popCost} credits{me.upgrades.ecoplants > 0
+								? ' (Ecoplants discount)'
+								: ''}"
+							onclick={() => store.startPopulationPayment()}
 						>
-							Robot · ◈ 10
+							Colonist · ◈ {store.popCost}
 						</button>
-					{/if}
-					<button class="end" onclick={() => store.startManning()}>Assign operators…</button>
+						{#if me.upgrades.robots > 0}
+							<button
+								class="buy"
+								disabled={store.myHandValue < 10}
+								title="Buy a robot: 10 credits"
+								onclick={() => store.startRobotsPayment()}
+							>
+								Robot · ◈ 10
+							</button>
+						{/if}
+						<button class="end" onclick={() => store.startManning()}>Assign operators…</button>
+					</div>
 				</div>
 				{#if staged.length > 0}
 					<div class="flow">
@@ -267,11 +273,12 @@
 						<button class="cancel" onclick={() => store.undoBuy()}>Undo last</button>
 					</div>
 				{/if}
-				<div class="flow">
-					<span class="hint dim">
+				<details class="action-help">
+					<summary>How to buy</summary>
+					<p class="hint dim">
 						Click a market upgrade to auction it, or a buy button and then the hand cards to pay with.
-					</span>
-				</div>
+					</p>
+				</details>
 			{/if}
 		{:else}
 			<div class="flow">
@@ -402,5 +409,83 @@
 	}
 	.cash {
 		color: var(--gold);
+	}
+
+	.purchase-options {
+		align-items: stretch;
+	}
+	.purchase-options > .hint {
+		flex-basis: 100%;
+	}
+	.factory-options {
+		flex-basis: 100%;
+	}
+	.factory-label {
+		font-size: 12px;
+		font-weight: 700;
+		color: var(--text);
+		margin-bottom: 6px;
+	}
+	.factory-buttons .buy:not(:disabled) {
+		background: color-mix(in srgb, var(--res) 15%, var(--bg-panel));
+	}
+	.action-help summary {
+		cursor: pointer;
+		min-height: 44px;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+	.action-help summary::after {
+		content: "+";
+		margin-left: auto;
+	}
+	details[open] > summary::after {
+		content: "−";
+	}
+	.factory-buttons,
+	.operator-options {
+		display: flex;
+		gap: 6px;
+		flex-wrap: wrap;
+		align-items: center;
+	}
+	.operator-options {
+		flex-basis: 100%;
+		border-top: 1px solid var(--line);
+		padding-top: 8px;
+	}
+	.operator-options .group-label {
+		flex-basis: 100%;
+		margin: 0;
+	}
+	.action-help {
+		font-size: 12px;
+		color: var(--text-dim);
+	}
+	@media (max-width: 1099px) and (max-height: 600px) {
+		.actionbar {
+			position: static;
+		}
+	}
+	@media (max-width: 600px) {
+		.actionbar {
+			padding: 6px 10px;
+		}
+		.actionbar.browsing {
+			position: static;
+		}
+		.buy,
+		.end {
+			min-height: 44px;
+		}
+		.factory-buttons {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+		.buy {
+			padding: 6px;
+			font-size: 12px;
+		}
 	}
 </style>

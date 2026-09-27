@@ -64,6 +64,21 @@ body {
 	min-height: 100vh;
 }
 
+button,
+input,
+summary,
+a {
+	touch-action: manipulation;
+}
+
+@media (any-pointer: coarse) {
+	/* Disabled native controls can swallow the start of a touch scroll. */
+	button:disabled,
+	button:disabled * {
+		pointer-events: none;
+	}
+}
+
 button {
 	font: inherit;
 	cursor: pointer;

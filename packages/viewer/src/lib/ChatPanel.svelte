@@ -316,11 +316,18 @@
 		border: 1px solid var(--line);
 		border-radius: var(--radius);
 		padding: 8px 12px;
+		line-height: 18px;
 		max-height: 220px;
 		overflow-y: auto;
+		overscroll-behavior: auto;
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
+	}
+	@media (max-height: 600px) {
+		.feed {
+			max-height: 160px;
+		}
 	}
 	.entry {
 		margin-bottom: 4px;

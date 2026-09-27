@@ -141,29 +141,32 @@
 			{/each}
 		</div>
 	{/if}
-	<div class="supply">
-		{#each supplyByEra as x (x.era)}
-			<span class="stag era-{x.era} ks-era" class:current={x.era === gameEra}>
-				<span class="stag-era">{["", "I", "II", "III"][x.era]}</span>
-			</span>
-			{#each x.counts as c (c.u)}
-				{@const spec = UPGRADE_SPECS[c.u]}
-				<span
-					class="stag era-{x.era}"
-					title="{spec.name} ({spec.vp} VP, list ◈ {spec.price}): {effectToText(
-						UPGRADE_EFFECTS[c.u]
-					)} ×{c.n} left in the supply — Era {['', 'I', 'II', 'III'][x.era]} upgrade (card #{upgradeNumber(
-						c.u
-					)}){x.era === gameEra ? ' (current era)' : ''}"
-				>
-					{spec.name}&nbsp;<span class="kcount">×{c.n}</span>
+	<details class="supply-details">
+		<summary>Remaining upgrades</summary>
+		<div class="supply">
+			{#each supplyByEra as x (x.era)}
+				<span class="stag era-{x.era} ks-era" class:current={x.era === gameEra}>
+					<span class="stag-era">{["", "I", "II", "III"][x.era]}</span>
 				</span>
+				{#each x.counts as c (c.u)}
+					{@const spec = UPGRADE_SPECS[c.u]}
+					<span
+						class="stag era-{x.era}"
+						title="{spec.name} ({spec.vp} VP, list ◈ {spec.price}): {effectToText(
+							UPGRADE_EFFECTS[c.u]
+						)} ×{c.n} left in the supply — Era {['', 'I', 'II', 'III'][x.era]} upgrade (card #{upgradeNumber(
+							c.u
+						)}){x.era === gameEra ? ' (current era)' : ''}"
+					>
+						{spec.name}&nbsp;<span class="kcount">×{c.n}</span>
+					</span>
+				{/each}
 			{/each}
-		{/each}
-		{#if supplyByEra.length === 0}
-			<span class="stag dim">Supply exhausted</span>
-		{/if}
-	</div>
+			{#if supplyByEra.length === 0}
+				<span class="stag dim">Supply exhausted</span>
+			{/if}
+		</div>
+	</details>
 	{#if state.kickerMarket.length > 0}
 		<div class="caption kicker-caption">Kicker cards — era {["", "I", "II", "III"][state.kickerEra]}</div>
 		<div class="cards">
@@ -231,26 +234,29 @@
 				</div>
 			{/each}
 		</div>
-		<div class="supply ksupply">
-			{#each kickerSupply as x (x.era)}
-				<span class="stag era-{x.era} ks-era" class:current={x.era === state.kickerEra}>
-					<span class="stag-era">{["", "I", "II", "III"][x.era]}</span>
-				</span>
-				{#each x.counts as c (c.k)}
-					{@const spec = KICKER_SPECS[c.k]}
-					<span
-						class="stag era-{x.era}"
-						title="{spec.name} ({spec.vp} VP, list ◈ {spec.price}): {effectToText(
-							KICKER_EFFECTS[c.k]
-						)} ×{c.n} left in the Era {['', 'I', 'II', 'III'][x.era]} pile{x.era === state.kickerEra
-							? ' (current era)'
-							: ''}"
-					>
-						{spec.name}&nbsp;<span class="kcount">×{c.n}</span>
+		<details class="supply-details">
+			<summary>Remaining Kicker cards</summary>
+			<div class="supply ksupply">
+				{#each kickerSupply as x (x.era)}
+					<span class="stag era-{x.era} ks-era" class:current={x.era === state.kickerEra}>
+						<span class="stag-era">{["", "I", "II", "III"][x.era]}</span>
 					</span>
+					{#each x.counts as c (c.k)}
+						{@const spec = KICKER_SPECS[c.k]}
+						<span
+							class="stag era-{x.era}"
+							title="{spec.name} ({spec.vp} VP, list ◈ {spec.price}): {effectToText(
+								KICKER_EFFECTS[c.k]
+							)} ×{c.n} left in the Era {['', 'I', 'II', 'III'][x.era]} pile{x.era === state.kickerEra
+								? ' (current era)'
+								: ''}"
+						>
+							{spec.name}&nbsp;<span class="kcount">×{c.n}</span>
+						</span>
+					{/each}
 				{/each}
-			{/each}
-		</div>
+			</div>
+		</details>
 	{/if}
 </div>
 
@@ -478,6 +484,50 @@
 		}
 		.bidbox {
 			width: 100%;
+		}
+	}
+
+	.supply-details summary {
+		cursor: pointer;
+		font-size: 12px;
+		color: var(--text-mid);
+		padding: 10px 4px;
+		min-height: 44px;
+		box-sizing: border-box;
+	}
+	.supply-details .supply {
+		margin: 0 0 8px;
+	}
+	@media (max-width: 600px) {
+		.cards {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr);
+			gap: 6px;
+		}
+		.ucard {
+			flex-direction: row;
+			flex-wrap: wrap;
+			align-items: baseline;
+			gap: 4px 10px;
+			min-height: 0;
+			padding: 8px 10px;
+			box-shadow: none;
+		}
+		.uname {
+			flex: 1;
+		}
+		.uvp {
+			margin-left: auto;
+		}
+		.uprice,
+		.ueffect {
+			flex-basis: 100%;
+		}
+		.bidbox {
+			box-sizing: border-box;
+		}
+		.bidrow button {
+			min-height: 44px;
 		}
 	}
 </style>

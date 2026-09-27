@@ -44,8 +44,12 @@
 
 <div class="side">
 	<div class="caption">Recent events</div>
+	<!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard users must be able to scroll the journal.) -->
 	<div
 		class="feed"
+		role="region"
+		aria-label="Recent events"
+		tabindex="0"
 		bind:this={feed}
 		onscroll={() => {
 			if (feed) {
@@ -91,8 +95,17 @@
 		border: 1px solid var(--line);
 		border-radius: var(--radius);
 		padding: 8px 12px;
+		/* Whole-pixel rows avoid a fractional scroll boundary swallowing touch gestures. */
+		line-height: 18px;
 		max-height: 320px;
 		overflow-y: auto;
+		overscroll-behavior: auto;
+		overflow-wrap: anywhere;
+	}
+	@media (max-height: 600px) {
+		.feed {
+			max-height: 160px;
+		}
 	}
 	.entries {
 		display: flex;
