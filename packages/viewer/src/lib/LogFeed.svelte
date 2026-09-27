@@ -53,7 +53,7 @@
 		bind:this={feed}
 		onscroll={() => {
 			if (feed) {
-				follow = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 32;
+				follow = feed.scrollHeight - feed.scrollTop - feed.clientHeight <= 1;
 			}
 		}}
 	>

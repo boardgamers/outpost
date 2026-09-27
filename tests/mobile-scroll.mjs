@@ -123,6 +123,16 @@ try {
 				const feed = frame.getByRole("region", { name, exact: true });
 				await center(feed);
 				await feed.evaluate((el) => {
+					el.scrollTop = el.scrollHeight;
+				});
+				await page.waitForTimeout(100);
+				const bottom = await feed.evaluate((el) => el.scrollTop);
+				const bounds = await feed.boundingBox();
+				await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+				await page.mouse.wheel(0, -8);
+				await page.waitForTimeout(100);
+				assert.ok((await feed.evaluate((el) => el.scrollTop)) < bottom - 3, `${name}: small wheel escapes following`);
+				await feed.evaluate((el) => {
 					el.scrollTop = 300;
 				});
 				await page.waitForTimeout(100);
