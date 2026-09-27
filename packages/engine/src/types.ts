@@ -240,6 +240,7 @@ export interface MoveInfo {
 }
 
 export interface GameState {
+	analysisKnowledge?: { hands: ProductionCard[][]; bidFloors: number[]; parked?: { min: number; max?: number }[] };
 	players: PlayerState[];
 	round: number;
 	phase: Phase;

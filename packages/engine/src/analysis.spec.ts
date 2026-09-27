@@ -1,6 +1,7 @@
+import { maxBid } from "./state.js";
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createAnalysisScenario, init, currentPlayer, moveAI } from "../wrapper.js";
+import { createAnalysisScenario, init, currentPlayer, moveAI, move } from "../wrapper.js";
 
 test("analysis uses observed production and independent randomness", async () => {
 	const state = await init(3, ["kicker"], {}, "real-secret");
@@ -75,4 +76,18 @@ test("sealed auction scenario replaces the secret opening bid and remains payabl
 	assert.deepEqual(a, createAnalysisScenario(changed, { player: 0, seed: "same" }));
 	assert.equal(a.auction!.highBid, a.auction!.bids![1]);
 	assert.ok(a.players[1]!.hand.reduce((sum, c) => sum + c.v, 0) >= a.auction!.highBid);
+});
+
+test("revealed sealed bids constrain every simulated hand and survive resampling", async () => {
+	const s = await init(3, [], { fastBid: true }, "seed0");
+	await move(s, { action: "auction", marketIndex: s.market.indexOf("dataLibrary"), bid: 15 }, 0);
+	await move(s, { action: "bid", amount: maxBid(s, 1, "dataLibrary") }, 1);
+	await move(s, { action: "bid", amount: maxBid(s, 2, "dataLibrary") }, 2);
+	assert.equal(s.phase, "auctionPayment");
+	const a = createAnalysisScenario(s, { seed: "fake1" });
+	for (const candidate of [a, createAnalysisScenario(a, { seed: "reroll" })]) {
+		for (const [seat, amount] of Object.entries(candidate.auction!.bids!)) {
+			assert.ok(maxBid(candidate, Number(seat), "dataLibrary") >= amount);
+		}
+	}
 });

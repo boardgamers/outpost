@@ -445,6 +445,63 @@ export function createAnalysisScenario(
 	{ player, seed }: { player?: number; seed: string }
 ): GameState {
 	const observed = structuredClone(stripSecret(data, player));
+	const knowledge =
+		data.analysisKnowledge ??
+		(() => {
+			const replayed = observed.log[0]?.type === "init" ? replayCore(observed) : undefined;
+			const bidFloors = observed.players.map(() => 0);
+			if (observed.auction) {
+				let start = observed.log.length;
+				for (let i = observed.log.length - 1; i >= 0; i--) {
+					const e = observed.log[i]!;
+					if (e.type === "move" && e.move.action === "auction") {
+						start = i;
+						break;
+					}
+				}
+				for (const e of observed.log.slice(start)) {
+					if (e.type !== "move") {
+						continue;
+					}
+					const amount = e.move.action === "auction" ? e.move.bid : e.move.action === "bid" ? e.move.amount : 0;
+					bidFloors[e.player] = Math.max(bidFloors[e.player]!, amount);
+				}
+				for (const [seat, amount] of Object.entries(observed.auction.bids ?? {})) {
+					bidFloors[Number(seat)] = Math.max(bidFloors[Number(seat)]!, amount);
+				}
+			}
+			const parked = observed.exchange?.parked.map(() => ({ min: 0 }) as { min: number; max?: number });
+			if (parked?.length) {
+				const entries = observed.log
+					.filter((e) => e.type === "move" && e.move.action === "exchange")
+					.slice(-parked.length);
+				entries.forEach((e, index) => {
+					if (e.type === "move" && (e.info?.exchangeGiven?.v ?? -1) >= 0) {
+						const value = e.info!.exchangeGiven!.v;
+						parked[index] = (e.info!.exchangeTake ?? -1) < 0 ? { min: value, max: value } : { min: value + 1 };
+					}
+				});
+			}
+			return { hands: replayed?.players.map((p) => p.hand) ?? observed.players.map((p) => p.hand), bidFloors, parked };
+		})();
+	observed.analysisKnowledge = structuredClone(knowledge);
+	for (const [seat, p] of observed.players.entries()) {
+		if (seat === player) {
+			continue;
+		}
+		const known = knowledge.hands[seat]!;
+		if (known.length !== p.hand.length) {
+			throw new Error("Cannot reconstruct known hand positions");
+		}
+		p.hand.forEach((card, i) => {
+			if (known[i]!.t !== card.t) {
+				throw new Error("Cannot reconstruct known card types");
+			}
+			if (known[i]!.v >= 0) {
+				card.v = known[i]!.v;
+			}
+		});
+	}
 	observed.seed = seed;
 	observed.rngCounter = 0;
 	observed.log = [];
@@ -483,11 +540,22 @@ export function createAnalysisScenario(
 			}
 			copy.decks[resource] = pool.slice(0, copy.decks[resource].length);
 		}
+		if (
+			knowledge.parked?.some((bound, index) => {
+				const value = copy.exchange?.parked[index]?.card.v;
+				return value !== undefined && (value < bound.min || (bound.max !== undefined && value > bound.max));
+			})
+		) {
+			continue;
+		}
 		for (const era of [1, 2, 3] as const) {
 			shuffle(copy, copy.kickerPiles[era]);
 		}
 		const a = copy.auction;
 		if (a) {
+			if (knowledge.bidFloors.some((amount, seat) => amount > maxBid(copy, seat, a.upgrade))) {
+				continue;
+			}
 			if (a.bids && copy.phase === "auction") {
 				const floor = a.kicker ? KICKER_SPECS[a.kicker].price : UPGRADE_SPECS[a.upgrade!].price;
 				if (maxBid(copy, a.auctioneer, a.upgrade) < floor) {
@@ -498,7 +566,14 @@ export function createAnalysisScenario(
 					const max = maxBid(copy, Number(seat), a.upgrade);
 					if (amount < 0) {
 						a.bids[seat] =
-							Number(seat) === a.auctioneer ? floor + nextInt(copy, max - floor + 1) : nextInt(copy, max + 1);
+							Number(seat) === a.auctioneer
+								? floor + nextInt(copy, max - floor + 1)
+								: max < floor + 1
+									? 0
+									: (() => {
+											const choice = nextInt(copy, max - floor + 1);
+											return choice === 0 ? 0 : floor + choice;
+										})();
 					} else if (amount > max) {
 						valid = false;
 					}

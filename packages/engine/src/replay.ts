@@ -41,6 +41,16 @@ export function replay(state: GameState, options?: { to?: number }): GameState {
 				if (entry.info?.winningBid !== undefined) {
 					setReplayFastResolve(entry.info.winningBid, entry.info.secondBid ?? 0, entry.info.winner ?? entry.player);
 				}
+				if (entry.move.action === "exchange") {
+					const given = replayed.players[entry.player]?.hand[entry.move.card];
+					if (given && (entry.info?.exchangeGiven?.v ?? -1) >= 0) {
+						given.v = entry.info!.exchangeGiven!.v;
+					}
+					const received = replayed.players[entry.move.target]?.hand[entry.info?.exchangeTake ?? -1];
+					if (received && (entry.info?.exchangeValue ?? -1) >= 0) {
+						received.v = entry.info!.exchangeValue!;
+					}
+				}
 				setReplayExchangeTake(entry.info?.exchangeTake ?? -1);
 				applyMove(replayed, entry.move, entry.player);
 			}
