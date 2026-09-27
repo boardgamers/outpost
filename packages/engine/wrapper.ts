@@ -1,3 +1,7 @@
+import { PRODUCTION_DECKS, KICKER_SPECS, UPGRADE_SPECS } from "./src/data.js";
+import { nextInt, shuffle } from "./src/prng.js";
+import { RESOURCES } from "./src/types.js";
+import { maxBid } from "./src/state.js";
 import { moveAI as moveAICore } from "./src/ai.js";
 import { describeLogEntry } from "./src/describe.js";
 import { applyMove, dropPlayer as dropPlayerCore, initGame } from "./src/moves.js";
@@ -224,6 +228,7 @@ export function stripSecret(data: GameState, player?: number): GameState {
 		auction?.bids && data.phase === "auction"
 			? {
 					...auction,
+					highBid: auction.auctioneer === viewer ? auction.highBid : -1,
 					bids: Object.fromEntries(
 						Object.entries(auction.bids).map(([seat, amount]) => [seat, Number(seat) === viewer ? amount : -1])
 					),
@@ -433,4 +438,80 @@ export function createAnalysis(data: GameState, { to }: { to: number; sourceEnde
 	});
 	copy.messages = [];
 	return copy;
+}
+
+export function createAnalysisScenario(
+	data: GameState,
+	{ player, seed }: { player?: number; seed: string }
+): GameState {
+	const observed = structuredClone(stripSecret(data, player));
+	observed.seed = seed;
+	observed.rngCounter = 0;
+	observed.log = [];
+	observed.messages = [];
+	observed.options = { fastBid: data.options.fastBid === true, kicker: data.options.kicker === true };
+	for (const p of observed.players) {
+		p.dropped = false;
+		p.settings = { autoPassBids: false };
+	}
+	for (let attempt = 0; attempt < 10000; attempt++) {
+		const copy = structuredClone(observed);
+		copy.rngCounter = attempt * 10000;
+		for (const resource of RESOURCES) {
+			const spec = PRODUCTION_DECKS[resource];
+			const pool = Object.entries(spec.distribution).flatMap(([v, count]) => Array<number>(count).fill(Number(v)));
+			const cards = copy.players
+				.flatMap((p) => [...p.hand, ...(p.pendingMega ?? [])])
+				.concat(copy.exchange?.parked.map((p) => p.card) ?? [])
+				.filter((c) => c.t === resource && !c.m);
+			const remove = (v: number) => {
+				const index = pool.indexOf(v);
+				if (index >= 0) {
+					pool.splice(index, 1);
+				}
+			};
+			copy.discards[resource].forEach(remove);
+			cards.filter((c) => c.v >= 0).forEach((c) => remove(c.v));
+			const unknown = cards.filter((c) => c.v < 0);
+			const required = unknown.length + copy.decks[resource].length;
+			while (pool.length < required) {
+				pool.push(spec.average);
+			}
+			shuffle(copy, pool);
+			for (const c of unknown) {
+				c.v = pool.pop()!;
+			}
+			copy.decks[resource] = pool.slice(0, copy.decks[resource].length);
+		}
+		for (const era of [1, 2, 3] as const) {
+			shuffle(copy, copy.kickerPiles[era]);
+		}
+		const a = copy.auction;
+		if (a) {
+			if (a.bids && copy.phase === "auction") {
+				const floor = a.kicker ? KICKER_SPECS[a.kicker].price : UPGRADE_SPECS[a.upgrade!].price;
+				if (maxBid(copy, a.auctioneer, a.upgrade) < floor) {
+					continue;
+				}
+				let valid = true;
+				for (const [seat, amount] of Object.entries(a.bids)) {
+					const max = maxBid(copy, Number(seat), a.upgrade);
+					if (amount < 0) {
+						a.bids[seat] =
+							Number(seat) === a.auctioneer ? floor + nextInt(copy, max - floor + 1) : nextInt(copy, max + 1);
+					} else if (amount > max) {
+						valid = false;
+					}
+				}
+				if (!valid) {
+					continue;
+				}
+				a.highBid = a.bids[String(a.auctioneer)]!;
+			} else if (maxBid(copy, a.highBidder, a.upgrade) < a.highBid) {
+				continue;
+			}
+		}
+		return copy;
+	}
+	throw new Error("Cannot simulate a production allocation compatible with the current auction");
 }
