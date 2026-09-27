@@ -111,6 +111,9 @@ test("completed exchanges retain the lowest-higher-card inference across resampl
 		const sample = createAnalysisScenario(scenario, { player: entry.player, seed: String(i) });
 		assert.ok(sample.players[target]!.hand.some((card) => card.t === "ore" && card.v === 3));
 		assert.ok(sample.players[target]!.hand.every((card) => card.t !== "ore" || card.v !== 4));
+		assert.ok(
+			sample.players[target]!.hand.slice(0, entry.info!.exchangeTake).every((card) => card.t !== "ore" || card.v < 5)
+		);
 	}
 });
 

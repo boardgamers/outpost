@@ -60,7 +60,7 @@ export function replay(state: GameState, options?: { to?: number; trackKnowledge
 							if (take < 0) {
 								card.analysisBounds.max = Math.min(card.analysisBounds.max ?? Infinity, given.v);
 							} else if (received && received.v >= 0) {
-								(card.analysisBounds.excluded ??= []).push([given.v, received.v]);
+								(card.analysisBounds.excluded ??= []).push([given.v, received.v + Number(index < take)]);
 							}
 						}
 					}
