@@ -116,8 +116,8 @@ try {
 			);
 			assert.equal(await frame.locator(".factory-buttons").count(), 1, "disabled tap does not open a purchase");
 			await pageScrollsFrom(frame.locator(".me .pcard").first(), "hand card");
-			await pageScrollsFrom(frame.locator(".auto-pass"), "auto-pass label");
-			await pageScrollsFrom(frame.locator(".auto-pass input"), "auto-pass checkbox");
+			await pageScrollsFrom(frame.locator(".auto-pass-label"), "auto-pass label");
+			await pageScrollsFrom(frame.locator(".auto-pass-track"), "auto-pass switch");
 			assert.equal(await frame.evaluate(() => settingsChanges.length), 0, "swiping does not change settings");
 			await pageScrollsFrom(frame.locator(".market .ucard").first(), "market card");
 			await pageScrollsFrom(frame.locator(".factory-buttons button:not(:disabled) svg").first(), "resource icon");

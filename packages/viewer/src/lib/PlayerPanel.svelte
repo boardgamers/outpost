@@ -321,18 +321,19 @@
 		{/if}
 	</div>
 	{#if isMe && store.settings !== null}
-		<label
+		<button
 			class="auto-pass"
+			type="button"
+			role="switch"
+			name="autoPassBids"
+			aria-checked={store.autoPassBids}
+			onclick={() => store.setAutoPassBids(!store.autoPassBids)}
+			disabled={!store.canEditSettings}
 			title="Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak."
 		>
-			<input
-				type="checkbox"
-				name="autoPassBids"
-				bind:checked={() => store.autoPassBids, (value) => store.setAutoPassBids(value)}
-				disabled={!store.canEditSettings}
-			/>
-			<span>Pass if I can't pay</span>
-		</label>
+			<span class="auto-pass-track" aria-hidden="true"><span class="auto-pass-thumb"></span></span>
+			<span class="auto-pass-label">Pass auctions I can't afford</span>
+		</button>
 	{/if}
 </div>
 
@@ -340,22 +341,53 @@
 	.auto-pass {
 		display: flex;
 		align-items: center;
-		gap: 7px;
-		min-height: 32px;
+		align-self: flex-start;
+		gap: 8px;
+		min-height: 40px;
+		max-width: 100%;
+		padding: 6px 9px;
 		font-size: 12px;
 		line-height: 1.3;
+		text-align: start;
 		color: var(--text-mid);
+		background: var(--bg-panel);
 		cursor: pointer;
 		touch-action: manipulation;
 	}
-	.auto-pass input {
-		width: 16px;
-		height: 16px;
-		margin: 0;
-		flex-shrink: 0;
-		accent-color: var(--gold);
+	.auto-pass[aria-checked="true"] {
+		color: var(--text);
+		border-color: var(--gold);
+		background: color-mix(in srgb, var(--gold) 10%, var(--bg-panel));
 	}
-	.auto-pass:has(input:disabled) {
+	.auto-pass:focus-visible {
+		outline: 2px solid var(--gold);
+		outline-offset: 2px;
+	}
+	.auto-pass-track {
+		display: flex;
+		align-items: center;
+		flex: 0 0 30px;
+		height: 18px;
+		padding: 2px;
+		border: 1px solid var(--text-dim);
+		border-radius: 9px;
+		background: var(--line);
+	}
+	.auto-pass-thumb {
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		background: var(--text-mid);
+	}
+	.auto-pass[aria-checked="true"] .auto-pass-track {
+		justify-content: flex-end;
+		border-color: var(--gold);
+		background: var(--gold);
+	}
+	.auto-pass[aria-checked="true"] .auto-pass-thumb {
+		background: var(--bg);
+	}
+	.auto-pass:disabled {
 		cursor: default;
 		opacity: 0.6;
 	}

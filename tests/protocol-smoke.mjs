@@ -62,7 +62,7 @@ try {
 			stripSecret(state, 0)
 		);
 		await page.waitForFunction(() => events.filter((e) => e.name === "ready").length === 1);
-		const autoPass = page.locator('input[name="autoPassBids"]');
+		const autoPass = page.getByRole("switch");
 		assert.equal(await autoPass.count(), 0, "wait for the host's settings before showing the control");
 		await page.evaluate(() => emitter.emit("settings", { autoPassBids: true }));
 		assert.equal(await autoPass.isChecked(), true);
