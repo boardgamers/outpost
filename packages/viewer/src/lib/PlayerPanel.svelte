@@ -339,6 +339,7 @@
 
 <style>
 	.auto-pass {
+		--auto-pass-active: color-mix(in srgb, var(--gold) 35%, var(--text-mid));
 		display: flex;
 		align-items: center;
 		align-self: flex-start;
@@ -350,14 +351,14 @@
 		line-height: 1.3;
 		text-align: start;
 		color: var(--text-mid);
-		background: var(--bg-panel);
+		border-color: transparent;
+		background: transparent;
 		cursor: pointer;
 		touch-action: manipulation;
 	}
-	.auto-pass[aria-checked="true"] {
-		color: var(--text);
-		border-color: var(--gold);
-		background: color-mix(in srgb, var(--gold) 10%, var(--bg-panel));
+	.auto-pass:hover:not(:disabled) {
+		border-color: transparent;
+		background: color-mix(in srgb, var(--text) 4%, transparent);
 	}
 	.auto-pass:focus-visible {
 		outline: 2px solid var(--gold);
@@ -381,11 +382,11 @@
 	}
 	.auto-pass[aria-checked="true"] .auto-pass-track {
 		justify-content: flex-end;
-		border-color: var(--gold);
-		background: var(--gold);
+		border-color: color-mix(in srgb, var(--auto-pass-active) 55%, var(--line));
+		background: color-mix(in srgb, var(--auto-pass-active) 15%, var(--bg-panel));
 	}
 	.auto-pass[aria-checked="true"] .auto-pass-thumb {
-		background: var(--bg);
+		background: var(--auto-pass-active);
 	}
 	.auto-pass:disabled {
 		cursor: default;
