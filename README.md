@@ -12,6 +12,10 @@ Two packages:
 - **`packages/viewer`** (`outpost-viewer`) — Svelte 5 browser UI, built as a self-contained
   IIFE bundle for the BGS iframe (`window.outpost.launch(selector)`).
 
+## Play online at
+
+[boardgamers.space](https://boardgamers.space/boardgame/outpost)
+
 ## Rules set
 
 The engine implements the **20th Anniversary / Expert Rules v1.32** set, which is the
