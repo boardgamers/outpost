@@ -1,7 +1,7 @@
 import { chatSegments } from "@boardgamers/protocol/chat";
 import type { ViewerEmitter } from "@boardgamers/protocol/viewer";
 import { applyMove, chooseMove, initGame, type GameState, type Move } from "outpost-engine";
-import { currentPlayer, stripSecret } from "outpost-engine/wrapper.js";
+import { currentPlayer, playerSettings, setPlayerSettings, stripSecret } from "outpost-engine/wrapper.js";
 
 export interface DevOptions {
 	players?: number;
@@ -56,6 +56,7 @@ export function startDevBackend(emitter: ViewerEmitter<GameState, Move>, options
 	function publish(): void {
 		emitter.emit("state", stripSecret(state, human));
 		emitter.emit("player", { index: human });
+		emitter.emit("settings", playerSettings(state, human));
 		emitter.emit("avatars", AVATARS.slice(0, playerCount));
 		if (state.ended && !ended) {
 			ended = true;
@@ -136,6 +137,12 @@ export function startDevBackend(emitter: ViewerEmitter<GameState, Move>, options
 		publish();
 	});
 
+	emitter.on("update:setting", ({ name, value }) => {
+		if (name === "autoPassBids" && typeof value === "boolean") {
+			setPlayerSettings(state, human, { ...playerSettings(state, human), [name]: value });
+			emitter.emit("settings", playerSettings(state, human));
+		}
+	});
 	emitter.on("fetchState", () => publish());
 
 	emitter.emit("chat:state", { canSend: true, mentions });

@@ -33,9 +33,12 @@ try {
 			await frame.evaluate(
 				(state) => {
 					window.moves = [];
+					window.settingsChanges = [];
 					window.emitter = outpost.launch("#app");
 					emitter.on("move", (move) => moves.push(move));
+					emitter.on("update:setting", (setting) => settingsChanges.push(setting));
 					emitter.emit("player", { index: 0 });
+					emitter.emit("settings", { autoPassBids: false });
 					emitter.emit("preferences", { sound: false });
 					emitter.emit("state", state);
 					emitter.emit("chat:state", { canSend: true });
@@ -113,6 +116,9 @@ try {
 			);
 			assert.equal(await frame.locator(".factory-buttons").count(), 1, "disabled tap does not open a purchase");
 			await pageScrollsFrom(frame.locator(".me .pcard").first(), "hand card");
+			await pageScrollsFrom(frame.locator(".auto-pass"), "auto-pass label");
+			await pageScrollsFrom(frame.locator(".auto-pass input"), "auto-pass checkbox");
+			assert.equal(await frame.evaluate(() => settingsChanges.length), 0, "swiping does not change settings");
 			await pageScrollsFrom(frame.locator(".market .ucard").first(), "market card");
 			await pageScrollsFrom(frame.locator(".factory-buttons button:not(:disabled) svg").first(), "resource icon");
 			await frame.evaluate(() => emitter.emit("player", { index: 1 }));

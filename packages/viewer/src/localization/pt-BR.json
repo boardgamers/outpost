@@ -1177,5 +1177,7 @@
 	"New factory": "New factory",
 	"How to buy": "How to buy",
 	"Remaining upgrades": "Remaining upgrades",
-	"Remaining Kicker cards": "Remaining Kicker cards"
+	"Remaining Kicker cards": "Remaining Kicker cards",
+	"Pass if I can't pay": "Passar se eu não puder pagar",
+	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "Passe automaticamente em um leilão quando suas cartas e descontos não cobrirem o lance necessário. Isso pode revelar que sua mão é fraca demais."
 }

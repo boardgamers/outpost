@@ -30,6 +30,7 @@ try {
 					"player:clicked",
 					"chat:read",
 					"chat:send",
+					"update:setting",
 				]) {
 					emitter.on(name, (data) => {
 						structuredClone(data);
@@ -61,6 +62,41 @@ try {
 			stripSecret(state, 0)
 		);
 		await page.waitForFunction(() => events.filter((e) => e.name === "ready").length === 1);
+		const autoPass = page.locator('input[name="autoPassBids"]');
+		assert.equal(await autoPass.count(), 0, "wait for the host's settings before showing the control");
+		await page.evaluate(() => emitter.emit("settings", { autoPassBids: true }));
+		assert.equal(await autoPass.isChecked(), true);
+		await autoPass.uncheck();
+		assert.deepEqual(await page.evaluate(() => events.filter((e) => e.name === "update:setting")), [
+			{ name: "update:setting", data: { name: "autoPassBids", value: false } },
+		]);
+		await page.evaluate(
+			(state) => {
+				emitter.emit("settings", { autoPassBids: false });
+				emitter.emit("state", { ...state, activeSeat: 1 });
+			},
+			stripSecret(state, 0)
+		);
+		assert.equal(await autoPass.isEnabled(), true, "setting remains accessible out of turn");
+		await autoPass.check();
+		await page.evaluate(
+			(state) => {
+				emitter.emit("settings", { autoPassBids: true });
+				emitter.emit("state", state);
+			},
+			stripSecret(state, 0)
+		);
+		assert.equal(await autoPass.isChecked(), true, "a state refresh does not overwrite host settings");
+		await page.evaluate(() => emitter.emit("settings", { autoPassBids: false }));
+		assert.equal(await autoPass.isChecked(), false, "platform settings update the viewer");
+		assert.equal(await page.evaluate(() => events.filter((e) => e.name === "update:setting").length), 2);
+		assert.equal(await page.evaluate(() => events.filter((e) => e.name === "move").length), 0);
+		await page.evaluate(() => emitter.emit("replay:start"));
+		assert.equal(await autoPass.isDisabled(), true);
+		await page.evaluate(() => emitter.emit("replay:end"));
+		await page.evaluate(() => {
+			events = events.filter((e) => e.name !== "replay:info");
+		});
 		assert.equal(await page.evaluate(() => outpost.diagnostics().compatible), true);
 		assert.equal(
 			await page
@@ -196,6 +232,7 @@ try {
 		assert.match(await page.locator('[data-message-id="000000000000000000000070"]').textContent(), /Hello/);
 		assert.equal(await page.evaluate(() => translationsRequested.length), 1, "showing original needs no new request");
 		await page.evaluate(() => emitter.emit("preferences", { sound: false, analysis: true }));
+		assert.equal(await autoPass.isDisabled(), true);
 		await page.waitForFunction(() => !document.querySelector(".chat-translate")?.getBoundingClientRect().height);
 		await page.screenshot({ path: "/tmp/outpost-analysis-" + width + ".png", fullPage: true });
 		await page.evaluate(() => emitter.emit("preferences", { sound: false, analysis: false }));
@@ -219,8 +256,10 @@ try {
 		assert.deepEqual(errors, []);
 		await page.evaluate((state) => {
 			emitter.emit("player", {});
+			emitter.emit("settings", { autoPassBids: true });
 			emitter.emit("state", state);
 		}, stripSecret(state));
+		assert.equal(await autoPass.count(), 0, "spectators have no personal auction setting");
 
 		await page.locator(".board").evaluate((el) => {
 			el.style.display = "none";

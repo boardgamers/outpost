@@ -320,9 +320,45 @@
 			{/if}
 		{/if}
 	</div>
+	{#if isMe && store.settings !== null}
+		<label
+			class="auto-pass"
+			title="Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak."
+		>
+			<input
+				type="checkbox"
+				name="autoPassBids"
+				bind:checked={() => store.autoPassBids, (value) => store.setAutoPassBids(value)}
+				disabled={!store.canEditSettings}
+			/>
+			<span>Pass if I can't pay</span>
+		</label>
+	{/if}
 </div>
 
 <style>
+	.auto-pass {
+		display: flex;
+		align-items: center;
+		gap: 7px;
+		min-height: 32px;
+		font-size: 12px;
+		line-height: 1.3;
+		color: var(--text-mid);
+		cursor: pointer;
+		touch-action: manipulation;
+	}
+	.auto-pass input {
+		width: 16px;
+		height: 16px;
+		margin: 0;
+		flex-shrink: 0;
+		accent-color: var(--gold);
+	}
+	.auto-pass:has(input:disabled) {
+		cursor: default;
+		opacity: 0.6;
+	}
 	.panel {
 		position: relative;
 		background: var(--bg-panel);

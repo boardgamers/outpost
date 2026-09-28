@@ -44,6 +44,9 @@ registerViewer<GameState, Move>(
 				store.preferences = preferences;
 				sounds.onPreferences(preferences);
 			},
+			onSettings(settings) {
+				store.settings = settings;
+			},
 			onLog(log) {
 				store.onGamelog(log);
 			},

@@ -1177,5 +1177,7 @@
 	"New factory": "New factory",
 	"How to buy": "How to buy",
 	"Remaining upgrades": "Remaining upgrades",
-	"Remaining Kicker cards": "Remaining Kicker cards"
+	"Remaining Kicker cards": "Remaining Kicker cards",
+	"Pass if I can't pay": "भुगतान न कर सकूँ तो पास करें",
+	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "जब आपके कार्ड और छूट आवश्यक बोली के लिए पर्याप्त न हों, तो नीलामी में अपने-आप पास करें। इससे पता चल सकता है कि आपका हाथ कमज़ोर है।"
 }

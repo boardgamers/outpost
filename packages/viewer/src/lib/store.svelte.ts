@@ -208,6 +208,7 @@ export class ViewerStore {
 	playerIndex = $state<number | undefined>(undefined);
 	avatars = $state<string[]>([]);
 	preferences = $state<Record<string, unknown>>({});
+	settings = $state<Record<string, unknown> | null>(null);
 	logLines = $state<string[]>([]);
 	seenLog = $state(0);
 	lastMoveAt = $state<number>(0);
@@ -249,6 +250,27 @@ export class ViewerStore {
 
 	openPlayer(index: number): void {
 		this.commands.openPlayer(index);
+	}
+
+	get autoPassBids(): boolean {
+		return this.settings?.autoPassBids === true;
+	}
+
+	get canEditSettings(): boolean {
+		return (
+			this.settings !== null &&
+			!!this.me &&
+			!this.me.dropped &&
+			!this.liveState?.ended &&
+			!this.replay.active &&
+			this.preferences.analysis !== true
+		);
+	}
+
+	setAutoPassBids(value: boolean): void {
+		if (this.canEditSettings && this.commands.updateSetting("autoPassBids", value)) {
+			this.settings = { ...this.settings, autoPassBids: value };
+		}
 	}
 
 	get state(): GameState | null {
