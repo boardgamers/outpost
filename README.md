@@ -134,7 +134,7 @@ Set `OUTPOST_CHROMIUM_EXECUTABLE` when using an existing Chromium installation.
 
 - Engine: `npm pack` the built `outpost-engine` (or publish) and register it as the game
   engine in the BGS admin panel; entry point `dist/wrapper.js`.
-- Viewer: upload `packages/viewer/dist/outpost-viewer.iife.js` + `outpost-viewer.css`
+- Viewer: upload the complete `packages/viewer/dist` folder, including language JSON
   (and the `.map` with a shared bundle id if you want devtools sourcemaps).
 
 See <https://docs.boardgamers.space/guide/adding-a-game>.
@@ -142,3 +142,5 @@ See <https://docs.boardgamers.space/guide/adding-a-game>.
 ## License
 
 AGPL-3.0.
+
+Viewer releases: see [uploading the complete viewer build](docs/viewer-publishing.md).

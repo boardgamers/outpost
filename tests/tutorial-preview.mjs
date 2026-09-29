@@ -16,6 +16,9 @@ export function previewServer() {
 			if (files[path]) {
 				res.setHeader("Content-Type", path.endsWith(".css") ? "text/css" : "text/javascript");
 				res.end(await readFile(files[path]));
+			} else if (/^\/[a-zA-Z0-9_-]+\.json$/.test(path)) {
+				res.setHeader("Content-Type", "application/json");
+				res.end(await readFile(new URL("../packages/viewer/dist" + path, import.meta.url)));
 			} else if (path === "/") {
 				res.setHeader("Content-Type", "text/html");
 				res.end(html);

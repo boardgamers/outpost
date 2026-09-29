@@ -1,8 +1,12 @@
+import { previewServer } from "./tutorial-preview.mjs";
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { initGame } from "../packages/engine/dist/index.js";
 import { stripSecret } from "../packages/engine/dist/wrapper.js";
 
+const server = previewServer();
+await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+const base = `http://127.0.0.1:${server.address().port}`;
 const browser = await chromium.launch({ headless: true });
 try {
 	const configurations = [
@@ -28,7 +32,7 @@ try {
 				await page.setContent(`${markup}<footer style="height:600px"></footer>`);
 			}
 			await frame.addStyleTag({ path: "packages/viewer/dist/outpost-viewer.css" });
-			await frame.addScriptTag({ path: "packages/viewer/dist/outpost-viewer.iife.js" });
+			await frame.addScriptTag({ url: base + "/bundle.js" });
 			const state = initGame(3, { fastBid: true, kicker: true }, "protocol-smoke");
 			await frame.evaluate(
 				(state) => {
@@ -196,4 +200,5 @@ try {
 	);
 } finally {
 	await browser.close();
+	await new Promise((resolve) => server.close(resolve));
 }

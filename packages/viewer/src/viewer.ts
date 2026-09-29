@@ -28,6 +28,7 @@ registerViewer<GameState, Move>(
 				return thumbnail.render(commands.target.querySelector(".main"), size, "#0a1421", ".side");
 			},
 			async onState(state) {
+				await localization.ready;
 				localization.setState(state);
 				sounds.onState(state);
 				store.setState(state);
@@ -39,8 +40,10 @@ registerViewer<GameState, Move>(
 			onAvatars(avatars) {
 				store.avatars = avatars;
 			},
-			onPreferences(preferences) {
-				localization.setLocale(preferences.locale);
+			async onPreferences(preferences) {
+				if (!(await localization.setLocale(preferences.locale))) {
+					return;
+				}
 				store.preferences = preferences;
 				sounds.onPreferences(preferences);
 			},

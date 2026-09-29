@@ -1,18 +1,28 @@
+import { previewServer } from "./tutorial-preview.mjs";
 import { checkHostPresentation } from "./host-presentation-smoke.mjs";
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { initGame } from "../packages/engine/dist/index.js";
 import { stripSecret } from "../packages/engine/dist/wrapper.js";
 
+const server = previewServer();
+await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+const base = `http://127.0.0.1:${server.address().port}`;
 const browser = await chromium.launch({ executablePath: process.env.OUTPOST_CHROMIUM_EXECUTABLE });
 try {
 	for (const width of [390, 1400]) {
 		const page = await browser.newPage({ viewport: { width, height: 950 } });
 		const errors = [];
+		const languageRequests = [];
+		page.on("request", (request) => {
+			if (request.url().endsWith(".json")) {
+				languageRequests.push(request.url());
+			}
+		});
 		page.on("pageerror", (error) => errors.push(error.message));
 		await page.setContent('<div id="app"></div>');
 		await page.addStyleTag({ path: "packages/viewer/dist/outpost-viewer.css" });
-		await page.addScriptTag({ path: "packages/viewer/dist/outpost-viewer.iife.js" });
+		await page.addScriptTag({ url: base + "/bundle.js" });
 		const state = initGame(3, { fastBid: true, kicker: true }, "protocol-smoke");
 		state.players.forEach((player, i) => {
 			player.name = ["You", "Full Name", "Other"][i];
@@ -106,6 +116,7 @@ try {
 			1
 		);
 		if (width === 390) {
+			await page.evaluate(() => window.scrollTo(0, 0));
 			await page.waitForTimeout(650);
 			assert.equal(await page.evaluate(() => events.filter((e) => e.name === "chat:read").length), 0);
 		}
@@ -295,6 +306,12 @@ try {
 			const count = Number((await stack.textContent()).trim());
 			assert.match(await stack.getAttribute("title"), new RegExp(`cards: ${count}$`));
 		}
+		assert.equal(languageRequests.length, 0, "English needs no language download");
+		await page.evaluate(() => emitter.emit("preferences", { locale: "fr", sound: false }));
+		await page.waitForFunction(() => document.body.textContent.includes("Eau"));
+		assert.equal(languageRequests.length, 1);
+		await page.evaluate(() => emitter.emit("preferences", { locale: "en", sound: false }));
+		await page.waitForFunction(() => document.body.textContent.includes("Water"));
 		await page.screenshot({ path: `/tmp/outpost-resource-icons-${width}.png`, fullPage: true });
 		await checkHostPresentation(page, "emitter", `/tmp/outpost-board-thumbnail-${width}.png`);
 		assert.deepEqual(errors, []);
@@ -303,4 +320,5 @@ try {
 	console.log("Outpost protocol: mobile/desktop chat, mentions, reads, drafts, replay, refresh and relaunch passed.");
 } finally {
 	await browser.close();
+	await new Promise((resolve) => server.close(resolve));
 }

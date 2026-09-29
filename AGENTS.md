@@ -129,20 +129,12 @@ curl -X POST "$BASE/1/engine" -H "$AUTH" \
 	-H "Content-Type: application/octet-stream" \
 	--data-binary @packages/engine/outpost-engine-<version>.tgz
 
-# 2. Viewer files: each upload returns { url } (content-hashed, S3).
-curl -X POST "$BASE/1/viewer/file?filename=outpost-viewer.iife.js" -H "$AUTH" \
-	-H "Content-Type: application/octet-stream" \
-	--data-binary @packages/viewer/dist/outpost-viewer.iife.js
-curl -X POST "$BASE/1/viewer/file?filename=outpost-viewer.css" -H "$AUTH" \
-	-H "Content-Type: application/octet-stream" \
-	--data-binary @packages/viewer/dist/outpost-viewer.css
-
-# 3. Persist the new viewer URLs: GET the doc, set viewer.url (and
-#    viewer.dependencies.stylesheets if the css hash changed), drop
-#    _id/createdAt/updatedAt/meta, PUT it back.
-curl "$BASE/1" -H "$AUTH"           # read
-curl -X PUT "$BASE/1" -H "$AUTH" -H "Content-Type: application/json" \
-	--data-binary @gameinfo.json      # write
+# 2–3. Upload the complete viewer folder and activate after verification.
+# Use the publisher from your BGS checkout (not this game repository):
+node /path/to/boardgamers/scripts/publish-viewer.mjs --game outpost --version 1 \
+  --dir packages/viewer/dist --entry outpost-viewer.iife.js --style outpost-viewer.css \
+  --token /path/to/admin-token --record /tmp/outpost-release.json --apply --activate
+# This includes language JSON and sets scriptBytes. BGS compresses uploads itself.
 
 # 4. Verify: engine.package.version and viewer.url on the doc.
 curl "$BASE/1" -H "$AUTH"
