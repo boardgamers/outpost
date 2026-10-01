@@ -66,10 +66,6 @@ export const PLAYER_COLORS = [
 	"#8b94f7",
 ] as const;
 
-export function playerColor(index: number): string {
-	return PLAYER_COLORS[index % PLAYER_COLORS.length] as string;
-}
-
 export const RESOURCE_LABELS: Record<string, string> = {
 	ore: "Ore",
 	water: "Water",
@@ -206,6 +202,12 @@ export const KICKER_EFFECTS: Record<Kicker, EffectToken[]> = {
 };
 
 export class ViewerStore {
+	playerColor(index: number): string {
+		const appearance = this.preferences.bgs as { playerColors?: string[] } | undefined;
+		const custom = appearance?.playerColors?.[index];
+		return custom && /^#[a-f0-9]{6}$/i.test(custom) ? custom : PLAYER_COLORS[index % PLAYER_COLORS.length]!;
+	}
+
 	liveState = $state<GameState | null>(null);
 	replay = $state<ReplayState>({ active: false, current: 0, end: 0, state: null });
 	playerIndex = $state<number | undefined>(undefined);
@@ -1043,7 +1045,7 @@ export class ViewerStore {
 		const seat =
 			message.playerIndex ??
 			(message.author !== undefined ? (this.liveState?.players.findIndex((p) => p.name === message.author) ?? -1) : -1);
-		return seat >= 0 ? playerColor(seat) : undefined;
+		return seat >= 0 ? this.playerColor(seat) : undefined;
 	}
 
 	private send(move: Move): void {

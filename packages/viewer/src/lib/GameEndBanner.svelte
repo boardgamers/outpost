@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { VICTORY_VP } from "outpost-engine";
-	import { playerColor, type ViewerStore } from "./store.svelte";
+	import { type ViewerStore } from "./store.svelte";
 
 	interface Props {
 		store: ViewerStore;
@@ -43,7 +43,7 @@
 							{/if}
 						</td>
 						<td>
-							<span class="dot" style="background: {playerColor(row.i)}"></span>
+							<span class="dot" style="background: {store.playerColor(row.i)}"></span>
 							{row.p.name}
 						</td>
 						<td class="score">{scores[row.i]}</td>
@@ -51,7 +51,7 @@
 							<span class="bar">
 								<span
 									class="fill"
-									style="width: {Math.round(((scores[row.i] ?? 0) / maxScore) * 100)}%; background: {playerColor(
+									style="width: {Math.round(((scores[row.i] ?? 0) / maxScore) * 100)}%; background: {store.playerColor(
 										row.i
 									)}"
 								></span>

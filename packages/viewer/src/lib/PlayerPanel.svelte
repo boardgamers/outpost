@@ -18,14 +18,7 @@
 	} from "outpost-engine";
 	import ProductionCardView from "./ProductionCardView.svelte";
 	import ResourceIcon from "./ResourceIcon.svelte";
-	import {
-		KICKER_EFFECTS,
-		RESOURCE_LABELS,
-		UPGRADE_EFFECTS,
-		effectToText,
-		playerColor,
-		type ViewerStore,
-	} from "./store.svelte";
+	import { KICKER_EFFECTS, RESOURCE_LABELS, UPGRADE_EFFECTS, effectToText, type ViewerStore } from "./store.svelte";
 
 	interface Props {
 		state: GameState;
@@ -110,7 +103,7 @@
 	class:me={isMe}
 	class:targetable={exchangeTargetable}
 	class:targeted={exchangeTargeted}
-	style="--pc: {playerColor(index)}"
+	style="--pc: {store.playerColor(index)}"
 >
 	{#if exchangeTargetable}
 		<button

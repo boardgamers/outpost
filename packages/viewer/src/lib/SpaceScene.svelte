@@ -13,7 +13,7 @@
 		type Resource,
 		type Upgrade,
 	} from "outpost-engine";
-	import { RESOURCE_LABELS, playerColor } from "./store.svelte";
+	import { RESOURCE_LABELS, type ViewerStore } from "./store.svelte";
 
 	const RESOURCE_COLORS: Record<Resource, string> = {
 		ore: "#a8b4c0",
@@ -37,9 +37,10 @@
 
 	interface Props {
 		gameState: GameState | null;
+		store: ViewerStore;
 	}
 
-	let { gameState }: Props = $props();
+	let { gameState, store }: Props = $props();
 
 	interface Building {
 		x: number;
@@ -113,7 +114,7 @@
 				const buildings: Omit<Building, "x" | "y">[] = [];
 				for (const f of p.factories) {
 					buildings.push({
-						color: playerColor(i),
+						color: store.playerColor(i),
 						kind: "factory",
 						type: f.type,
 						resource: f.type,
@@ -129,7 +130,7 @@
 					const spec = UPGRADE_SPECS[u];
 					for (let n = 0; n < count; n++) {
 						buildings.push({
-							color: playerColor(i),
+							color: store.playerColor(i),
 							kind: "upgrade",
 							type: u,
 							resource: spec.produces ?? (spec.freeFactory as Resource) ?? "ore",
@@ -144,7 +145,7 @@
 					}
 					for (let n = 0; n < p.kickers[k]; n++) {
 						buildings.push({
-							color: playerColor(i),
+							color: store.playerColor(i),
 							kind: "kicker",
 							type: k,
 							resource: "ore",
@@ -153,7 +154,7 @@
 						});
 					}
 				}
-				return { color: playerColor(i), name: p.name, biosphere: p.kickers.biosphere > 0, buildings };
+				return { color: store.playerColor(i), name: p.name, biosphere: p.kickers.biosphere > 0, buildings };
 			})
 			.filter((c) => c.buildings.length > 0);
 	});
