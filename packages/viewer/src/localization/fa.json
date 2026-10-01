@@ -1172,7 +1172,7 @@
 	"Selected cards: {p0} · ◈ {p1}": "کارت‌های انتخاب‌شده: {p0} · ◈ {p1}",
 	"{p0} cards: {p1}": "کارت‌های {p0}: {p1}",
 	"Factories staffed: {p0}/{p1}.": "کارخانه‌های فعال: {p0}/{p1}.",
-	"Production: choose Mega cards before drawing. Each Mega replaces the production of 4 staffed factories; other factories produce single cards.": "تولید: پیش از کشیدن کارت‌ها مگا را انتخاب کنید. هر مگا جای تولید ۴ کارخانهٔ فعال را می‌گیرد؛ کارخانه‌های دیگر تک‌کارت تولید می‌کنند.",
+	"Production: 1 Mega per 4 staffed factories.": "تولید: ۱ مگا به‌ازای هر ۴ کارخانهٔ فعال.",
 	"Purchase order this round: {p0}": "ترتیب خرید این دور: {p0}",
 	"New factory": "کارخانهٔ جدید",
 	"How to buy": "روش خرید",

@@ -1172,7 +1172,7 @@
 	"Selected cards: {p0} · ◈ {p1}": "已選 {p0} 張卡 · ◈ {p1}",
 	"{p0} cards: {p1}": "{p0} 卡：{p1} 張",
 	"Factories staffed: {p0}/{p1}.": "已配置操作員的工廠：{p0}/{p1}。",
-	"Production: choose Mega cards before drawing. Each Mega replaces the production of 4 staffed factories; other factories produce single cards.": "生產：抽牌前先選擇巨型牌。每張巨型牌取代 4 座已配置操作員工廠的產出；其他工廠各自生產單張牌。",
+	"Production: 1 Mega per 4 staffed factories.": "生產：每 4 座已配置操作員的工廠可生產 1 張巨型牌。",
 	"Purchase order this round: {p0}": "本回合購買順位：{p0}",
 	"New factory": "New factory",
 	"How to buy": "How to buy",

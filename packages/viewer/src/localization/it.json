@@ -1172,7 +1172,7 @@
 	"Selected cards: {p0} · ◈ {p1}": "Carte selezionate: {p0} · ◈ {p1}",
 	"{p0} cards: {p1}": "Carte {p0}: {p1}",
 	"Factories staffed: {p0}/{p1}.": "Fabbriche con operatori: {p0}/{p1}.",
-	"Production: choose Mega cards before drawing. Each Mega replaces the production of 4 staffed factories; other factories produce single cards.": "Produzione: scegli le carte Mega prima di pescare. Ogni Mega sostituisce la produzione di 4 fabbriche con operatore; le altre fabbriche producono carte singole.",
+	"Production: 1 Mega per 4 staffed factories.": "Produzione: 1 Mega ogni 4 fabbriche con operatore.",
 	"Purchase order this round: {p0}": "Ordine di acquisto in questo round: {p0}",
 	"New factory": "New factory",
 	"How to buy": "How to buy",

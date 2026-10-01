@@ -1172,7 +1172,7 @@
 	"Selected cards: {p0} · ◈ {p1}": "Geselecteerde kaarten: {p0} · ◈ {p1}",
 	"{p0} cards: {p1}": "{p0}-kaarten: {p1}",
 	"Factories staffed: {p0}/{p1}.": "Bemande fabrieken: {p0}/{p1}.",
-	"Production: choose Mega cards before drawing. Each Mega replaces the production of 4 staffed factories; other factories produce single cards.": "Productie: kies Mega-kaarten voordat je trekt. Elke Mega vervangt de productie van 4 bemande fabrieken; de andere fabrieken produceren losse kaarten.",
+	"Production: 1 Mega per 4 staffed factories.": "Productie: 1 Mega per 4 bemande fabrieken.",
 	"Purchase order this round: {p0}": "Aankoopvolgorde deze ronde: {p0}",
 	"New factory": "New factory",
 	"How to buy": "How to buy",
