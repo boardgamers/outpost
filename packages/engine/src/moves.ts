@@ -471,10 +471,7 @@ function moveDiscard(
 	}
 	const indices = sanitizeIndices(move.cards, player.hand.length, "discard");
 	const remaining = player.hand.filter((_, i) => !indices.includes(i));
-	const counting = remaining.reduce(
-		(sum, c) => sum + (c.t === "research" || c.t === "microbiotics" ? 0 : c.m ? 4 : 1),
-		0
-	);
+	const counting = countingHandSize({ ...player, hand: remaining });
 	if (counting > handCapacity(player)) {
 		err(`still ${counting} cards over the hand capacity of ${handCapacity(player)}`);
 	}

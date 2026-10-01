@@ -141,9 +141,13 @@
 			{:else if store.iMustDiscard && me}
 				<div class="flow">
 					<span class="hint warn">
-						{`Hand limit exceeded. Cards still to discard: ${store.discardExcess} (selected: ${pickCount}; Research and Microbiotics do not count).`}
+						{`Hand limit exceeded. Cards still to discard: ${store.discardRemaining} (selected: ${store.discardSelectedSize}; Research and Microbiotics do not count).`}
 					</span>
-					<button class="confirm" disabled={pickCount === 0} onclick={() => store.confirmDiscard()}>
+					<button
+						class="confirm"
+						disabled={pickCount === 0 || store.discardRemaining > 0}
+						onclick={() => store.confirmDiscard()}
+					>
 						Discard selected
 					</button>
 				</div>

@@ -2,6 +2,7 @@ import { FACTORIES, KICKER_SPECS, MEGA_CARDS, PRODUCTION_DECKS, UPGRADE_SPECS } 
 import { applyMove } from "./moves.js";
 import {
 	auctionCard,
+	bestDiscard,
 	bestPayment,
 	canBuyFactory,
 	countingHandSize,
@@ -126,23 +127,7 @@ function chooseExchange(state: GameState, seat: number, player: PlayerState): Mo
 }
 
 function chooseDiscard(player: PlayerState): Move {
-	const cap = handCapacity(player);
-	// Discard the cheapest counting cards until under the cap. A mega card
-	// counts as 4, so it is only discarded when nothing smaller suffices.
-	const counting = player.hand
-		.map((card, index) => ({ card, index, weight: card.m ? 4 : 1 }))
-		.filter(({ card }) => card.t !== "research" && card.t !== "microbiotics")
-		.sort((a, b) => a.card.v - b.card.v);
-	let size = counting.reduce((sum, e) => sum + e.weight, 0);
-	const picked: number[] = [];
-	for (const e of counting) {
-		if (size <= cap) {
-			break;
-		}
-		picked.push(e.index);
-		size -= e.weight;
-	}
-	return { action: "discard", cards: picked };
+	return { action: "discard", cards: bestDiscard(player) };
 }
 
 function chooseAction(state: GameState, player: PlayerState): Move {

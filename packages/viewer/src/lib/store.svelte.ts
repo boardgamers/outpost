@@ -8,6 +8,7 @@ import {
 	applyMove,
 	applyTurnBuy,
 	auctionCard,
+	bestDiscard,
 	bestPayment,
 	canBuyFactory,
 	countingHandSize,
@@ -15,6 +16,7 @@ import {
 	describeLogEntry,
 	exchangeResources,
 	handCapacity,
+	handCardSize,
 	handValue,
 	megaEligible as megaEligibleEngine,
 	needsMegaChoice,
@@ -660,7 +662,7 @@ export class ViewerStore {
 		return null;
 	}
 
-	/** Preselect the optimal payment: least overpay, then as many (small) cards as possible. */
+	/** Minimize overpayment, then free hand space and preserve research. */
 	suggestPayment(due: number, mustIncludeResearch = false): void {
 		const me = this.me;
 		if (!me) {
@@ -669,18 +671,13 @@ export class ViewerStore {
 		this.cardPick = bestPayment(me, due, mustIncludeResearch) ?? [];
 	}
 
-	/** Preselect the cheapest counting cards to get back under the hand cap. */
+	/** Minimize discarded credits while freeing enough hand space. */
 	suggestDiscard(): void {
 		const me = this.me;
 		if (!me) {
 			return;
 		}
-		this.cardPick = me.hand
-			.map((card, index) => ({ card, index }))
-			.filter(({ card }) => card.t !== "research" && card.t !== "microbiotics")
-			.sort((a, b) => a.card.v - b.card.v)
-			.slice(0, this.discardExcess)
-			.map((e) => e.index);
+		this.cardPick = bestDiscard(me);
 	}
 
 	canBuy(type: FactoryType): boolean {
@@ -938,14 +935,19 @@ export class ViewerStore {
 		this.rebuildDraft();
 	}
 
+	get discardSelectedSize(): number {
+		return this.cardPick.reduce((sum, index) => {
+			const card = this.me?.hand[index];
+			return sum + (card ? handCardSize(card) : 0);
+		}, 0);
+	}
+
+	get discardRemaining(): number {
+		return Math.max(0, this.discardExcess - this.discardSelectedSize);
+	}
+
 	confirmDiscard(): void {
-		const me = this.me;
-		if (!this.iMustDiscard || !me || this.cardPick.length === 0) {
-			return;
-		}
-		const remaining = me.hand.filter((_, i) => !this.cardPick.includes(i));
-		const counting = remaining.filter((c) => c.t !== "research" && c.t !== "microbiotics").length;
-		if (counting > handCapacity(me)) {
+		if (!this.me || !this.iMustDiscard || this.cardPick.length === 0 || this.discardRemaining > 0) {
 			return;
 		}
 		this.send({ action: "discard", cards: this.cardPick });

@@ -15,6 +15,7 @@
 		"lint": "oxlint",
 		"check": "pnpm test:locales && pnpm fmt:check && pnpm lint && pnpm tsc && pnpm test && pnpm build",
 		"test:browser": "node tests/protocol-smoke.mjs",
+		"test:selection": "node tests/card-selection-browser.mjs",
 		"test:tutorial": "pnpm --filter outpost-engine build && node --test tests/tutorial.spec.mjs",
 		"test:tutorial:browser": "node tests/tutorial-browser.mjs",
 		"preview:tutorial": "node tests/tutorial-preview.mjs",
