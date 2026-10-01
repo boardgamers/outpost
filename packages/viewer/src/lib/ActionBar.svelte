@@ -7,6 +7,7 @@
 		MIN_CARD_VALUE,
 		UPGRADE_SPECS,
 		auctionCard,
+		needsMegaChoice,
 		operators,
 	} from "outpost-engine";
 	import ResourceIcon from "./ResourceIcon.svelte";
@@ -44,7 +45,7 @@
 			seat === undefined ? "…" : (s.players[seat]?.name ?? `Player ${seat + 1}`);
 		switch (s.phase) {
 			case "mega": {
-				const seats = s.players.flatMap((p, i) => ((p.pendingMega?.length ?? 0) > 0 ? [i] : []));
+				const seats = s.players.flatMap((p, i) => (needsMegaChoice(p) ? [i] : []));
 				return `Waiting for ${seats.map(name).join(", ")} to take production…`;
 			}
 			case "discard": {
@@ -106,6 +107,7 @@
 					Production: choose Mega cards before drawing. Each Mega replaces the production of 4 staffed factories; other
 					factories produce single cards.
 				</span>
+				<span class="hint dim">Choices stay hidden until everyone has confirmed.</span>
 				{#each Object.entries(store.megaEligible) as [resource, groups] (resource)}
 					{@const mega = MEGA_CARDS[resource as keyof typeof MEGA_CARDS]}
 					{@const taking = store.megaTake[resource] ?? 0}
@@ -282,6 +284,10 @@
 			{/if}
 		{:else}
 			<div class="flow">
+				{#if state?.phase === "mega" && me?.megaChoice !== undefined}
+					<span class="hint">Production choice locked.</span>
+					<span class="hint dim">Choices stay hidden until everyone has confirmed.</span>
+				{/if}
 				<span class="hint dim">{waitingOn}</span>
 			</div>
 		{/if}

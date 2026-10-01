@@ -1179,5 +1179,8 @@
 	"Remaining upgrades": "Remaining upgrades",
 	"Remaining Kicker cards": "Remaining Kicker cards",
 	"Pass auctions I can't afford": "Пасовать на аукционах, если не хватает средств",
-	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "Автоматически пасовать на аукционе, если ваших карт и скидок недостаточно для требуемой ставки. Это может выдать слабость вашей руки."
+	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "Автоматически пасовать на аукционе, если ваших карт и скидок недостаточно для требуемой ставки. Это может выдать слабость вашей руки.",
+	"Choices stay hidden until everyone has confirmed.": "Выбор остаётся скрытым, пока все его не подтвердят.",
+	"Production choice locked.": "Выбор производства подтверждён.",
+	"{p0} locks in their production choice": "{p0} подтверждает выбор производства"
 }

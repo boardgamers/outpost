@@ -10,6 +10,7 @@
 		UPGRADES,
 		handValueExpected,
 		handValueRange,
+		needsMegaChoice,
 		productionRange,
 		operators as availableOperators,
 		type GameState,
@@ -42,7 +43,8 @@
 	const orderPos = $derived(state.purchaseOrder.indexOf(index) + 1);
 	const isActive = $derived(
 		!state.ended &&
-			((state.phase === "actions" && state.activeSeat === index) ||
+			((state.phase === "mega" && needsMegaChoice(player)) ||
+				(state.phase === "actions" && state.activeSeat === index) ||
 				(state.phase === "discard" && player.mustDiscard) ||
 				(state.phase === "auction" &&
 					(state.auction?.bids ? state.auction.bids[index] === undefined : state.auction?.activeBidder === index)) ||
@@ -264,14 +266,9 @@
 			{/if}
 		</div>
 	{/if}
-	{#if isMe && store.myMega && (player.pendingMega?.length ?? 0) > 0}
+	{#if isMe && state.phase === "mega" && (player.pendingMega?.length ?? 0) > 0}
 		<div class="row hand pending">
-			<span
-				class="pending-label"
-				title="cards just produced — values hidden until you commit to Mega cards (rule 12.1)"
-			>
-				produced:
-			</span>
+			<span class="pending-label" title="Choices stay hidden until everyone has confirmed."> produced: </span>
 			{#each player.pendingMega ?? [] as card, i (i)}
 				<ProductionCardView {card} />
 			{/each}

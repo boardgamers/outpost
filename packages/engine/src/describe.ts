@@ -68,6 +68,9 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 			const info = entry.info;
 			switch (move.action) {
 				case "mega": {
+					if (info?.megaSealed) {
+						return `${name} locks in their production choice`;
+					}
 					const count = info?.mega ?? 0;
 					return count > 0
 						? `${name} takes ${count} mega production card${count === 1 ? "" : "s"}`

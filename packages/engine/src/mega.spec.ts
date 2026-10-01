@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { MEGA_CARDS } from "./data.js";
-import { applyMove, initGame } from "./moves.js";
+import { applyMove, dropPlayer, initGame } from "./moves.js";
 import { replay } from "./replay.js";
-import { countingHandSize, handValue, megaEligible } from "./state.js";
-import { currentPlayer, stripSecret } from "../wrapper.js";
+import { availableMoves, countingHandSize, handValue, megaEligible } from "./state.js";
+import { currentPlayer, logSlice, stripSecret } from "../wrapper.js";
 import type { GameState, PlayerState, ProductionCard } from "./types.js";
 
 /** A game where seat 0 just produced 5 water draws (1 mega group + 1 single). */
@@ -213,4 +213,169 @@ test("mega: full flow replays identically, including from a stripped log", () =>
 	const replayMega = (strippedReplay.players[0] as PlayerState).hand.find((c) => c.m);
 	assert.equal(replayMega?.v, MEGA_CARDS.water?.value);
 	assert.equal(handValue(strippedReplay.players[0] as PlayerState) >= 0, true);
+});
+
+function simultaneousMegaGame(): GameState {
+	const state = megaGame();
+	const first = state.players[0]!;
+	for (const [seat, player] of state.players.entries()) {
+		player.hand = [];
+		player.pendingMega = first.pendingMega!.map((c) => ({ ...c, v: c.v + seat }));
+		player.megaGroups = { water: 1 };
+		player.factories = first.factories.map((f) => ({ ...f }));
+	}
+	const round = state.log.find((e) => e.type === "round");
+	assert.ok(round?.type === "round");
+	round.produced = state.players.map((p, player) => ({ player, cards: structuredClone(p.pendingMega!) }));
+	round.megaGroups = state.players.map((_, player) => ({ player, groups: { water: 1 } }));
+	return state;
+}
+
+test("mega: submitted choices cannot be inferred from state, deck counts, or sliced logs", () => {
+	const mega = simultaneousMegaGame();
+	const singles = structuredClone(mega);
+	const before = structuredClone(mega);
+	applyMove(mega, { action: "mega", take: { water: 1 } }, 2);
+	applyMove(singles, { action: "mega", take: {} }, 2);
+	assert.deepEqual(currentPlayer(mega), [0, 1]);
+	assert.deepEqual(availableMoves(mega, 2), []);
+	assert.deepEqual(mega.decks, before.decks);
+	assert.deepEqual(
+		mega.players.map((p) => p.hand),
+		before.players.map((p) => p.hand)
+	);
+	for (const viewer of [undefined, -1, 0, 1]) {
+		assert.deepEqual(stripSecret(mega, viewer), stripSecret(singles, viewer));
+		const hidden = stripSecret(mega, viewer);
+		assert.deepEqual(hidden.players[2]!.megaChoice, {});
+		const entry = hidden.log.at(-1);
+		assert.ok(entry?.type === "move" && entry.move.action === "mega");
+		assert.deepEqual(entry.move.take, {});
+		assert.deepEqual(entry.info, { megaSealed: true });
+		const slice = logSlice(mega, { player: viewer, start: mega.log.length - 1 });
+		assert.deepEqual(slice, logSlice(singles, { player: viewer, start: singles.log.length - 1 }));
+		assert.match(slice.log[0]!.simple!, /locks in their production choice/);
+	}
+	const own = stripSecret(mega, 2);
+	assert.deepEqual(own.players[2]!.megaChoice, { water: 1 });
+	assert.ok(own.players[2]!.pendingMega!.every((c) => c.v === -1));
+});
+
+test("mega: all choices reveal together after JSON persistence, including earlier log slices", () => {
+	let state = simultaneousMegaGame();
+	applyMove(state, { action: "mega", take: { water: 1 } }, 2);
+	const index = state.log.length - 1;
+	state = JSON.parse(JSON.stringify(state)) as GameState;
+	applyMove(state, { action: "mega", take: {} }, 0);
+	assert.equal(currentPlayer(state), 1);
+	assert.equal(state.phase, "mega");
+	assert.ok(state.players.every((p) => p.hand.length === 0));
+	applyMove(state, { action: "mega", take: { water: 1 } }, 1);
+	assert.notEqual(state.phase, "mega");
+	assert.deepEqual(
+		state.players.map((p) => p.hand.filter((c) => c.m).length),
+		[0, 1, 1]
+	);
+	assert.ok(state.players.every((p) => p.megaChoice === undefined && p.pendingMega?.length === 0));
+	for (const viewer of [undefined, 0, 1, 2]) {
+		const entry = logSlice(state, { player: viewer, start: index, end: index + 1 }).log[0];
+		assert.ok(entry?.type === "move" && entry.move.action === "mega");
+		assert.deepEqual(entry.move.take, { water: 1 });
+		assert.match(entry.simple!, /takes 1 mega production card/);
+		const hand = stripSecret(state, viewer).players[2]!.hand;
+		assert.equal(hand.find((c) => c.m)?.v, MEGA_CARDS.water!.value);
+		assert.ok(hand.filter((c) => !c.m).every((c) => (viewer === 2 ? c.v > 0 : c.v === -1)));
+	}
+});
+
+test("mega: duplicate and invalid commitments leave the whole state unchanged", () => {
+	const state = simultaneousMegaGame();
+	const before = structuredClone(state);
+	assert.throws(() => applyMove(state, { action: "mega", take: { water: 2 } }, 0));
+	assert.deepEqual(state, before);
+	applyMove(state, { action: "mega", take: {} }, 0);
+	const committed = structuredClone(state);
+	assert.throws(() => applyMove(state, { action: "mega", take: { water: 1 } }, 0));
+	assert.deepEqual(state, committed);
+});
+
+test("mega: pending and resolved secret-stripped replays preserve hands and sealed choices", () => {
+	const state = simultaneousMegaGame();
+	applyMove(state, { action: "mega", take: { water: 1 } }, 2);
+	for (const viewer of [undefined, 0, 1, 2]) {
+		const visible = stripSecret(state, viewer);
+		const rebuilt = replay(visible);
+		assert.equal(rebuilt.phase, "mega");
+		if (viewer !== 2) {
+			const last = rebuilt.log.at(-1);
+			assert.ok(last?.type === "move" && last.info?.megaSealed);
+		}
+		assert.deepEqual(currentPlayer(rebuilt), currentPlayer(visible));
+		for (let i = 0; i < 3; i++) {
+			assert.deepEqual(rebuilt.players[i]!.hand, visible.players[i]!.hand);
+			assert.deepEqual(rebuilt.players[i]!.pendingMega, visible.players[i]!.pendingMega);
+			assert.deepEqual(rebuilt.players[i]!.megaChoice, visible.players[i]!.megaChoice);
+		}
+	}
+	applyMove(state, { action: "mega", take: {} }, 0);
+	applyMove(state, { action: "mega", take: { water: 1 } }, 1);
+	for (const viewer of [undefined, 0, 1, 2]) {
+		const visible = stripSecret(state, viewer);
+		const rebuilt = replay(visible);
+		assert.equal(rebuilt.phase, visible.phase);
+		assert.deepEqual(
+			rebuilt.players.map((p) => p.hand),
+			visible.players.map((p) => p.hand)
+		);
+	}
+});
+
+test("mega: response order cannot change resolved hands or returned deck order", () => {
+	const first = simultaneousMegaGame();
+	const second = structuredClone(first);
+	for (const seat of [2, 0, 1]) {
+		applyMove(first, { action: "mega", take: { water: 1 } }, seat);
+	}
+	for (const seat of [0, 1, 2]) {
+		applyMove(second, { action: "mega", take: { water: 1 } }, seat);
+	}
+	assert.deepEqual(first.decks, second.decks);
+	assert.deepEqual(first.players, second.players);
+});
+
+test("mega: dropping the last waiting player reveals the remaining commitments", () => {
+	const state = simultaneousMegaGame();
+	applyMove(state, { action: "mega", take: { water: 1 } }, 0);
+	applyMove(state, { action: "mega", take: {} }, 1);
+	dropPlayer(state, 2);
+	assert.notEqual(state.phase, "mega");
+	assert.equal(state.players[0]!.hand.filter((c) => c.m).length, 1);
+	assert.equal(state.players[1]!.hand.length, 6);
+	assert.equal(state.players[2]!.hand.length, 0);
+	assert.ok(state.players.every((p) => p.megaChoice === undefined));
+});
+
+test("mega: dropping a committed player cancels their choice without blocking others", () => {
+	const state = simultaneousMegaGame();
+	applyMove(state, { action: "mega", take: { water: 1 } }, 0);
+	dropPlayer(state, 0);
+	assert.deepEqual(currentPlayer(state), [1, 2]);
+	applyMove(state, { action: "mega", take: {} }, 1);
+	applyMove(state, { action: "mega", take: {} }, 2);
+	assert.notEqual(state.phase, "mega");
+	assert.equal(state.players[0]!.hand.length, 0);
+	assert.ok(state.players.every((p) => p.megaChoice === undefined));
+});
+
+test("mega: old mid-production saves with already-collected hands still complete", () => {
+	const state = simultaneousMegaGame();
+	state.players[0]!.hand = [{ t: "water", v: MEGA_CARDS.water!.value, m: true }];
+	state.players[0]!.pendingMega = [];
+	state.players[0]!.megaGroups = {};
+	const existingHand = structuredClone(state.players[0]!.hand);
+	assert.deepEqual(currentPlayer(state), [1, 2]);
+	applyMove(state, { action: "mega", take: {} }, 1);
+	applyMove(state, { action: "mega", take: { water: 1 } }, 2);
+	assert.notEqual(state.phase, "mega");
+	assert.deepEqual(state.players[0]!.hand, existingHand);
 });

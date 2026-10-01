@@ -302,9 +302,9 @@
 	>
 		<defs>
 			<linearGradient id="moonbody" x1="0" y1="0" x2="0" y2="1">
-				<stop offset="0" stop-color="#7a6a55" />
-				<stop offset="0.45" stop-color="#5d5140" />
-				<stop offset="1" stop-color="#3c352a" />
+				<stop offset="0" stop-color="#434c54" />
+				<stop offset="0.45" stop-color="#303841" />
+				<stop offset="1" stop-color="#1f262e" />
 			</linearGradient>
 		</defs>
 		<path
@@ -640,21 +640,21 @@
 	}
 	.moon .rim {
 		fill: none;
-		stroke: #97815f;
+		stroke: #76848e;
 		stroke-width: 2;
 		opacity: 0.7;
 	}
 	.moon .crater {
-		fill: #453c2e;
+		fill: #202830;
 	}
 	.moon .crater-hi {
 		fill: none;
-		stroke: #87714f;
+		stroke: #53616b;
 		stroke-width: 1.2;
 		opacity: 0.6;
 	}
 	/* Player buildings: factories and upgrades clustered per player.
-	   Player color is the outline/accent; unmanned factories are dimmer. */
+	   Player color marks the foundations and upgrade lights; unmanned factories are dimmer. */
 	.bldg {
 		pointer-events: all;
 	}
@@ -677,8 +677,8 @@
 		opacity: 0.55;
 	}
 	.bldg {
-		stroke-linecap: round;
-		stroke-linejoin: round;
+		stroke-linecap: square;
+		stroke-linejoin: bevel;
 	}
 	.bldg .footprint {
 		fill: #17191c;
@@ -686,17 +686,17 @@
 	}
 	.bldg .body {
 		fill: #29343d;
-		stroke: color-mix(in srgb, var(--bc) 55%, #68747e);
+		stroke: #526674;
 		stroke-width: 0.85;
 	}
 	.bldg .roof {
 		fill: #414e57;
-		stroke: var(--bc);
+		stroke: #8295a1;
 		stroke-width: 0.8;
 	}
 	.bldg .base {
 		fill: #263038;
-		stroke: #637079;
+		stroke: color-mix(in srgb, var(--bc) 65%, #637079);
 		stroke-width: 0.6;
 	}
 	.bldg .detail {
@@ -706,7 +706,7 @@
 	}
 	.bldg .panel {
 		fill: #182c3f;
-		stroke: var(--bc);
+		stroke: #6c8390;
 		stroke-width: 0.7;
 	}
 	.bldg .signal {
@@ -715,19 +715,19 @@
 		stroke-width: 1;
 	}
 	.bldg.manned .body {
-		fill: color-mix(in srgb, var(--bc) 18%, #27323b);
-		stroke: var(--bc);
+		fill: #31434f;
+		stroke: #8295a1;
 	}
 	.bldg.manned .roof {
-		fill: color-mix(in srgb, var(--bc) 38%, #53616a);
+		fill: #485c68;
 	}
 	.bldg.manned .signal {
 		fill: var(--rc);
 		stroke: var(--rc);
 	}
 	.bldg.upgrade .signal {
-		fill: #e5dcb0;
-		stroke: #e5dcb0;
+		fill: color-mix(in srgb, var(--bc) 65%, #c5d3d7);
+		stroke: color-mix(in srgb, var(--bc) 65%, #c5d3d7);
 	}
 	.bldg:hover {
 		filter: brightness(1.35);

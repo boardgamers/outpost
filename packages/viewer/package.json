@@ -1,6 +1,6 @@
 {
 	"name": "outpost-viewer",
-	"version": "0.1.9",
+	"version": "0.1.10",
 	"description": "Browser viewer for the Outpost game on boardgamers.space",
 	"license": "AGPL-3.0",
 	"files": [

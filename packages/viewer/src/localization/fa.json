@@ -1179,5 +1179,8 @@
 	"Remaining upgrades": "ارتقاهای باقی‌مانده",
 	"Remaining Kicker cards": "کارت‌های کیکر باقی‌مانده",
 	"Pass auctions I can't afford": "در مزایده‌هایی که توان پرداخت ندارم، انصراف بده",
-	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "وقتی کارت‌ها و تخفیف‌هایتان مبلغ پیشنهاد لازم را پوشش نمی‌دهند، خودکار از حراج انصراف دهید. این کار ممکن است ضعیف بودن دستتان را آشکار کند."
+	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "وقتی کارت‌ها و تخفیف‌هایتان مبلغ پیشنهاد لازم را پوشش نمی‌دهند، خودکار از حراج انصراف دهید. این کار ممکن است ضعیف بودن دستتان را آشکار کند.",
+	"Choices stay hidden until everyone has confirmed.": "انتخاب‌ها تا زمانی که همه تأیید کنند پنهان می‌مانند.",
+	"Production choice locked.": "انتخاب تولید ثبت شد.",
+	"{p0} locks in their production choice": "{p0} انتخاب تولید خود را ثبت می‌کند"
 }

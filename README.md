@@ -49,7 +49,8 @@ original edition's physical decks differ in a few counts (e.g. only two "4" wate
 - Mega production cards (expert rule 12.1) are implemented: with 4+ operated water/titanium/
   new-chemicals factories you may elect 1 Mega card per group of 4 (fixed printed value —
   Mega Water 30, Mega Titanium 44, Mega New Chemicals 88 — that counts as 4 cards toward
-  hand capacity). The election is **blind**, made before any of that round's production
+  hand capacity). Eligible players choose **simultaneously**, with choices sealed until everyone confirms.
+  Production and choices are revealed together. The election is **blind**, made before any of that round's production
   draws are revealed, and decided per group of 4; only operated factories count (never
   upgrade freebies or Kicker bonuses). Mega cards are a separate face-up pool; a spent or
   discarded mega returns to its pool. The pool is unlimited — like every component in the

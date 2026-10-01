@@ -17,6 +17,7 @@ import {
 	handCapacity,
 	handValue,
 	megaEligible as megaEligibleEngine,
+	needsMegaChoice,
 	operators as availableOperators,
 	populationCost,
 	populationMax,
@@ -380,7 +381,7 @@ export class ViewerStore {
 	/** Mega phase: I have staged production draws awaiting the mega-vs-singles choice. */
 	get myMega(): boolean {
 		const s = this.liveState;
-		return !!s && !s.ended && s.phase === "mega" && !this.replay.active && (this.me?.pendingMega?.length ?? 0) > 0;
+		return !!s && !s.ended && s.phase === "mega" && !this.replay.active && !!this.me && needsMegaChoice(this.me);
 	}
 
 	/** Mega conversions available from my staged draws (resource -> groups of 4). */
@@ -574,7 +575,7 @@ export class ViewerStore {
 
 	get myHandValue(): number {
 		const me = this.me;
-		return me ? handValue(me) : 0;
+		return me ? me.hand.reduce((sum, card) => sum + card.v, 0) : 0;
 	}
 
 	vpOf(index: number): number {

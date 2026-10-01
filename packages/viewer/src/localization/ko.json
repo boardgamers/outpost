@@ -1179,5 +1179,8 @@
 	"Remaining upgrades": "Remaining upgrades",
 	"Remaining Kicker cards": "Remaining Kicker cards",
 	"Pass auctions I can't afford": "감당할 수 없는 경매는 패스",
-	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "카드와 할인으로 필요한 입찰 금액을 충당할 수 없으면 경매에서 자동으로 패스합니다. 이로 인해 패가 약하다는 사실이 드러날 수 있습니다."
+	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "카드와 할인으로 필요한 입찰 금액을 충당할 수 없으면 경매에서 자동으로 패스합니다. 이로 인해 패가 약하다는 사실이 드러날 수 있습니다.",
+	"Choices stay hidden until everyone has confirmed.": "모두가 확정할 때까지 선택은 공개되지 않습니다.",
+	"Production choice locked.": "생산 선택이 확정되었습니다.",
+	"{p0} locks in their production choice": "{p0} 님이 생산 선택을 확정합니다"
 }

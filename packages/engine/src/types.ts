@@ -89,6 +89,8 @@ export interface PlayerState {
 	 * blind — made before the pendingMega values are revealed to the player.
 	 */
 	megaGroups?: Partial<Record<Resource, number>>;
+	/** Committed production choice, kept sealed until every eligible player has chosen. */
+	megaChoice?: Partial<Record<Resource, number>>;
 	dropped: boolean;
 	/** Per-player gameplay settings (set via setPlayerSettings). */
 	settings: PlayerSettings;
@@ -208,6 +210,7 @@ export interface MoveInfo {
 	discarded?: number;
 	/** Mega cards taken with this "mega" move (for the log description). */
 	mega?: number;
+	megaSealed?: true;
 	/**
 	 * Seats auto-passed out of the auction by this move (public bound or the
 	 * autoPassBids setting). Replay applies these verbatim: the true-value check

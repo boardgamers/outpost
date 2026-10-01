@@ -1179,5 +1179,8 @@
 	"Remaining upgrades": "Remaining upgrades",
 	"Remaining Kicker cards": "Remaining Kicker cards",
 	"Pass auctions I can't afford": "Passer les enchères hors budget",
-	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "Passer automatiquement une enchère si vos cartes et réductions ne permettent pas de couvrir l’enchère requise. Cela peut révéler que votre main est trop faible."
+	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "Passer automatiquement une enchère si vos cartes et réductions ne permettent pas de couvrir l’enchère requise. Cela peut révéler que votre main est trop faible.",
+	"Choices stay hidden until everyone has confirmed.": "Les choix restent cachés jusqu’à ce que tout le monde ait confirmé.",
+	"Production choice locked.": "Choix de production confirmé.",
+	"{p0} locks in their production choice": "{p0} confirme son choix de production"
 }

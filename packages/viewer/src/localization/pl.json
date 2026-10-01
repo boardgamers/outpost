@@ -1179,5 +1179,8 @@
 	"Remaining upgrades": "Remaining upgrades",
 	"Remaining Kicker cards": "Remaining Kicker cards",
 	"Pass auctions I can't afford": "Pasuj w aukcjach, na które mnie nie stać",
-	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "Automatycznie pasuj w licytacji, gdy twoje karty i zniżki nie wystarczają na wymaganą ofertę. Może to ujawnić, że twoja ręka jest zbyt słaba."
+	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "Automatycznie pasuj w licytacji, gdy twoje karty i zniżki nie wystarczają na wymaganą ofertę. Może to ujawnić, że twoja ręka jest zbyt słaba.",
+	"Choices stay hidden until everyone has confirmed.": "Wybory pozostają ukryte, dopóki wszyscy ich nie zatwierdzą.",
+	"Production choice locked.": "Wybór produkcji zatwierdzony.",
+	"{p0} locks in their production choice": "{p0} zatwierdza wybór produkcji"
 }

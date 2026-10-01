@@ -1179,5 +1179,8 @@
 	"Remaining upgrades": "Remaining upgrades",
 	"Remaining Kicker cards": "Remaining Kicker cards",
 	"Pass auctions I can't afford": "Πάσο σε δημοπρασίες που δεν μπορώ να πληρώσω",
-	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "Αυτόματο πάσο σε δημοπρασία όταν οι κάρτες και οι εκπτώσεις σου δεν καλύπτουν την απαιτούμενη προσφορά. Αυτό μπορεί να αποκαλύψει ότι το χέρι σου είναι πολύ αδύναμο."
+	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "Αυτόματο πάσο σε δημοπρασία όταν οι κάρτες και οι εκπτώσεις σου δεν καλύπτουν την απαιτούμενη προσφορά. Αυτό μπορεί να αποκαλύψει ότι το χέρι σου είναι πολύ αδύναμο.",
+	"Choices stay hidden until everyone has confirmed.": "Οι επιλογές παραμένουν κρυφές μέχρι να επιβεβαιώσουν όλοι.",
+	"Production choice locked.": "Η επιλογή παραγωγής κλειδώθηκε.",
+	"{p0} locks in their production choice": "{p0} κλειδώνει την επιλογή παραγωγής"
 }

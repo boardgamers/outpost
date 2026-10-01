@@ -1179,5 +1179,8 @@
 	"Remaining upgrades": "Remaining upgrades",
 	"Remaining Kicker cards": "Remaining Kicker cards",
 	"Pass auctions I can't afford": "Pass auctions I can't afford",
-	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak."
+	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.",
+	"Choices stay hidden until everyone has confirmed.": "Choices stay hidden until everyone has confirmed.",
+	"Production choice locked.": "Production choice locked.",
+	"{p0} locks in their production choice": "{p0} locks in their production choice"
 }

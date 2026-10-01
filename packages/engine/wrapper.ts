@@ -1,7 +1,7 @@
 import { PRODUCTION_DECKS, KICKER_SPECS, UPGRADE_SPECS } from "./src/data.js";
 import { nextInt, shuffle } from "./src/prng.js";
 import { RESOURCES } from "./src/types.js";
-import { maxBid } from "./src/state.js";
+import { maxBid, needsMegaChoice } from "./src/state.js";
 import { moveAI as moveAICore } from "./src/ai.js";
 import { describeLogEntry } from "./src/describe.js";
 import { applyMove, dropPlayer as dropPlayerCore, initGame } from "./src/moves.js";
@@ -65,7 +65,7 @@ export function currentPlayer(data: GameState): number | number[] | undefined {
 	}
 	switch (data.phase) {
 		case "mega": {
-			const waiting = data.players.flatMap((p, seat) => ((p.pendingMega?.length ?? 0) > 0 && !p.dropped ? [seat] : []));
+			const waiting = data.players.flatMap((p, seat) => (needsMegaChoice(p) ? [seat] : []));
 			return waiting.length === 1 ? waiting[0] : waiting;
 		}
 		case "discard": {
@@ -97,7 +97,7 @@ export function logLength(data: GameState): number {
 	return data.log.length;
 }
 
-/** Rule 12.1: the viewer's own production draws stay hidden while their mega election is pending. */
+/** Rule 12.1: production draws stay hidden until all mega elections are resolved. */
 function hideOwnProduction(data: GameState, viewer: number | undefined): boolean {
 	if (data.phase !== "mega" || viewer === undefined) {
 		return false;
@@ -267,7 +267,7 @@ export function stripSecret(data: GameState, player?: number): GameState {
 		players: data.players.map((p, i) => {
 			if (i === viewer) {
 				// Rule 12.1: the mega election is blind — the player's own pending
-				// draw values stay hidden until they commit (mega phase only).
+				// draw values stay hidden until all choices resolve (mega phase only).
 				if (data.phase === "mega" && (p.pendingMega?.length ?? 0) > 0) {
 					return { ...p, pendingMega: p.pendingMega?.map((c): ProductionCard => ({ t: c.t, v: -1 })) };
 				}
@@ -275,6 +275,7 @@ export function stripSecret(data: GameState, player?: number): GameState {
 			}
 			return {
 				...p,
+				...(p.megaChoice !== undefined ? { megaChoice: {} } : {}),
 				hand: p.hand.map((c): ProductionCard => ({ t: c.t, v: c.m ? c.v : -1, ...(c.m ? { m: true } : {}) })),
 				pendingMega: p.pendingMega?.map(
 					(c): ProductionCard => ({
@@ -306,19 +307,31 @@ function maskLog(
 	// An exchange's received card is parked on the upgrade until the exchange
 	// step (end of the discard phase) closes, i.e. while data.exchange is set.
 	const exchangeOngoing = data.exchange != null && !data.ended;
-	return data.log
-		.slice(start, end)
-		.map((entry, i) =>
-			hideProduced(
-				entry,
-				viewer,
-				data.options.fastBid === true,
-				hideOwn,
-				revealed.has(i + start),
-				data.ended,
-				exchangeOngoing
-			)
+	let productionStart = data.log.length;
+	if (data.phase === "mega" && !data.ended) {
+		while (productionStart > 0 && data.log[productionStart - 1]?.type !== "round") {
+			productionStart--;
+		}
+	}
+	return data.log.slice(start, end).map((entry, i) => {
+		if (
+			i + start >= productionStart &&
+			entry.type === "move" &&
+			entry.move.action === "mega" &&
+			entry.player !== viewer
+		) {
+			return { ...entry, move: { action: "mega" as const, take: {} }, info: { megaSealed: true as const } };
+		}
+		return hideProduced(
+			entry,
+			viewer,
+			data.options.fastBid === true,
+			hideOwn,
+			revealed.has(i + start),
+			data.ended,
+			exchangeOngoing
 		);
+	});
 }
 
 export interface LogSliceOptions {

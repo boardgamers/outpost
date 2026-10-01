@@ -67,6 +67,12 @@ export function replay(state: GameState, options?: { to?: number; trackKnowledge
 				}
 				setReplayExchangeTake(entry.info?.exchangeTake ?? -1);
 				applyMove(replayed, entry.move, entry.player);
+				if (entry.info?.megaSealed) {
+					const applied = replayed.log.at(-1);
+					if (applied?.type === "move") {
+						applied.info = { megaSealed: true };
+					}
+				}
 			}
 		}
 	} finally {

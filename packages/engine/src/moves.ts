@@ -11,6 +11,7 @@ import {
 	hasExchange,
 	maxBid,
 	megaEligible,
+	needsMegaChoice,
 	mustAutoPassBid,
 	populationCost,
 	populationMax,
@@ -137,6 +138,7 @@ export function enterMegaPhase(state: GameState): void {
 	for (const player of state.players) {
 		player.done = false;
 		player.mustDiscard = false;
+		delete player.megaChoice;
 		if (player.dropped) {
 			player.pendingMega = [];
 			continue;
@@ -333,7 +335,7 @@ export function applyMove(state: GameState, rawMove: Move | unknown, seat: numbe
 
 	switch (move.action) {
 		case "mega":
-			info = moveMega(state, move, seat, player);
+			info = moveMega(state, move, player);
 			break;
 		case "discard":
 			info = moveDiscard(state, move, seat, player);
@@ -371,7 +373,8 @@ export function applyMove(state: GameState, rawMove: Move | unknown, seat: numbe
 
 /** Phase transitions that must happen after the move is logged (may end the round/game). */
 function postMove(state: GameState, move: Move): void {
-	if (state.phase === "mega" && !state.players.some((p) => (p.pendingMega?.length ?? 0) > 0)) {
+	if (state.phase === "mega" && !state.players.some(needsMegaChoice)) {
+		resolveMegaChoices(state);
 		enterDiscardPhase(state);
 		return;
 	}
@@ -384,13 +387,8 @@ function postMove(state: GameState, move: Move): void {
 	}
 }
 
-/**
- * Confirm the mega-vs-singles choice for the staged production draws. Any full
- * group of 4 pending draws of a mega resource may be exchanged for one fixed
- * Mega card (while the pool lasts); the rest joins the hand as singles.
- */
-function moveMega(state: GameState, move: Move & { action: "mega" }, seat: number, player: PlayerState): MoveInfo {
-	if (state.phase !== "mega" || (player.pendingMega?.length ?? 0) === 0) {
+function moveMega(state: GameState, move: Move & { action: "mega" }, player: PlayerState): MoveInfo {
+	if (state.phase !== "mega" || !needsMegaChoice(player)) {
 		err("no production pending for this player");
 	}
 	// The election is blind (rule 12.1): the player commits to a number of Mega
@@ -403,6 +401,23 @@ function moveMega(state: GameState, move: Move & { action: "mega" }, seat: numbe
 			err(`cannot take ${count} mega ${resource} card(s)`);
 		}
 	}
+	player.megaChoice = { ...take };
+	const count = Object.values(take).reduce((sum, value) => sum + (value ?? 0), 0);
+	return count > 0 ? { mega: count } : {};
+}
+
+function resolveMegaChoices(state: GameState): void {
+	// Resolve in purchase order so response timing cannot change the deck order.
+	for (const seat of state.purchaseOrder) {
+		const player = state.players[seat];
+		if (player && !player.dropped && player.megaChoice !== undefined) {
+			collectProduction(state, player, player.megaChoice);
+			delete player.megaChoice;
+		}
+	}
+}
+
+function collectProduction(state: GameState, player: PlayerState, take: Partial<Record<Resource, number>>): void {
 	const pending = player.pendingMega ?? [];
 	const megas: ProductionCard[] = [];
 	const consumed = new Set<number>();
@@ -434,7 +449,6 @@ function moveMega(state: GameState, move: Move & { action: "mega" }, seat: numbe
 	player.hand.push(...keep, ...megas);
 	player.pendingMega = [];
 	player.megaGroups = {};
-	return megas.length > 0 ? { mega: megas.length } : {};
 }
 
 function moveDiscard(
@@ -1025,6 +1039,7 @@ export function dropPlayer(state: GameState, seat: number): GameState {
 	player.mustDiscard = false;
 	player.done = true;
 	player.pendingMega = [];
+	delete player.megaChoice;
 	for (const factory of player.factories) {
 		factory.manned = false;
 	}
@@ -1033,12 +1048,15 @@ export function dropPlayer(state: GameState, seat: number): GameState {
 	if (state.ended) {
 		return state;
 	}
+	if (state.phase === "mega" && !state.players.some(needsMegaChoice)) {
+		resolveMegaChoices(state);
+	}
 	if (activePlayers(state) <= 1) {
 		finishGame(state);
 		return state;
 	}
 
-	if (state.phase === "mega" && !state.players.some((p) => (p.pendingMega?.length ?? 0) > 0)) {
+	if (state.phase === "mega" && !state.players.some(needsMegaChoice)) {
 		enterDiscardPhase(state);
 		return state;
 	}

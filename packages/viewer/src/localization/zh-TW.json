@@ -1179,5 +1179,8 @@
 	"Remaining upgrades": "Remaining upgrades",
 	"Remaining Kicker cards": "Remaining Kicker cards",
 	"Pass auctions I can't afford": "自動放棄無力支付的拍賣",
-	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "當手牌和折扣不足以支付所需的出價時，自動放棄競標。這可能讓其他玩家知道你的手牌價值不足。"
+	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "當手牌和折扣不足以支付所需的出價時，自動放棄競標。這可能讓其他玩家知道你的手牌價值不足。",
+	"Choices stay hidden until everyone has confirmed.": "所有人確認前，選擇都會保持隱藏。",
+	"Production choice locked.": "生產選擇已確認。",
+	"{p0} locks in their production choice": "{p0} 確認了生產選擇"
 }

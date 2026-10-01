@@ -214,6 +214,10 @@ export function handValue(player: PlayerState): number {
 	return player.hand.reduce((sum, c) => sum + c.v, 0) + (player.pendingMega ?? []).reduce((sum, c) => sum + c.v, 0);
 }
 
+export function needsMegaChoice(player: PlayerState): boolean {
+	return !player.dropped && (player.pendingMega?.length ?? 0) > 0 && player.megaChoice === undefined;
+}
+
 /**
  * Mega production eligibility (rule 12.1): the Mega cards a player may elect to
  * take this round — full groups of 4 operated factories per mega resource. Only
@@ -632,7 +636,7 @@ export function availableMoves(state: GameState, player?: number): string[] {
 	}
 	switch (state.phase) {
 		case "mega":
-			return (p.pendingMega?.length ?? 0) > 0 ? ["mega"] : [];
+			return needsMegaChoice(p) ? ["mega"] : [];
 		case "discard":
 			return p.mustDiscard ? ["discard"] : [];
 		case "exchange":
