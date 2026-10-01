@@ -120,7 +120,7 @@
 		grid-auto-rows: min-content;
 		align-content: start;
 		gap: 10px;
-		align-items: start;
+		align-items: stretch;
 	}
 	/* Wide screens: two columns — players/market on the left, action bar + event
 	   feed in a fixed right sidebar. The main column grows to fill the board, so
