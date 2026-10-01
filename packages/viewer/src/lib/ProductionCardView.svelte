@@ -41,6 +41,7 @@
 
 <style>
 	.pcard {
+		position: relative;
 		display: inline-flex;
 		flex-direction: column;
 		align-items: center;
@@ -49,40 +50,44 @@
 		width: var(--card-w);
 		height: var(--card-h);
 		padding: 2px;
-		border-radius: 6px;
-		border: 1px solid color-mix(in srgb, var(--res) 60%, #000);
-		background: linear-gradient(
-			160deg,
-			color-mix(in srgb, var(--res) 88%, #fff),
-			var(--res) 65%,
-			color-mix(in srgb, var(--res) 78%, #000)
-		);
-		color: var(--res-text);
-		box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+		border-radius: 1px;
+		border: 1px solid color-mix(in srgb, var(--res) 50%, #27323d);
+		border-top: 3px solid var(--res);
+		background: linear-gradient(135deg, color-mix(in srgb, var(--res) 18%, #202831), #141b24 80%);
+		color: var(--text);
+		box-shadow:
+			inset 0 0 0 2px #00000020,
+			1px 2px 0 #00000050;
 		user-select: none;
 		transition:
 			transform 0.12s ease,
 			box-shadow 0.12s ease;
 	}
+	.pcard:disabled {
+		opacity: 1;
+		cursor: default;
+	}
 	.icon {
 		display: inline-flex;
-		opacity: 0.85;
+		color: var(--res);
 		line-height: 0;
 	}
 	.value {
-		font-size: 16px;
+		color: var(--text);
+		font-family: var(--font-console);
+		font-size: 20px;
 		font-weight: 800;
 		line-height: 1;
-		text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
 	}
 	.label {
-		font-size: 7.5px;
+		font-family: "Arial Narrow", "Liberation Sans Narrow", sans-serif;
+		font-size: 6.5px;
+		color: color-mix(in srgb, var(--res) 55%, var(--text));
 		font-weight: 700;
 		text-transform: uppercase;
-		letter-spacing: 0.02em;
+		letter-spacing: 0.025em;
 		text-align: center;
 		line-height: 1.1;
-		opacity: 0.9;
 		max-width: 100%;
 		hyphens: manual;
 	}
@@ -115,6 +120,10 @@
 		box-shadow:
 			0 0 0 1px color-mix(in srgb, var(--gold) 55%, transparent),
 			0 2px 6px rgba(0, 0, 0, 0.4);
+	}
+	.pcard.mega .label {
+		font-size: 6px;
+		letter-spacing: 0;
 	}
 	.pcard.mega .value {
 		font-size: 18px;

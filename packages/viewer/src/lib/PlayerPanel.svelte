@@ -393,6 +393,7 @@
 		opacity: 0.6;
 	}
 	.panel {
+		box-shadow: var(--panel-bevel);
 		position: relative;
 		background: var(--bg-panel);
 		border: 1px solid var(--line);
@@ -453,7 +454,7 @@
 		letter-spacing: 0.05em;
 		color: var(--gold);
 		border: 1px solid var(--gold);
-		border-radius: 4px;
+		border-radius: 2px;
 		padding: 1px 6px;
 	}
 	.panel.dropped {
@@ -461,6 +462,8 @@
 		filter: grayscale(0.8);
 	}
 	.head {
+		border-bottom: 1px solid var(--line);
+		padding-bottom: 6px;
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
@@ -553,7 +556,7 @@
 		box-sizing: border-box;
 		gap: 3px;
 		padding: 3px 4px;
-		border-radius: 6px;
+		border-radius: 2px;
 		background: color-mix(in srgb, var(--res) 16%, transparent);
 		border: 1px solid color-mix(in srgb, var(--res) 45%, transparent);
 	}
@@ -563,7 +566,7 @@
 		justify-content: center;
 		width: 18px;
 		height: 18px;
-		border-radius: 5px;
+		border-radius: 2px;
 		border: 1.5px solid var(--res);
 		background: transparent;
 		color: var(--res);
@@ -639,7 +642,7 @@
 		color: var(--text);
 		background: color-mix(in srgb, var(--gold) 14%, var(--bg-elevated));
 		border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
-		border-radius: 4px;
+		border-radius: 2px;
 		padding: 1px 6px;
 	}
 	/* Kicker badges use their era color (era I blue, II orange, III purple). */
@@ -661,7 +664,7 @@
 	.hand.pending {
 		background: color-mix(in srgb, var(--gold) 8%, var(--bg-elevated));
 		border: 1px dashed color-mix(in srgb, var(--gold) 45%, transparent);
-		border-radius: 6px;
+		border-radius: 2px;
 		padding: 4px 6px;
 		align-items: center;
 	}
@@ -681,7 +684,7 @@
 		min-width: 20px;
 		height: 20px;
 		padding: 0 4px;
-		border-radius: 5px;
+		border-radius: 2px;
 		background: var(--res);
 		border: 1px solid color-mix(in srgb, var(--res) 60%, #000);
 		color: var(--res-text);

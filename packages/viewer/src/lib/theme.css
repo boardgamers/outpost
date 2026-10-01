@@ -32,7 +32,9 @@
 	--orbitalMedicine: #55ccc6;
 	--ringOre: #f08c48;
 	--moonOre: #e8c550;
-	--radius: 10px;
+	--radius: 2px;
+	--font-console: "Lucida Console", "Courier New", monospace;
+	--panel-bevel: inset 0 1px 0 #ffffff08, 0 2px 0 #00000030;
 	--card-w: 44px;
 	--card-h: 60px;
 }
@@ -85,11 +87,18 @@ button {
 	border: 1px solid var(--line);
 	background: var(--bg-elevated);
 	color: var(--text);
-	border-radius: 8px;
+	border-radius: 2px;
 	padding: 6px 12px;
 	transition:
 		background 0.15s ease,
 		border-color 0.15s ease;
+}
+
+button:focus-visible,
+summary:focus-visible,
+a:focus-visible {
+	outline: 2px solid var(--gold);
+	outline-offset: 3px;
 }
 
 button:hover:not(:disabled) {
@@ -106,7 +115,7 @@ input[type="number"] {
 	color: var(--text);
 	background: var(--bg-elevated);
 	border: 1px solid var(--line);
-	border-radius: 8px;
+	border-radius: 2px;
 	padding: 5px 8px;
 	width: 90px;
 }
@@ -164,5 +173,14 @@ input[type="number"]:focus {
 		box-shadow:
 			0 0 0 4px var(--gold),
 			0 4px 14px var(--gold-soft);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation: none !important;
+		transition: none !important;
 	}
 }

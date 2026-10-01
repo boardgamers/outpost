@@ -199,7 +199,7 @@
 		font-size: 14px;
 		padding: 8px 10px;
 		background: var(--bg-panel);
-		border-radius: 6px;
+		border-radius: 2px;
 	}
 	.net-cost {
 		color: var(--gold);
@@ -294,7 +294,7 @@
 		font-weight: 800;
 		color: var(--microbiotics);
 		background: color-mix(in srgb, var(--microbiotics) 16%, transparent);
-		border-radius: 4px;
+		border-radius: 2px;
 		padding: 0 4px;
 	}
 	.maxeq {

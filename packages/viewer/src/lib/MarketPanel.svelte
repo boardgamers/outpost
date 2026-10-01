@@ -11,6 +11,7 @@
 		type Kicker,
 	} from "outpost-engine";
 	import UpgradeBadges from "./UpgradeBadges.svelte";
+	import ColonyArt from "./ColonyArt.svelte";
 	import CardEffect from "./CardEffect.svelte";
 	import { KICKER_EFFECTS, UPGRADE_EFFECTS, effectToText, type ViewerStore } from "./store.svelte";
 
@@ -89,6 +90,7 @@
 								{["", "I", "II", "III"][upgradeEra(upgrade)]}
 							</span>
 						</span>
+						<span class="art"><ColonyArt card={upgrade} /></span>
 						<span class="uvp">{spec.vp} VP</span>
 						<span class="uprice">
 							min ◈ {spec.price}
@@ -193,6 +195,7 @@
 								{["", "I", "II", "III"][spec.era]}
 							</span>
 						</span>
+						<span class="art"><ColonyArt card={kicker} /></span>
 						<span class="uvp">{spec.vp} VP</span>
 						<span class="uprice">min ◈ {spec.price}</span>
 						<span class="ueffect"><CardEffect locale={store.preferences.locale} tokens={KICKER_EFFECTS[kicker]} /></span
@@ -276,6 +279,7 @@
 		gap: 6px;
 	}
 	.caption {
+		font-family: var(--font-console);
 		font-size: 11px;
 		font-weight: 700;
 		letter-spacing: 0.06em;
@@ -302,20 +306,42 @@
 		gap: 6px;
 	}
 	.ucard {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 3px;
+		display: grid;
+		grid-template-columns: 1fr auto;
+		align-content: start;
+		align-items: start;
+		gap: 6px;
 		width: 168px;
-		min-height: 118px;
-		padding: 10px 12px;
+		min-height: 190px;
+		padding: 9px;
 		text-align: left;
-		background: linear-gradient(165deg, var(--bg-elevated), var(--bg-panel));
-		border: 1px solid var(--line);
-		border-top: 3px solid var(--gold);
-		border-radius: var(--radius);
-		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+		background: linear-gradient(145deg, #202a34, var(--bg-panel) 65%);
+		border: 1px solid #485562;
+		border-top: 2px solid var(--card-accent, #779baa);
+		border-radius: 2px;
+		box-shadow:
+			inset 0 0 0 2px #10151c80,
+			2px 3px 0 #00000035;
 	}
+	.art {
+		grid-column: 1 / -1;
+		display: block;
+		width: 100%;
+		height: 70px;
+		border: 1px solid #465460;
+		--art-line: var(--card-accent, #7895a5);
+	}
+	.ucard :global(.badges) {
+		grid-column: 1 / -1;
+	}
+	.ucard :global(.badges:empty) {
+		display: none;
+	}
+	.ucard:disabled {
+		opacity: 1;
+		cursor: default;
+	}
+
 	.ucard.clickable:hover:not(:disabled) {
 		border-color: var(--gold);
 		transform: translateY(-2px);
@@ -329,19 +355,19 @@
 	}
 	/* Kicker era colors: era I blue, era II orange, era III purple. */
 	.kcard.era-1 {
-		border-top-color: #5aa5e0;
+		--card-accent: #5aa5e0;
 	}
 	.kcard.era-2 {
-		border-top-color: #f08c48;
+		--card-accent: #f08c48;
 	}
 	.kcard.era-3 {
-		border-top-color: #b48ce8;
+		--card-accent: #b48ce8;
 	}
 	.uera {
 		font-size: 9.5px;
 		font-weight: 800;
 		letter-spacing: 0.06em;
-		border-radius: 4px;
+		border-radius: 1px;
 		padding: 1px 5px;
 		margin-left: 5px;
 		vertical-align: 1px;
@@ -359,20 +385,34 @@
 		background: color-mix(in srgb, #b48ce8 16%, transparent);
 	}
 	.uname {
+		grid-column: 1 / -1;
+		font-family: "Arial Narrow", "Liberation Sans Narrow", sans-serif;
 		font-weight: 800;
 		font-size: 13px;
+		letter-spacing: 0.045em;
+		text-transform: uppercase;
+		line-height: 1.3;
 		color: var(--text);
 	}
 	.uvp {
+		grid-column: 2;
+		grid-row: 3;
+		font-family: var(--font-console);
 		font-size: 11px;
 		font-weight: 800;
 		color: var(--gold);
 	}
 	.uprice {
+		grid-column: 1;
+		grid-row: 3;
+		font-family: var(--font-console);
 		font-size: 11.5px;
 		color: var(--text-mid);
 	}
 	.ueffect {
+		grid-column: 1 / -1;
+		padding-top: 6px;
+		border-top: 1px solid var(--line);
 		font-size: 11.5px;
 		line-height: 1.35;
 		color: var(--text-mid);
@@ -425,7 +465,7 @@
 		color: var(--text-mid);
 		background: var(--bg-panel);
 		border: 1px solid var(--line);
-		border-radius: 4px;
+		border-radius: 1px;
 		padding: 1px 6px;
 		display: inline-flex;
 		align-items: center;
@@ -435,7 +475,7 @@
 		font-size: 9px;
 		font-weight: 800;
 		letter-spacing: 0.04em;
-		border-radius: 3px;
+		border-radius: 1px;
 		padding: 0 3px;
 	}
 	.stag.era-1 .stag-era {
@@ -478,7 +518,7 @@
 		.ucard {
 			width: 100%;
 			min-width: 0;
-			padding: 10px 9px;
+			padding: 9px;
 			overflow-wrap: anywhere;
 			flex: 1;
 		}
@@ -505,23 +545,32 @@
 			gap: 6px;
 		}
 		.ucard {
-			flex-direction: row;
-			flex-wrap: wrap;
-			align-items: baseline;
-			gap: 4px 10px;
+			grid-template-columns: 72px minmax(0, 1fr) auto;
+			gap: 6px 10px;
 			min-height: 0;
-			padding: 8px 10px;
-			box-shadow: none;
+			padding: 9px;
+		}
+		.art {
+			grid-column: 1;
+			grid-row: 2 / span 3;
+			height: 65px;
 		}
 		.uname {
-			flex: 1;
+			grid-column: 1 / -1;
 		}
 		.uvp {
-			margin-left: auto;
+			grid-column: 3;
+			grid-row: 2;
 		}
-		.uprice,
+		.uprice {
+			grid-column: 2;
+			grid-row: 2;
+		}
+		.ucard :global(.badges) {
+			grid-column: 2 / -1;
+		}
 		.ueffect {
-			flex-basis: 100%;
+			grid-column: 2 / -1;
 		}
 		.bidbox {
 			box-sizing: border-box;

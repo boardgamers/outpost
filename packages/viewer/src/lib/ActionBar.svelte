@@ -290,6 +290,7 @@
 
 <style>
 	.actionbar {
+		box-shadow: var(--panel-bevel);
 		background: var(--bg-panel);
 		border: 1px solid var(--line);
 		border-radius: var(--radius);
@@ -360,7 +361,7 @@
 		gap: 8px;
 		padding: 3px 8px;
 		border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent);
-		border-radius: 6px;
+		border-radius: 2px;
 	}
 	.mega-name {
 		font-size: 12.5px;

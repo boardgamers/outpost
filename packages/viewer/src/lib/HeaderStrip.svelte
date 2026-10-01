@@ -62,6 +62,7 @@
 
 <style>
 	.strip {
+		box-shadow: var(--panel-bevel);
 		display: flex;
 		align-items: center;
 		gap: 16px;
@@ -72,6 +73,7 @@
 		flex-wrap: wrap;
 	}
 	.brand {
+		font-family: var(--font-console);
 		display: inline-flex;
 		align-items: center;
 		gap: 7px;
@@ -102,7 +104,7 @@
 		letter-spacing: 0.08em;
 		background: color-mix(in srgb, var(--gold) 18%, transparent);
 		color: var(--gold);
-		border-radius: 5px;
+		border-radius: 2px;
 		padding: 2px 8px;
 	}
 	.era {
@@ -112,7 +114,7 @@
 		text-transform: uppercase;
 		background: color-mix(in srgb, var(--research) 20%, transparent);
 		color: var(--research);
-		border-radius: 5px;
+		border-radius: 2px;
 		padding: 2px 8px;
 	}
 	.dim {

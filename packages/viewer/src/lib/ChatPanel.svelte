@@ -407,7 +407,7 @@
 		color: var(--text);
 		background: var(--bg-elevated);
 		border: 1px solid var(--line);
-		border-radius: 8px;
+		border-radius: 2px;
 		padding: 6px 10px;
 	}
 	.composer input:focus {
