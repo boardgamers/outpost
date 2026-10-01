@@ -39,6 +39,12 @@
 	const player = $derived(state.players[index]!);
 	const isMe = $derived(store.playerIndex === index);
 	const avatar = $derived(store.avatars[index]);
+	const appearance = $derived(
+		store.preferences.bgs as
+			| { players?: { pro?: boolean }[]; supporterBadge?: { url: string; label: string } }
+			| undefined
+	);
+	const badge = $derived(appearance?.players?.[index]?.pro ? appearance.supporterBadge : undefined);
 	const initial = $derived((player.name.trim()[0] ?? "?").toUpperCase());
 	const orderPos = $derived(state.purchaseOrder.indexOf(index) + 1);
 	const isActive = $derived(
@@ -119,11 +125,14 @@
 			{#if orderPos > 0}
 				<span class="order" title="Purchase order this round: {orderPos}">{orderPos}</span>
 			{/if}
-			{#if avatar}
-				<img class="avatar" src={avatar} alt="" referrerpolicy="no-referrer" />
-			{:else}
-				<span class="avatar fallback">{initial}</span>
-			{/if}
+			<span class="portrait">
+				{#if avatar}
+					<img class="avatar" src={avatar} alt="" referrerpolicy="no-referrer" />
+				{:else}
+					<span class="avatar fallback">{initial}</span>
+				{/if}
+				{#if badge}<img class="supporter-badge" src={badge.url} alt={badge.label} title={badge.label} />{/if}
+			</span>
 			<span class="name">{player.name}</span>
 		</button>
 		{#if exchangeTargetable}
@@ -411,6 +420,18 @@
 	}
 	.identity:hover .name {
 		color: var(--gold);
+	}
+	.portrait {
+		position: relative;
+		display: inline-flex;
+		flex-shrink: 0;
+	}
+	.supporter-badge {
+		position: absolute;
+		top: -3px;
+		left: -3px;
+		width: 14px;
+		height: 14px;
 	}
 	.avatar {
 		width: 30px;
