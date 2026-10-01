@@ -102,245 +102,251 @@
 	});
 </script>
 
-{#if state && !state.ended && !store.replay.active && !store.myBidTurn}
+{#if state && !state.ended && !store.replay.active}
 	<div class="actionbar" class:browsing={store.myActionTurn && !pending} data-tutorial="actions">
-		{#if store.myMega && me}
-			<div class="flow mega-flow">
-				<span class="hint gold-hint">
-					Production: choose Mega cards before drawing. Each Mega replaces the production of 4 staffed factories; other
-					factories produce single cards.
-				</span>
-				<span class="hint dim">Choices stay hidden until everyone has confirmed.</span>
-				{#each Object.entries(store.megaEligible) as [resource, groups] (resource)}
-					{@const mega = MEGA_CARDS[resource as keyof typeof MEGA_CARDS]}
-					{@const taking = store.megaTake[resource] ?? 0}
-					<div class="mega-row">
-						<span class="mega-name">
-							Mega {RESOURCE_LABELS[resource] ?? resource}
-							{#if mega}
-								<em>(◈ {mega.value})</em>{/if}
-						</span>
-						<span class="mega-stepper">
-							<button class="step" disabled={taking <= 0} onclick={() => store.setMegaTake(resource, taking - 1)}
-								>−</button
-							>
-							<span class="count">{taking}/{groups}</span>
-							<button
-								class="step"
-								disabled={taking >= (groups ?? 0)}
-								onclick={() => store.setMegaTake(resource, taking + 1)}>+</button
-							>
-						</span>
-					</div>
-				{/each}
-				<button class="confirm" onclick={() => store.confirmMega()}>
-					{store.megaTakeCount > 0 ? `Take ${store.megaTakeCount} mega` : "Take all as singles"}
-				</button>
-			</div>
-		{:else if store.iMustDiscard && me}
-			<div class="flow">
-				<span class="hint warn">
-					{`Hand limit exceeded. Cards still to discard: ${store.discardExcess} (selected: ${pickCount}; Research and Microbiotics do not count).`}
-				</span>
-				<button class="confirm" disabled={pickCount === 0} onclick={() => store.confirmDiscard()}>
-					Discard selected
-				</button>
-			</div>
-		{:else if store.myPayment && me}
-			<div class="flow">
-				<span class="hint gold-hint">
-					You won {auctionName}: select hand cards worth at least ◈ {store.myPaymentDue}
-					(selected ◈ {total}).
-				</span>
-				<button class="confirm" disabled={!store.paymentValid()} onclick={() => store.confirmPayment()}>
-					Pay ◈ {store.myPaymentDue}
-				</button>
-			</div>
-		{:else if store.myExchange && me}
-			<div class="flow">
-				<span class="hint gold-hint">
-					Wily Trader / Merchant House: click one of your
-					{store.exchangeOfferTypes.map((t) => RESOURCE_LABELS[t] ?? t).join("/")}
-					cards to offer, then a player to trade with. They must hand back a higher-valued card of the same type if they have
-					one.
-				</span>
-				<button
-					class="confirm"
-					disabled={store.exchangeCard === null || store.exchangeTarget === null}
-					onclick={() => store.confirmExchange()}
-				>
-					Trade
-				</button>
-				<button class="cancel" onclick={() => store.passExchange()}>Pass</button>
-			</div>
-		{:else if store.myActionTurn && me}
-			{#if store.manning}
+		{#if !store.myBidTurn}
+			{#if store.myMega && me}
+				<div class="flow mega-flow">
+					<span class="hint gold-hint">
+						Production: choose Mega cards before drawing. Each Mega replaces the production of 4 staffed factories;
+						other factories produce single cards.
+					</span>
+					<span class="hint dim">Choices stay hidden until everyone has confirmed.</span>
+					{#each Object.entries(store.megaEligible) as [resource, groups] (resource)}
+						{@const mega = MEGA_CARDS[resource as keyof typeof MEGA_CARDS]}
+						{@const taking = store.megaTake[resource] ?? 0}
+						<div class="mega-row">
+							<span class="mega-name">
+								Mega {RESOURCE_LABELS[resource] ?? resource}
+								{#if mega}
+									<em>(◈ {mega.value})</em>{/if}
+							</span>
+							<span class="mega-stepper">
+								<button class="step" disabled={taking <= 0} onclick={() => store.setMegaTake(resource, taking - 1)}
+									>−</button
+								>
+								<span class="count">{taking}/{groups}</span>
+								<button
+									class="step"
+									disabled={taking >= (groups ?? 0)}
+									onclick={() => store.setMegaTake(resource, taking + 1)}>+</button
+								>
+							</span>
+						</div>
+					{/each}
+					<button class="confirm" onclick={() => store.confirmMega()}>
+						{store.megaTakeCount > 0 ? `Take ${store.megaTakeCount} mega` : "Take all as singles"}
+					</button>
+				</div>
+			{:else if store.iMustDiscard && me}
+				<div class="flow">
+					<span class="hint warn">
+						{`Hand limit exceeded. Cards still to discard: ${store.discardExcess} (selected: ${pickCount}; Research and Microbiotics do not count).`}
+					</span>
+					<button class="confirm" disabled={pickCount === 0} onclick={() => store.confirmDiscard()}>
+						Discard selected
+					</button>
+				</div>
+			{:else if store.myPayment && me}
 				<div class="flow">
 					<span class="hint gold-hint">
-						Assign operators — click the glowing factory chips in your panel to toggle them.
-						<span>{`Factories staffed: ${store.manningPick.length}/${me.factories.length}.`}</span>
-						{#if idleOperators > 0 && idleFactories > 0}
-							<span class="warn">
-								Assign {Math.min(idleOperators, idleFactories)} more before ending your turn.
-							</span>
-						{/if}
-						{#if staged.length > 0}
-							Also confirms: {staged.join(", ")}.
-						{/if}
+						You won {auctionName}: select hand cards worth at least ◈ {store.myPaymentDue}
+						(selected ◈ {total}).
+					</span>
+					<button class="confirm" disabled={!store.paymentValid()} onclick={() => store.confirmPayment()}>
+						Pay ◈ {store.myPaymentDue}
+					</button>
+				</div>
+			{:else if store.myExchange && me}
+				<div class="flow">
+					<span class="hint gold-hint">
+						Wily Trader / Merchant House: click one of your
+						{store.exchangeOfferTypes.map((t) => RESOURCE_LABELS[t] ?? t).join("/")}
+						cards to offer, then a player to trade with. They must hand back a higher-valued card of the same type if they
+						have one.
 					</span>
 					<button
 						class="confirm"
-						disabled={idleOperators > 0 && idleFactories > 0}
-						onclick={() => store.confirmEndTurn()}>End turn</button
+						disabled={store.exchangeCard === null || store.exchangeTarget === null}
+						onclick={() => store.confirmExchange()}
 					>
-					<button class="cancel" onclick={() => store.cancel()}>Back</button>
-				</div>
-			{:else if pending}
-				<div class="flow">
-					<span class="hint">
-						{#if pending.kind === "factory"}
-							{`Building ${pending.count} ${RESOURCE_LABELS[pending.factory]} ${pending.count === 1 ? "factory" : "factories"} (produces ◈ ${MIN_CARD_VALUE[pending.factory]}–${MAX_CARD_VALUE[pending.factory]} per round when manned):`}
-						{:else if pending.kind === "population"}
-							{`Colonists to recruit: ${pending.count}`}
-						{:else}
-							{`Robots to buy: ${pending.count}`}
-						{/if}
-						selected ◈ {total} / ◈ {pending.cost}.
-						{#if needsResearch && !hasResearch}
-							<span class="warn"
-								>Payment must include a research card{pending.kind === "factory" && pending.count > 1
-									? ` per factory (◈ ${pending.count} research)`
-									: ""}.</span
-							>
-						{/if}
-					</span>
-					{#if pending.kind === "factory" || pending.kind === "population" || pending.kind === "robots"}
-						<button onclick={() => store.bumpPendingCount(-1)} disabled={pending.count <= 1}>−</button>
-						<button onclick={() => store.bumpPendingCount(1)}>+1</button>
-					{/if}
-					<button class="confirm" disabled={!store.pendingValid()} onclick={() => store.confirmPending()}>
-						Confirm (◈ {pending.cost})
+						Trade
 					</button>
-					<button class="cancel" onclick={() => store.cancel()}>Cancel</button>
+					<button class="cancel" onclick={() => store.passExchange()}>Pass</button>
 				</div>
-			{:else}
-				<div class="flow wrap purchase-options">
-					<span class="hint">Your turn. Credits: <strong class="cash">◈ {store.myHandValue}</strong></span>
-					<div class="factory-options">
-						<div class="factory-label">New factory</div>
-						<div class="factory-buttons">
-							{#each FACTORY_TYPES as type (type)}
-								{@const spec = FACTORIES[type]}
-								{@const reason = factoryReason[type]}
-								<button
-									class="buy res-{type}"
-									disabled={!store.canAffordFactory(type)}
-									title={reason ??
-										`${RESOURCE_LABELS[type]} factory: ◈ ${spec.cost}, ${spec.vp} VP manned, produces a ◈ ${MIN_CARD_VALUE[type]}–${MAX_CARD_VALUE[type]} card each round when manned`}
-									onclick={() => store.startFactoryPayment(type)}
-								>
-									<ResourceIcon resource={type} size={13} />
-									{RESOURCE_LABELS[type]} · ◈ {spec.cost}
-								</button>
-							{/each}
-						</div>
-					</div>
-					<div class="operator-options">
-						<span class="group-label">Operators:</span>
-						<button
-							class="buy"
-							disabled={me.population >= store.popMaxOf(store.playerIndex ?? -1) || store.myHandValue < store.popCost}
-							title="Recruit a colonist: {store.popCost} credits{me.upgrades.ecoplants > 0
-								? ' (Ecoplants discount)'
-								: ''}"
-							onclick={() => store.startPopulationPayment()}
-						>
-							Colonist · ◈ {store.popCost}
-						</button>
-						{#if me.upgrades.robots > 0}
-							<button
-								class="buy"
-								disabled={store.myHandValue < 10}
-								title="Buy a robot: 10 credits"
-								onclick={() => store.startRobotsPayment()}
-							>
-								Robot · ◈ 10
-							</button>
-						{/if}
-						<button class="end" onclick={() => store.startManning()}>Assign operators…</button>
-					</div>
-				</div>
-				{#if staged.length > 0}
+			{:else if store.myActionTurn && me}
+				{#if store.manning}
 					<div class="flow">
 						<span class="hint gold-hint">
-							Staged this turn: {staged.join(", ")} (undo to open an auction).
+							Assign operators — click the glowing factory chips in your panel to toggle them.
+							<span>{`Factories staffed: ${store.manningPick.length}/${me.factories.length}.`}</span>
+							{#if idleOperators > 0 && idleFactories > 0}
+								<span class="warn">
+									Assign {Math.min(idleOperators, idleFactories)} more before ending your turn.
+								</span>
+							{/if}
+							{#if staged.length > 0}
+								Also confirms: {staged.join(", ")}.
+							{/if}
 						</span>
-						<button class="cancel" onclick={() => store.undoBuy()}>Undo last</button>
+						<button
+							class="confirm"
+							disabled={idleOperators > 0 && idleFactories > 0}
+							onclick={() => store.confirmEndTurn()}>End turn</button
+						>
+						<button class="cancel" onclick={() => store.cancel()}>Back</button>
 					</div>
+				{:else if pending}
+					<div class="flow">
+						<span class="hint">
+							{#if pending.kind === "factory"}
+								{`Building ${pending.count} ${RESOURCE_LABELS[pending.factory]} ${pending.count === 1 ? "factory" : "factories"} (produces ◈ ${MIN_CARD_VALUE[pending.factory]}–${MAX_CARD_VALUE[pending.factory]} per round when manned):`}
+							{:else if pending.kind === "population"}
+								{`Colonists to recruit: ${pending.count}`}
+							{:else}
+								{`Robots to buy: ${pending.count}`}
+							{/if}
+							selected ◈ {total} / ◈ {pending.cost}.
+							{#if needsResearch && !hasResearch}
+								<span class="warn"
+									>Payment must include a research card{pending.kind === "factory" && pending.count > 1
+										? ` per factory (◈ ${pending.count} research)`
+										: ""}.</span
+								>
+							{/if}
+						</span>
+						{#if pending.kind === "factory" || pending.kind === "population" || pending.kind === "robots"}
+							<button onclick={() => store.bumpPendingCount(-1)} disabled={pending.count <= 1}>−</button>
+							<button onclick={() => store.bumpPendingCount(1)}>+1</button>
+						{/if}
+						<button class="confirm" disabled={!store.pendingValid()} onclick={() => store.confirmPending()}>
+							Confirm (◈ {pending.cost})
+						</button>
+						<button class="cancel" onclick={() => store.cancel()}>Cancel</button>
+					</div>
+				{:else}
+					<div class="flow wrap purchase-options">
+						<span class="hint">Your turn. Credits: <strong class="cash">◈ {store.myHandValue}</strong></span>
+						<div class="factory-options">
+							<div class="factory-label">New factory</div>
+							<div class="factory-buttons">
+								{#each FACTORY_TYPES as type (type)}
+									{@const spec = FACTORIES[type]}
+									{@const reason = factoryReason[type]}
+									<button
+										class="buy res-{type}"
+										disabled={!store.canAffordFactory(type)}
+										title={reason ??
+											`${RESOURCE_LABELS[type]} factory: ◈ ${spec.cost}, ${spec.vp} VP manned, produces a ◈ ${MIN_CARD_VALUE[type]}–${MAX_CARD_VALUE[type]} card each round when manned`}
+										onclick={() => store.startFactoryPayment(type)}
+									>
+										<ResourceIcon resource={type} size={13} />
+										{RESOURCE_LABELS[type]} · ◈ {spec.cost}
+									</button>
+								{/each}
+							</div>
+						</div>
+						<div class="operator-options">
+							<span class="group-label">Operators:</span>
+							<button
+								class="buy"
+								disabled={me.population >= store.popMaxOf(store.playerIndex ?? -1) || store.myHandValue < store.popCost}
+								title="Recruit a colonist: {store.popCost} credits{me.upgrades.ecoplants > 0
+									? ' (Ecoplants discount)'
+									: ''}"
+								onclick={() => store.startPopulationPayment()}
+							>
+								Colonist · ◈ {store.popCost}
+							</button>
+							{#if me.upgrades.robots > 0}
+								<button
+									class="buy"
+									disabled={store.myHandValue < 10}
+									title="Buy a robot: 10 credits"
+									onclick={() => store.startRobotsPayment()}
+								>
+									Robot · ◈ 10
+								</button>
+							{/if}
+							<button class="end" onclick={() => store.startManning()}>Assign operators…</button>
+						</div>
+					</div>
+					{#if staged.length > 0}
+						<div class="flow">
+							<span class="hint gold-hint">
+								Staged this turn: {staged.join(", ")} (undo to open an auction).
+							</span>
+							<button class="cancel" onclick={() => store.undoBuy()}>Undo last</button>
+						</div>
+					{/if}
 				{/if}
-				<details class="action-help">
-					<summary>How to buy</summary>
-					<p class="hint dim">
-						Click a market upgrade to auction it, or a buy button and then the hand cards to pay with.
-					</p>
-				</details>
+			{:else}
+				<div class="flow">
+					{#if state?.phase === "mega" && me?.megaChoice !== undefined}
+						<span class="hint">Production choice locked.</span>
+						<span class="hint dim">Choices stay hidden until everyone has confirmed.</span>
+					{/if}
+					<span class="hint dim">{waitingOn}</span>
+				</div>
 			{/if}
-		{:else}
-			<div class="flow">
-				{#if state?.phase === "mega" && me?.megaChoice !== undefined}
-					<span class="hint">Production choice locked.</span>
-					<span class="hint dim">Choices stay hidden until everyone has confirmed.</span>
-				{/if}
-				<span class="hint dim">{waitingOn}</span>
+		{/if}
+
+		{#if me && store.settings !== null}
+			<div class="automatic-settings">
+				<button
+					class="auto-pass"
+					type="button"
+					role="switch"
+					name="autoPassBids"
+					aria-checked={store.autoPassBids}
+					onclick={() => store.setAutoPassBids(!store.autoPassBids)}
+					disabled={!store.canEditSettings}
+					title="Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak."
+				>
+					<span class="auto-pass-track" aria-hidden="true"><span class="auto-pass-thumb"></span></span>
+					<span class="auto-pass-label">Pass auctions I can't afford</span>
+				</button>
+				<label
+					class="mega-setting"
+					title="Automatically submits each round, including this round if you haven't chosen yet."
+				>
+					<span class="setting-label">Automatic production choice</span>
+					<select
+						value={store.autoMega}
+						onchange={(event) => store.setAutoMega(event.currentTarget.value)}
+						disabled={!store.canEditSettings}
+					>
+						<option value="ask">Megas: ask each round</option>
+						<option value="maximum">Always take maximum Megas</option>
+						<option value="singles">Always take singles</option>
+					</select>
+				</label>
 			</div>
 		{/if}
 	</div>
 {/if}
 
-{#if state && !state.ended && !store.replay.active && me && store.settings !== null}
-	<div class="automatic-settings">
-		<button
-			class="auto-pass"
-			type="button"
-			role="switch"
-			name="autoPassBids"
-			aria-checked={store.autoPassBids}
-			onclick={() => store.setAutoPassBids(!store.autoPassBids)}
-			disabled={!store.canEditSettings}
-			title="Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak."
-		>
-			<span class="auto-pass-track" aria-hidden="true"><span class="auto-pass-thumb"></span></span>
-			<span class="auto-pass-label">Pass auctions I can't afford</span>
-		</button>
-		<label class="mega-setting">
-			<span>Automatic production choice</span>
-			<select
-				value={store.autoMega}
-				onchange={(event) => store.setAutoMega(event.currentTarget.value)}
-				disabled={!store.canEditSettings}
-			>
-				<option value="ask">Ask each round</option>
-				<option value="maximum">Always take maximum Megas</option>
-				<option value="singles">Always take singles</option>
-			</select>
-		</label>
-		<p class="automation-hint">Automatically submits each round, including this round if you haven't chosen yet.</p>
-	</div>
-{/if}
-
 <style>
 	.automatic-settings {
-		background: var(--bg-panel);
-		border: 1px solid var(--line);
-		padding: 8px 12px;
-		display: grid;
-		gap: 6px;
+		border-top: 1px solid var(--line);
+		padding-top: 6px;
+		margin-top: 4px;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 2px 16px;
 	}
 	.mega-setting {
-		display: grid;
-		gap: 6px;
 		color: var(--text-mid);
-		font-size: 12px;
+		font-size: 11px;
+		max-width: 100%;
+	}
+	.setting-label {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
 	}
 	.mega-setting select {
 		color-scheme: dark;
@@ -352,13 +358,7 @@
 		font: inherit;
 		width: 100%;
 		min-width: 0;
-		min-height: 36px;
-	}
-	.automation-hint {
-		margin: 0;
-		color: var(--text-dim);
-		font-size: 11px;
-		line-height: 1.4;
+		min-height: 32px;
 	}
 	.auto-pass {
 		--auto-pass-active: color-mix(in srgb, var(--gold) 35%, var(--text-mid));
@@ -366,10 +366,10 @@
 		align-items: center;
 		align-self: flex-start;
 		gap: 8px;
-		min-height: 40px;
+		min-height: 32px;
 		max-width: 100%;
-		padding: 6px 9px;
-		font-size: 12px;
+		padding: 2px 0;
+		font-size: 11px;
 		line-height: 1.3;
 		text-align: start;
 		color: var(--text-mid);
@@ -556,20 +556,6 @@
 	.factory-buttons .buy:not(:disabled) {
 		background: color-mix(in srgb, var(--res) 15%, var(--bg-panel));
 	}
-	.action-help summary {
-		cursor: pointer;
-		min-height: 44px;
-		display: flex;
-		align-items: center;
-		gap: 6px;
-	}
-	.action-help summary::after {
-		content: "+";
-		margin-left: auto;
-	}
-	details[open] > summary::after {
-		content: "−";
-	}
 	.factory-buttons,
 	.operator-options {
 		display: flex;
@@ -585,10 +571,6 @@
 	.operator-options .group-label {
 		flex-basis: 100%;
 		margin: 0;
-	}
-	.action-help {
-		font-size: 12px;
-		color: var(--text-dim);
 	}
 	@media (max-width: 1099px) and (max-height: 600px) {
 		.actionbar {

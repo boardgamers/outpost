@@ -1187,5 +1187,6 @@
 	"Ask each round": "매 라운드 묻기",
 	"Always take maximum Megas": "항상 메가 최대 수량 선택",
 	"Always take singles": "항상 일반 카드 선택",
-	"Automatically submits each round, including this round if you haven't chosen yet.": "아직 선택하지 않았다면 이번 라운드를 포함하여 매 라운드 자동으로 확정합니다."
+	"Automatically submits each round, including this round if you haven't chosen yet.": "아직 선택하지 않았다면 이번 라운드를 포함하여 매 라운드 자동으로 확정합니다.",
+	"Megas: ask each round": "메가: 매 라운드 묻기"
 }

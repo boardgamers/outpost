@@ -1187,5 +1187,6 @@
 	"Ask each round": "每回合詢問",
 	"Always take maximum Megas": "一律選擇最多 Mega 卡",
 	"Always take singles": "一律選擇普通卡",
-	"Automatically submits each round, including this round if you haven't chosen yet.": "每回合自動確認，若本回合尚未選擇，也會自動確認。"
+	"Automatically submits each round, including this round if you haven't chosen yet.": "每回合自動確認，若本回合尚未選擇，也會自動確認。",
+	"Megas: ask each round": "Mega：每回合詢問"
 }
