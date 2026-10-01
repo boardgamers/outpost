@@ -99,6 +99,7 @@ export interface PlayerState {
 export interface PlayerSettings {
 	/** Auto-pass an auction when the player's true hand value can't beat the high bid. */
 	autoPassBids?: boolean;
+	autoMega?: "ask" | "maximum" | "singles";
 }
 
 export type Phase = "mega" | "discard" | "exchange" | "actions" | "auction" | "auctionPayment" | "ended";

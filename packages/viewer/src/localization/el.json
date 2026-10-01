@@ -1182,5 +1182,10 @@
 	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "Αυτόματο πάσο σε δημοπρασία όταν οι κάρτες και οι εκπτώσεις σου δεν καλύπτουν την απαιτούμενη προσφορά. Αυτό μπορεί να αποκαλύψει ότι το χέρι σου είναι πολύ αδύναμο.",
 	"Choices stay hidden until everyone has confirmed.": "Οι επιλογές παραμένουν κρυφές μέχρι να επιβεβαιώσουν όλοι.",
 	"Production choice locked.": "Η επιλογή παραγωγής κλειδώθηκε.",
-	"{p0} locks in their production choice": "{p0} κλειδώνει την επιλογή παραγωγής"
+	"{p0} locks in their production choice": "{p0} κλειδώνει την επιλογή παραγωγής",
+	"Automatic production choice": "Αυτόματη επιλογή παραγωγής",
+	"Ask each round": "Ερώτηση κάθε γύρο",
+	"Always take maximum Megas": "Πάντα ο μέγιστος αριθμός Mega",
+	"Always take singles": "Πάντα μονές κάρτες",
+	"Automatically submits each round, including this round if you haven't chosen yet.": "Υποβάλλει αυτόματα κάθε γύρο, συμπεριλαμβανομένου αυτού αν δεν έχεις επιλέξει ακόμα."
 }

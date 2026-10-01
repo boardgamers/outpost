@@ -1182,5 +1182,10 @@
 	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "當手牌和折扣不足以支付所需的出價時，自動放棄競標。這可能讓其他玩家知道你的手牌價值不足。",
 	"Choices stay hidden until everyone has confirmed.": "所有人確認前，選擇都會保持隱藏。",
 	"Production choice locked.": "生產選擇已確認。",
-	"{p0} locks in their production choice": "{p0} 確認了生產選擇"
+	"{p0} locks in their production choice": "{p0} 確認了生產選擇",
+	"Automatic production choice": "自動選擇生產方式",
+	"Ask each round": "每回合詢問",
+	"Always take maximum Megas": "一律選擇最多 Mega 卡",
+	"Always take singles": "一律選擇普通卡",
+	"Automatically submits each round, including this round if you haven't chosen yet.": "每回合自動確認，若本回合尚未選擇，也會自動確認。"
 }

@@ -1182,5 +1182,10 @@
 	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "وقتی کارت‌ها و تخفیف‌هایتان مبلغ پیشنهاد لازم را پوشش نمی‌دهند، خودکار از حراج انصراف دهید. این کار ممکن است ضعیف بودن دستتان را آشکار کند.",
 	"Choices stay hidden until everyone has confirmed.": "انتخاب‌ها تا زمانی که همه تأیید کنند پنهان می‌مانند.",
 	"Production choice locked.": "انتخاب تولید ثبت شد.",
-	"{p0} locks in their production choice": "{p0} انتخاب تولید خود را ثبت می‌کند"
+	"{p0} locks in their production choice": "{p0} انتخاب تولید خود را ثبت می‌کند",
+	"Automatic production choice": "انتخاب خودکار تولید",
+	"Ask each round": "در هر دور بپرس",
+	"Always take maximum Megas": "همیشه بیشترین مگا را بگیر",
+	"Always take singles": "همیشه کارت‌های تکی بگیر",
+	"Automatically submits each round, including this round if you haven't chosen yet.": "در هر دور خودکار تأیید می‌کند؛ اگر هنوز انتخاب نکرده‌اید، این دور را هم شامل می‌شود."
 }

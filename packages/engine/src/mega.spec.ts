@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { MEGA_CARDS } from "./data.js";
-import { applyMove, dropPlayer, initGame } from "./moves.js";
+import { applyMove, dropPlayer, enterMegaPhase, initGame } from "./moves.js";
 import { replay } from "./replay.js";
 import { availableMoves, countingHandSize, handValue, megaEligible } from "./state.js";
-import { currentPlayer, logSlice, stripSecret } from "../wrapper.js";
+import { currentPlayer, logSlice, stripSecret, setPlayerSettings, playerSettings } from "../wrapper.js";
 import type { GameState, PlayerState, ProductionCard } from "./types.js";
 
 /** A game where seat 0 just produced 5 water draws (1 mega group + 1 single). */
@@ -378,4 +378,58 @@ test("mega: old mid-production saves with already-collected hands still complete
 	applyMove(state, { action: "mega", take: { water: 1 } }, 2);
 	assert.notEqual(state.phase, "mega");
 	assert.deepEqual(state.players[0]!.hand, existingHand);
+});
+
+test("mega automation: opt-in choices are sealed and replayed as ordinary moves", () => {
+	const state = simultaneousMegaGame();
+	setPlayerSettings(state, 0, { autoMega: "maximum", autoPassBids: true });
+	setPlayerSettings(state, 1, { autoMega: "singles" });
+	enterMegaPhase(state);
+	assert.equal(state.phase, "mega");
+	assert.equal(currentPlayer(state), 2);
+	assert.deepEqual(state.players[0]!.megaChoice, { water: 1 });
+	assert.deepEqual(state.players[1]!.megaChoice, {});
+	assert.deepEqual(playerSettings(state, 0), { autoMega: "maximum", autoPassBids: true });
+	for (const viewer of [2, undefined]) {
+		const hidden = stripSecret(state, viewer);
+		assert.deepEqual(hidden.players[0]!.settings, {});
+		assert.deepEqual(hidden.players[0]!.megaChoice, {});
+		assert.equal(hidden.players[0]!.hand.length, 0);
+		assert.deepEqual(
+			replay(hidden).players.map((p) => p.hand),
+			hidden.players.map((p) => p.hand)
+		);
+	}
+	applyMove(state, { action: "mega", take: {} }, 2);
+	assert.equal(state.players[0]!.hand.filter((c) => c.m).length, 1);
+	assert.equal(state.players[1]!.hand.filter((c) => c.m).length, 0);
+	assert.deepEqual(
+		replay(state).players.map((p) => p.hand),
+		state.players.map((p) => p.hand)
+	);
+});
+
+test("mega automation: all automated seats advance without an online client", () => {
+	const state = simultaneousMegaGame();
+	for (let seat = 0; seat < 3; seat++) {
+		setPlayerSettings(state, seat, { autoMega: "maximum" });
+	}
+	enterMegaPhase(state);
+	assert.notEqual(state.phase, "mega");
+	assert.equal(state.log.filter((e) => e.type === "move" && e.move.action === "mega").length, 3);
+	assert.ok(state.players.every((p) => p.megaChoice === undefined && p.pendingMega?.length === 0));
+	assert.deepEqual(
+		replay(state).players.map((p) => p.hand),
+		state.players.map((p) => p.hand)
+	);
+});
+
+test("mega automation: invalid, missing and disabled settings leave the choice manual", () => {
+	for (const choice of [undefined, "ask", "invalid", true]) {
+		const state = simultaneousMegaGame();
+		setPlayerSettings(state, 0, { autoMega: choice });
+		enterMegaPhase(state);
+		assert.deepEqual(currentPlayer(state), [0, 1, 2]);
+		assert.equal(playerSettings(state, 0).autoMega, "ask");
+	}
 });

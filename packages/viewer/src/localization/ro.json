@@ -1182,5 +1182,10 @@
 	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "Pasează automat la o licitație când cărțile și reducerile tale nu acoperă oferta necesară. Asta poate dezvălui că mâna ta este prea slabă.",
 	"Choices stay hidden until everyone has confirmed.": "Alegerile rămân ascunse până când toți au confirmat.",
 	"Production choice locked.": "Alegerea producției a fost confirmată.",
-	"{p0} locks in their production choice": "{p0} confirmă alegerea producției"
+	"{p0} locks in their production choice": "{p0} confirmă alegerea producției",
+	"Automatic production choice": "Alegere automată a producției",
+	"Ask each round": "Întreabă în fiecare rundă",
+	"Always take maximum Megas": "Ia întotdeauna numărul maxim de Mega",
+	"Always take singles": "Ia întotdeauna cărți simple",
+	"Automatically submits each round, including this round if you haven't chosen yet.": "Confirmă automat în fiecare rundă, inclusiv aceasta dacă nu ai ales încă."
 }

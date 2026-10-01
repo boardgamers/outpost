@@ -1182,5 +1182,10 @@
 	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "Pas automatisk på en auktion, når dine kort og rabatter ikke kan dække det krævede bud. Det kan afsløre, at din hånd er for svag.",
 	"Choices stay hidden until everyone has confirmed.": "Valgene forbliver skjulte, indtil alle har bekræftet.",
 	"Production choice locked.": "Produktionsvalg bekræftet.",
-	"{p0} locks in their production choice": "{p0} bekræfter sit produktionsvalg"
+	"{p0} locks in their production choice": "{p0} bekræfter sit produktionsvalg",
+	"Automatic production choice": "Automatisk produktionsvalg",
+	"Ask each round": "Spørg hver runde",
+	"Always take maximum Megas": "Tag altid flest mulige Mega",
+	"Always take singles": "Tag altid enkeltkort",
+	"Automatically submits each round, including this round if you haven't chosen yet.": "Bekræfter automatisk hver runde, også denne, hvis du ikke har valgt endnu."
 }

@@ -1182,5 +1182,10 @@
 	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.",
 	"Choices stay hidden until everyone has confirmed.": "Choices stay hidden until everyone has confirmed.",
 	"Production choice locked.": "Production choice locked.",
-	"{p0} locks in their production choice": "{p0} locks in their production choice"
+	"{p0} locks in their production choice": "{p0} locks in their production choice",
+	"Automatic production choice": "Automatic production choice",
+	"Ask each round": "Ask each round",
+	"Always take maximum Megas": "Always take maximum Megas",
+	"Always take singles": "Always take singles",
+	"Automatically submits each round, including this round if you haven't chosen yet.": "Automatically submits each round, including this round if you haven't chosen yet."
 }

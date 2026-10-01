@@ -138,7 +138,10 @@ export function startDevBackend(emitter: ViewerEmitter<GameState, Move>, options
 	});
 
 	emitter.on("update:setting", ({ name, value }) => {
-		if (name === "autoPassBids" && typeof value === "boolean") {
+		if (
+			(name === "autoPassBids" && typeof value === "boolean") ||
+			(name === "autoMega" && ["ask", "maximum", "singles"].includes(String(value)))
+		) {
 			setPlayerSettings(state, human, { ...playerSettings(state, human), [name]: value });
 			emitter.emit("settings", playerSettings(state, human));
 		}

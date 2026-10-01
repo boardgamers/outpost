@@ -1182,5 +1182,10 @@
 	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "Passa automaticamente in un’asta quando le tue carte e i tuoi sconti non coprono l’offerta richiesta. Questo può rivelare che la tua mano è troppo debole.",
 	"Choices stay hidden until everyone has confirmed.": "Le scelte restano nascoste finché tutti non hanno confermato.",
 	"Production choice locked.": "Scelta di produzione confermata.",
-	"{p0} locks in their production choice": "{p0} conferma la propria scelta di produzione"
+	"{p0} locks in their production choice": "{p0} conferma la propria scelta di produzione",
+	"Automatic production choice": "Scelta automatica della produzione",
+	"Ask each round": "Chiedi a ogni round",
+	"Always take maximum Megas": "Prendi sempre il massimo di Mega",
+	"Always take singles": "Prendi sempre carte singole",
+	"Automatically submits each round, including this round if you haven't chosen yet.": "Conferma automaticamente ogni round, incluso questo se non hai ancora scelto."
 }

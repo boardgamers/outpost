@@ -257,6 +257,30 @@ export class ViewerStore {
 		return this.settings?.autoPassBids === true;
 	}
 
+	get autoMega(): string {
+		return typeof this.settings?.autoMega === "string" ? this.settings.autoMega : "ask";
+	}
+
+	setAutoMega(value: string): void {
+		if (this.canEditSettings && ["ask", "maximum", "singles"].includes(value)) {
+			this.commands.updateSetting("autoMega", value);
+		}
+	}
+
+	private automaticMegaRound = "";
+
+	submitAutomaticMega(): void {
+		if (!this.canEditSettings || !this.myMega || !["maximum", "singles"].includes(this.autoMega)) {
+			return;
+		}
+		const key = `${this.playerIndex}:${this.liveState?.round}`;
+		if (this.automaticMegaRound === key) {
+			return;
+		}
+		this.automaticMegaRound = key;
+		this.send({ action: "mega", take: this.autoMega === "maximum" ? this.megaEligible : {} });
+	}
+
 	get canEditSettings(): boolean {
 		return (
 			this.settings !== null &&

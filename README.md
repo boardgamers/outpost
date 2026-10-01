@@ -145,3 +145,5 @@ See <https://docs.boardgamers.space/guide/adding-a-game>.
 AGPL-3.0.
 
 Viewer releases: see [uploading the complete viewer build](docs/viewer-publishing.md).
+
+Players can opt into automatic production choices (maximum Megas or singles) in the action panel. The default asks each round. Automatic choices run on the server, remain sealed until everyone has chosen, and are recorded for replay.

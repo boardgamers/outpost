@@ -1182,5 +1182,10 @@
 	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "Pas automatisch bij een veiling als je kaarten en kortingen het vereiste bod niet dekken. Dit kan verraden dat je hand te zwak is.",
 	"Choices stay hidden until everyone has confirmed.": "De keuzes blijven verborgen totdat iedereen heeft bevestigd.",
 	"Production choice locked.": "Productiekeuze bevestigd.",
-	"{p0} locks in their production choice": "{p0} bevestigt de productiekeuze"
+	"{p0} locks in their production choice": "{p0} bevestigt de productiekeuze",
+	"Automatic production choice": "Automatische productiekeuze",
+	"Ask each round": "Elke ronde vragen",
+	"Always take maximum Megas": "Altijd het maximale aantal Mega’s nemen",
+	"Always take singles": "Altijd losse kaarten nemen",
+	"Automatically submits each round, including this round if you haven't chosen yet.": "Bevestigt automatisch elke ronde, ook deze als je nog niet hebt gekozen."
 }

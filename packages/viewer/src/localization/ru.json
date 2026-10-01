@@ -1182,5 +1182,10 @@
 	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "Автоматически пасовать на аукционе, если ваших карт и скидок недостаточно для требуемой ставки. Это может выдать слабость вашей руки.",
 	"Choices stay hidden until everyone has confirmed.": "Выбор остаётся скрытым, пока все его не подтвердят.",
 	"Production choice locked.": "Выбор производства подтверждён.",
-	"{p0} locks in their production choice": "{p0} подтверждает выбор производства"
+	"{p0} locks in their production choice": "{p0} подтверждает выбор производства",
+	"Automatic production choice": "Автоматический выбор производства",
+	"Ask each round": "Спрашивать каждый раунд",
+	"Always take maximum Megas": "Всегда брать максимум Мега",
+	"Always take singles": "Всегда брать обычные карты",
+	"Automatically submits each round, including this round if you haven't chosen yet.": "Подтверждает автоматически каждый раунд, включая текущий, если вы ещё не выбрали."
 }

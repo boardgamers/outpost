@@ -152,6 +152,15 @@ export function enterMegaPhase(state: GameState): void {
 	}
 	if (anyPending) {
 		state.phase = "mega";
+		if (!replayMode) {
+			for (const seat of state.purchaseOrder) {
+				const player = state.players[seat]!;
+				const choice = player.settings?.autoMega;
+				if (needsMegaChoice(player) && (choice === "maximum" || choice === "singles")) {
+					applyMove(state, { action: "mega", take: choice === "maximum" ? megaEligible(state, player) : {} }, seat);
+				}
+			}
+		}
 	} else {
 		enterDiscardPhase(state);
 	}

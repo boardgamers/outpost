@@ -275,6 +275,7 @@ export function stripSecret(data: GameState, player?: number): GameState {
 			}
 			return {
 				...p,
+				settings: {},
 				...(p.megaChoice !== undefined ? { megaChoice: {} } : {}),
 				hand: p.hand.map((c): ProductionCard => ({ t: c.t, v: c.m ? c.v : -1, ...(c.m ? { m: true } : {}) })),
 				pendingMega: p.pendingMega?.map(
@@ -380,14 +381,20 @@ export function setPlayerSettings(data: GameState, player: number, settings: Rec
 	if (target) {
 		// The game-server already whitelisted and typed these against the declared
 		// settings; keep only the ones this engine understands.
-		target.settings = { autoPassBids: settings.autoPassBids === true };
+		target.settings = {
+			autoPassBids: settings.autoPassBids === true,
+			autoMega: settings.autoMega === "maximum" || settings.autoMega === "singles" ? settings.autoMega : "ask",
+		};
 	}
 	return data;
 }
 
 export function playerSettings(data: GameState, player: number): Record<string, unknown> {
 	// Optional chain: states saved before the settings field existed lack it.
-	return { autoPassBids: data.players[player]?.settings?.autoPassBids === true };
+	return {
+		autoPassBids: data.players[player]?.settings?.autoPassBids === true,
+		autoMega: data.players[player]?.settings?.autoMega ?? "ask",
+	};
 }
 
 // Every state must be persisted: the platform keeps no memory between requests

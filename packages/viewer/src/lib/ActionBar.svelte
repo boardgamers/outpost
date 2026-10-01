@@ -20,6 +20,9 @@
 	let { store }: Props = $props();
 
 	const state = $derived(store.state);
+	$effect(() => {
+		store.submitAutomaticMega();
+	});
 	const me = $derived(store.me);
 	const pending = $derived(store.pending);
 	const staged = $derived(
@@ -294,7 +297,124 @@
 	</div>
 {/if}
 
+{#if state && !state.ended && !store.replay.active && me && store.settings !== null}
+	<div class="automatic-settings">
+		<button
+			class="auto-pass"
+			type="button"
+			role="switch"
+			name="autoPassBids"
+			aria-checked={store.autoPassBids}
+			onclick={() => store.setAutoPassBids(!store.autoPassBids)}
+			disabled={!store.canEditSettings}
+			title="Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak."
+		>
+			<span class="auto-pass-track" aria-hidden="true"><span class="auto-pass-thumb"></span></span>
+			<span class="auto-pass-label">Pass auctions I can't afford</span>
+		</button>
+		<label class="mega-setting">
+			<span>Automatic production choice</span>
+			<select
+				value={store.autoMega}
+				onchange={(event) => store.setAutoMega(event.currentTarget.value)}
+				disabled={!store.canEditSettings}
+			>
+				<option value="ask">Ask each round</option>
+				<option value="maximum">Always take maximum Megas</option>
+				<option value="singles">Always take singles</option>
+			</select>
+		</label>
+		<p class="automation-hint">Automatically submits each round, including this round if you haven't chosen yet.</p>
+	</div>
+{/if}
+
 <style>
+	.automatic-settings {
+		background: var(--bg-panel);
+		border: 1px solid var(--line);
+		padding: 8px 12px;
+		display: grid;
+		gap: 6px;
+	}
+	.mega-setting {
+		display: grid;
+		gap: 6px;
+		color: var(--text-mid);
+		font-size: 12px;
+	}
+	.mega-setting select {
+		color-scheme: dark;
+		color: var(--text);
+		background: var(--bg-panel);
+		border: 1px solid var(--line);
+		border-radius: var(--radius);
+		padding: 6px 8px;
+		font: inherit;
+		width: 100%;
+		min-width: 0;
+		min-height: 36px;
+	}
+	.automation-hint {
+		margin: 0;
+		color: var(--text-dim);
+		font-size: 11px;
+		line-height: 1.4;
+	}
+	.auto-pass {
+		--auto-pass-active: color-mix(in srgb, var(--gold) 35%, var(--text-mid));
+		display: flex;
+		align-items: center;
+		align-self: flex-start;
+		gap: 8px;
+		min-height: 40px;
+		max-width: 100%;
+		padding: 6px 9px;
+		font-size: 12px;
+		line-height: 1.3;
+		text-align: start;
+		color: var(--text-mid);
+		border-color: transparent;
+		background: transparent;
+		cursor: pointer;
+		touch-action: manipulation;
+	}
+	.auto-pass:hover:not(:disabled) {
+		border-color: transparent;
+		background: color-mix(in srgb, var(--text) 4%, transparent);
+	}
+	.auto-pass:focus-visible {
+		outline: 2px solid var(--gold);
+		outline-offset: 2px;
+	}
+	.auto-pass-track {
+		display: flex;
+		align-items: center;
+		flex: 0 0 30px;
+		height: 18px;
+		padding: 2px;
+		border: 1px solid var(--text-dim);
+		border-radius: 9px;
+		background: var(--line);
+	}
+	.auto-pass-thumb {
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		background: var(--text-mid);
+	}
+	.auto-pass[aria-checked="true"] .auto-pass-track {
+		justify-content: flex-end;
+		border-color: color-mix(in srgb, var(--auto-pass-active) 55%, var(--line));
+		background: color-mix(in srgb, var(--auto-pass-active) 15%, var(--bg-panel));
+	}
+	.auto-pass[aria-checked="true"] .auto-pass-thumb {
+		background: var(--auto-pass-active);
+	}
+	.auto-pass:disabled {
+		cursor: default;
+		opacity: 0.6;
+	}
+
 	.actionbar {
 		box-shadow: var(--panel-bevel);
 		background: var(--bg-panel);

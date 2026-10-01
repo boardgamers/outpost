@@ -1182,5 +1182,10 @@
 	"Automatically pass an auction when your cards and discounts cannot cover the required bid. This can reveal that your hand is too weak.": "Automatycznie pasuj w licytacji, gdy twoje karty i zniżki nie wystarczają na wymaganą ofertę. Może to ujawnić, że twoja ręka jest zbyt słaba.",
 	"Choices stay hidden until everyone has confirmed.": "Wybory pozostają ukryte, dopóki wszyscy ich nie zatwierdzą.",
 	"Production choice locked.": "Wybór produkcji zatwierdzony.",
-	"{p0} locks in their production choice": "{p0} zatwierdza wybór produkcji"
+	"{p0} locks in their production choice": "{p0} zatwierdza wybór produkcji",
+	"Automatic production choice": "Automatyczny wybór produkcji",
+	"Ask each round": "Pytaj w każdej rundzie",
+	"Always take maximum Megas": "Zawsze bierz maksymalną liczbę Mega",
+	"Always take singles": "Zawsze bierz pojedyncze karty",
+	"Automatically submits each round, including this round if you haven't chosen yet.": "Zatwierdza automatycznie w każdej rundzie, również bieżącej, jeśli jeszcze nie wybrano."
 }
