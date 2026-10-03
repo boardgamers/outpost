@@ -1188,5 +1188,12 @@
 	"Always take maximum Megas": "Ia întotdeauna numărul maxim de Mega",
 	"Always take singles": "Ia întotdeauna cărți simple",
 	"Automatically submits each round, including this round if you haven't chosen yet.": "Confirmă automat în fiecare rundă, inclusiv aceasta dacă nu ai ales încă.",
-	"Megas: ask each round": "Mega: întreabă în fiecare rundă"
+	"Megas: ask each round": "Mega: întreabă în fiecare rundă",
+	"Your sealed bid": "Oferta ta secretă",
+	"Your bid": "Oferta ta",
+	"Min ◈ {p0} · Max ◈ {p1}": "Min. ◈ {p0} · Max. ◈ {p1}",
+	"{p0} pending": "În așteptare: {p0}",
+	"Discount ◈ {p0}": "Reducere ◈ {p0}",
+	"Bid submitted": "Ofertă trimisă",
+	"Auction details": "Detaliile licitației"
 }

@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { KICKER_SPECS, UPGRADE_SPECS, type GameState } from "outpost-engine";
-	import UpgradeBadges from "./UpgradeBadges.svelte";
 	import CardEffect from "./CardEffect.svelte";
 	import { KICKER_EFFECTS, UPGRADE_EFFECTS, type ViewerStore } from "./store.svelte";
 
@@ -24,10 +23,14 @@
 		auction && auction.upgrade && meIndex !== undefined ? store.discountOf(meIndex, auction.upgrade) : 0
 	);
 	const due = $derived(store.auctionDue());
-	const fast = $derived(store.fastBid);
+	const fast = $derived(!!auction?.bids);
 	const minBid = $derived(fast ? (spec?.price ?? 0) + 1 : (auction?.highBid ?? 0) + 1);
 	const maxBid = $derived(store.maxBid);
-	const pendingNames = $derived(store.fastBidPending.map(nameOf).join(", "));
+	const pendingSeats = $derived(
+		state.players.flatMap((player, seat) => (!player.dropped && auction?.bids?.[seat] === undefined ? [seat] : []))
+	);
+	const pendingNames = $derived(pendingSeats.map(nameOf).join(", "));
+	const validBid = $derived(Number.isFinite(store.bidAmount) && store.bidAmount >= minBid && store.bidAmount <= maxBid);
 
 	$effect(() => {
 		if (store.myBidTurn) {
@@ -38,269 +41,271 @@
 
 {#if auction && spec}
 	<div class="banner" data-tutorial="auction">
-		<div class="block">
-			<span class="label">On the block</span>
-			<span class="uname">{spec.name}</span>
-			<span class="uvp">{spec.vp} VP · list ◈ {spec.price}</span>
-			{#if auction.upgrade}
-				<UpgradeBadges upgrade={auction.upgrade} />
-			{/if}
-			<span class="ueffect"><CardEffect locale={store.preferences.locale} tokens={effectTokens} /></span>
-		</div>
-		<div class="status">
-			{#if fast && state.phase === "auction"}
-				<div class="bid">
-					Sealed bids — <strong>{store.fastBidPending.length}</strong> still to bid{#if pendingNames}
-						: {pendingNames}{/if}
+		<div class="auction-layout">
+			<div class="block">
+				<div class="eyebrow">
+					<span class="label">
+						{#if fast}
+							<svg width="12" height="14" viewBox="0 0 12 14" fill="none" stroke="currentColor" aria-hidden="true">
+								<rect x="1.5" y="6" width="9" height="6.5" rx="1" />
+								<path d="M3 6V4a3 3 0 0 1 6 0v2M6 8.5v2" />
+							</svg>
+							<span>Sealed bids</span>
+						{:else}
+							<span>Auction</span>
+						{/if}
+					</span>
+					{#if fast && state.phase === "auction"}<span class="pending">{`${pendingSeats.length} pending`}</span>{/if}
 				</div>
-				{#if store.myBidTurn}
-					{#if maxBid < minBid}
-						<div class="controls">
-							<span class="cantbid">Minimum bid is ◈ {minBid}; your maximum is ◈ {maxBid}.</span>
-							<button class="confirm" onclick={() => store.passBid()}>Pass</button>
-						</div>
+				<div class="card-heading">
+					<span class="uname">{spec.name}</span>
+					<span class="uvp">{spec.vp} VP · list ◈ {spec.price}</span>
+				</div>
+				<div class="ueffect"><CardEffect locale={store.preferences.locale} tokens={effectTokens} /></div>
+			</div>
+			<div class="status">
+				{#if !fast || state.phase !== "auction"}
+					<div class="bid">
+						High bid <strong>◈ {auction.highBid}</strong> by
+						<strong translate="no">{nameOf(auction.highBidder)}</strong>
+					</div>
+				{/if}
+				{#if state.phase === "auction"}
+					{#if store.myBidTurn}
+						{#if maxBid < minBid}
+							<div class="unaffordable">
+								<span class="cantbid">Minimum bid is ◈ {minBid}; your maximum is ◈ {maxBid}.</span>
+								<button class="confirm" onclick={() => store.passBid()}>Pass</button>
+							</div>
+						{:else}
+							<div class="bid-heading">
+								<label for="auction-bid">{fast ? "Your sealed bid" : "Your bid"}</label>
+								<span class="limits">{`Min ◈ ${minBid} · Max ◈ ${maxBid}`}</span>
+							</div>
+							<div class="controls">
+								<div class="stepper">
+									<button
+										onclick={() => (store.bidAmount = Math.max(minBid, store.bidAmount - 1))}
+										disabled={store.bidAmount <= minBid}>−1</button
+									>
+									<input
+										id="auction-bid"
+										aria-label="Bid before discount"
+										type="number"
+										inputmode="numeric"
+										min={minBid}
+										max={maxBid}
+										bind:value={store.bidAmount}
+										onchange={() => store.setBidAmount(store.bidAmount)}
+									/>
+									<button
+										onclick={() => (store.bidAmount = Math.min(maxBid, store.bidAmount + 1))}
+										disabled={store.bidAmount >= maxBid}>+1</button
+									>
+									<button
+										onclick={() => (store.bidAmount = Math.min(maxBid, store.bidAmount + 5))}
+										disabled={store.bidAmount >= maxBid}>+5</button
+									>
+								</div>
+								<div class="actions">
+									<button class="pass" onclick={() => store.passBid()}>Pass</button>
+									<button class="confirm" disabled={!validBid} onclick={() => store.confirmBid()}
+										>Bid ◈ {store.bidAmount}</button
+									>
+								</div>
+							</div>
+							{#if discount > 0}
+								<div class="bid-cost">
+									<span>{`Discount ◈ ${discount}`}</span>
+									<span class="net-cost"
+										><span>{fast ? "Pay at most" : "Pay"}</span>
+										<strong>◈ {validBid ? Math.max(0, store.bidAmount - discount) : "—"}</strong></span
+									>
+								</div>
+							{/if}
+						{/if}
+					{:else if fast}
+						{#if meIndex !== undefined && auction.bids?.[meIndex] !== undefined}
+							<div class="turn">Bid submitted</div>
+						{/if}
+						<div class="waiting">Waiting for {pendingNames} to bid…</div>
 					{:else}
-						<div class="turn">Your sealed bid (hidden until everyone has bid):</div>
-						<div class="controls">
-							<button
-								onclick={() => (store.bidAmount = Math.max(minBid, store.bidAmount - 1))}
-								disabled={store.bidAmount <= minBid}>−1</button
-							>
-							<input
-								aria-label="Bid before discount"
-								type="number"
-								min={minBid}
-								max={maxBid}
-								bind:value={store.bidAmount}
-								onchange={() => store.setBidAmount(store.bidAmount)}
-							/>
-							<button
-								onclick={() => (store.bidAmount = Math.min(maxBid, store.bidAmount + 1))}
-								disabled={store.bidAmount >= maxBid}>+1</button
-							>
-							<button
-								onclick={() => (store.bidAmount = Math.min(maxBid, store.bidAmount + 5))}
-								disabled={store.bidAmount >= maxBid}>+5</button
-							>
-							<button
-								class="confirm"
-								disabled={store.bidAmount < minBid || store.bidAmount > maxBid}
-								onclick={() => store.confirmBid()}>Bid ◈ {store.bidAmount}</button
-							>
-							<button class="pass" onclick={() => store.passBid()}>Pass</button>
-						</div>
-						<div class="bid-cost">
-							<span>Bid <strong>◈ {store.bidAmount}</strong></span>
-							{#if discount > 0}<span>− discount <strong>◈ {discount}</strong></span>{/if}
-							<strong class="net-cost"
-								>= {fast ? "pay at most" : "pay"} ◈ {Math.max(0, store.bidAmount - discount)}</strong
-							>
-						</div>
-						<div class="hint">
-							<span class="maxline">
-								You hold ◈ {store.myHandValue}
-								{#if discount > 0}
-									<span class="plusdisc" title="your discount on this upgrade">+{discount}</span>
-								{/if}
-								<span class="maxeq">= max bid <strong>◈ {maxBid}</strong></span>
-							</span>
-							Highest bid wins at second-highest + 1; ties go to the earliest in turn order.
-						</div>
+						<div class="waiting">Waiting for {nameOf(auction.activeBidder)} to bid…</div>
 					{/if}
 				{:else}
-					<div class="turn">Your bid is in — waiting for the rest…</div>
+					<div class="turn">
+						{#if store.myPayment}
+							You won: select hand cards worth at least ◈ {due} and confirm below (bid {auction.highBid}{#if discount > 0}{` − ${discount} discount`}{/if}).
+						{:else}
+							Waiting for {nameOf(auction.highBidder)} to pay…
+						{/if}
+					</div>
 				{/if}
-			{:else}
-				<div class="bid">
-					High bid <strong>◈ {auction.highBid}</strong> by <strong>{nameOf(auction.highBidder)}</strong>
-				</div>
-			{/if}
-			{#if !fast && state.phase === "auction"}
-				<div class="turn">
-					{#if store.myBidTurn}
-						Your bid: raise to at least ◈ {minBid} or pass.
-					{:else}
-						Waiting for {nameOf(auction.activeBidder)} to bid…
-					{/if}
-				</div>
-				{#if store.myBidTurn}
-					{#if maxBid < minBid}
-						<div class="controls">
-							<span class="cantbid">You can't beat the high bid (your max is ◈ {maxBid}).</span>
-							<button class="confirm" onclick={() => store.passBid()}>Pass</button>
-						</div>
-					{:else}
-						<div class="controls">
-							<button
-								onclick={() => (store.bidAmount = Math.max(minBid, store.bidAmount - 1))}
-								disabled={store.bidAmount <= minBid}>−1</button
-							>
-							<input
-								aria-label="Bid before discount"
-								type="number"
-								min={minBid}
-								max={maxBid}
-								bind:value={store.bidAmount}
-								onchange={() => store.setBidAmount(store.bidAmount)}
-							/>
-							<button
-								onclick={() => (store.bidAmount = Math.min(maxBid, store.bidAmount + 1))}
-								disabled={store.bidAmount >= maxBid}>+1</button
-							>
-							<button
-								onclick={() => (store.bidAmount = Math.min(maxBid, store.bidAmount + 5))}
-								disabled={store.bidAmount >= maxBid}>+5</button
-							>
-							<button
-								class="confirm"
-								disabled={store.bidAmount < minBid || store.bidAmount > maxBid}
-								onclick={() => store.confirmBid()}>Bid ◈ {store.bidAmount}</button
-							>
-							<button class="pass" onclick={() => store.passBid()}>Pass</button>
-						</div>
-						<div class="bid-cost">
-							<span>Bid <strong>◈ {store.bidAmount}</strong></span>
-							{#if discount > 0}<span>− discount <strong>◈ {discount}</strong></span>{/if}
-							<strong class="net-cost"
-								>= {fast ? "pay at most" : "pay"} ◈ {Math.max(0, store.bidAmount - discount)}</strong
-							>
-						</div>
-						<div class="hint">
-							<span class="maxline">
-								You hold ◈ {store.myHandValue}
-								{#if discount > 0}
-									<span class="plusdisc" title="your discount on this upgrade">+{discount}</span>
-								{/if}
-								<span class="maxeq">= max bid <strong>◈ {maxBid}</strong></span>
-							</span>
-							Cards must cover the payment; excess card value is not returned.
-						</div>
-					{/if}
-				{/if}
-			{:else if state.phase !== "auction"}
-				<div class="turn">
-					{#if store.myPayment}
-						You won: select hand cards worth at least ◈ {due} and confirm below (bid {auction.highBid}{#if discount > 0}{` − ${discount} discount`}{/if}).
-					{:else}
-						Waiting for {nameOf(auction.highBidder)} to pay…
-					{/if}
-				</div>
-			{/if}
+				<details class="auction-details">
+					<summary>Auction details</summary>
+					<div class="detail-copy">
+						{#if fast}
+							<p>Choices stay hidden until everyone has confirmed.</p>
+							<p>Highest bid wins at second-highest + 1; ties go to the earliest in turn order.</p>
+							{#if store.myBidTurn}<p>Waiting for {pendingNames} to bid…</p>{/if}
+						{/if}
+						{#if meIndex !== undefined}
+							<p>You hold ◈ {store.myHandValue}</p>
+						{/if}
+						<p>Cards must cover the payment; excess card value is not returned.</p>
+					</div>
+				</details>
+			</div>
 		</div>
 	</div>
 {/if}
 
 <style>
+	.banner {
+		container-type: inline-size;
+		background: linear-gradient(160deg, color-mix(in srgb, var(--gold) 8%, var(--bg-panel)), var(--bg-panel));
+		border: 1px solid color-mix(in srgb, var(--gold) 55%, var(--line));
+		border-left: 3px solid var(--gold);
+		border-radius: var(--radius);
+		padding: 12px;
+	}
+	.auction-layout {
+		display: grid;
+		gap: 12px;
+	}
+	.block,
+	.status {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		gap: 6px;
+	}
+	.status {
+		border-top: 1px solid var(--line);
+		padding-top: 10px;
+	}
+	.eyebrow,
+	.card-heading,
+	.bid-heading,
 	.bid-cost {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 10px;
-		font-size: 14px;
-		padding: 8px 10px;
-		background: var(--bg-panel);
-		border-radius: 2px;
-	}
-	.net-cost {
-		color: var(--gold);
-		font-size: 16px;
-	}
-
-	.banner {
-		display: flex;
-		gap: 18px;
-		align-items: flex-start;
-		flex-wrap: wrap;
-		background: linear-gradient(160deg, color-mix(in srgb, var(--gold) 14%, var(--bg-panel)), var(--bg-panel));
-		border: 1px solid var(--gold);
-		border-radius: var(--radius);
-		padding: 12px 16px;
-		animation: glowPulse 2.5s ease-in-out infinite;
-	}
-	.block {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-		min-width: 170px;
+		justify-content: space-between;
+		gap: 4px 12px;
 	}
 	.label {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
 		font-size: 10px;
 		font-weight: 800;
-		letter-spacing: 0.1em;
+		letter-spacing: 0.08em;
 		text-transform: uppercase;
-		color: var(--text-dim);
+		color: var(--gold);
+	}
+	.pending,
+	.limits {
+		font-size: 11px;
+		color: var(--text-mid);
+		font-variant-numeric: tabular-nums;
 	}
 	.uname {
-		font-size: 17px;
+		font-size: 18px;
 		font-weight: 800;
-		color: var(--gold);
+		color: var(--text);
 	}
 	.uvp {
 		font-size: 12px;
-		font-weight: 700;
-		color: var(--text);
-	}
-	.ueffect {
-		font-size: 11.5px;
 		color: var(--text-mid);
-		max-width: 260px;
+		white-space: nowrap;
 	}
-	.status {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-		flex: 1;
-		min-width: 220px;
+	.ueffect,
+	.bid,
+	.waiting,
+	.cantbid {
+		font-size: 12px;
+		color: var(--text-mid);
+		overflow-wrap: anywhere;
 	}
-	.bid {
-		font-size: 14px;
-	}
-	.turn {
+	.turn,
+	.bid-heading label {
 		font-size: 13px;
-		color: var(--text);
 		font-weight: 600;
 	}
 	.controls {
-		display: flex;
-		gap: 6px;
-		align-items: center;
-		flex-wrap: wrap;
+		display: grid;
+		gap: 7px;
 	}
-	.controls input {
-		width: 70px;
+	.stepper {
+		display: grid;
+		grid-template-columns: 44px minmax(50px, 1fr) 44px 44px;
+		gap: 6px;
+	}
+	.controls button,
+	.unaffordable button,
+	.stepper input {
+		min-height: 44px;
+		padding: 6px 10px;
+	}
+	.stepper input {
+		width: 100%;
+		min-width: 0;
+		text-align: center;
+		font-size: 16px;
+		font-weight: 700;
+		font-variant-numeric: tabular-nums;
+	}
+	.actions {
+		display: grid;
+		grid-template-columns: minmax(70px, 0.6fr) minmax(0, 1fr);
+		gap: 6px;
 	}
 	.confirm {
 		border-color: var(--gold);
+		background: color-mix(in srgb, var(--gold) 12%, var(--bg-elevated));
 		font-weight: 700;
 	}
 	.pass {
-		color: var(--text-dim);
-	}
-	.cantbid {
-		font-size: 12.5px;
 		color: var(--text-mid);
 	}
-	.hint {
+	.unaffordable {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
+	.bid-cost {
+		font-size: 12px;
+		color: var(--text-mid);
+	}
+	.net-cost {
+		color: var(--gold);
+	}
+	.auction-details {
 		font-size: 11.5px;
 		color: var(--text-dim);
 	}
-	.maxline {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		margin-right: 4px;
+	.auction-details summary {
+		width: fit-content;
+		padding: 6px 0;
+		cursor: pointer;
 	}
-	.plusdisc {
-		font-weight: 800;
-		color: var(--microbiotics);
-		background: color-mix(in srgb, var(--microbiotics) 16%, transparent);
-		border-radius: 2px;
-		padding: 0 4px;
-	}
-	.maxeq {
+	.detail-copy {
 		color: var(--text-mid);
 	}
-	.maxeq strong {
-		color: var(--gold);
+	.detail-copy p {
+		margin: 4px 0;
+	}
+	@container (min-width: 620px) {
+		.auction-layout {
+			grid-template-columns: minmax(0, 1fr) minmax(300px, 1fr);
+			gap: 20px;
+		}
+		.status {
+			border-top: 0;
+			border-left: 1px solid var(--line);
+			padding-top: 0;
+			padding-left: 20px;
+		}
 	}
 </style>

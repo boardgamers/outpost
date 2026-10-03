@@ -1188,5 +1188,12 @@
 	"Always take maximum Megas": "Luôn lấy số Mega tối đa",
 	"Always take singles": "Luôn lấy thẻ thường",
 	"Automatically submits each round, including this round if you haven't chosen yet.": "Tự động xác nhận mỗi vòng, kể cả vòng này nếu bạn chưa chọn.",
-	"Megas: ask each round": "Mega: hỏi mỗi vòng"
+	"Megas: ask each round": "Mega: hỏi mỗi vòng",
+	"Your sealed bid": "Giá đấu kín của bạn",
+	"Your bid": "Giá đấu của bạn",
+	"Min ◈ {p0} · Max ◈ {p1}": "Tối thiểu ◈ {p0} · Tối đa ◈ {p1}",
+	"{p0} pending": "Còn chờ: {p0}",
+	"Discount ◈ {p0}": "Giảm giá ◈ {p0}",
+	"Bid submitted": "Đã gửi giá đấu",
+	"Auction details": "Chi tiết đấu giá"
 }

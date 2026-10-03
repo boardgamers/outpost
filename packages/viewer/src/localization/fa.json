@@ -1188,5 +1188,12 @@
 	"Always take maximum Megas": "همیشه بیشترین مگا را بگیر",
 	"Always take singles": "همیشه کارت‌های تکی بگیر",
 	"Automatically submits each round, including this round if you haven't chosen yet.": "در هر دور خودکار تأیید می‌کند؛ اگر هنوز انتخاب نکرده‌اید، این دور را هم شامل می‌شود.",
-	"Megas: ask each round": "مگا: در هر دور بپرس"
+	"Megas: ask each round": "مگا: در هر دور بپرس",
+	"Your sealed bid": "پیشنهاد مخفی شما",
+	"Your bid": "پیشنهاد شما",
+	"Min ◈ {p0} · Max ◈ {p1}": "حداقل ◈ {p0} · حداکثر ◈ {p1}",
+	"{p0} pending": "{p0} در انتظار",
+	"Discount ◈ {p0}": "تخفیف ◈ {p0}",
+	"Bid submitted": "پیشنهاد ثبت شد",
+	"Auction details": "جزئیات حراج"
 }

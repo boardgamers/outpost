@@ -1188,5 +1188,12 @@
 	"Always take maximum Megas": "Always take maximum Megas",
 	"Always take singles": "Always take singles",
 	"Automatically submits each round, including this round if you haven't chosen yet.": "Automatically submits each round, including this round if you haven't chosen yet.",
-	"Megas: ask each round": "Megas: ask each round"
+	"Megas: ask each round": "Megas: ask each round",
+	"Your sealed bid": "Your sealed bid",
+	"Your bid": "Your bid",
+	"Min ◈ {p0} · Max ◈ {p1}": "Min ◈ {p0} · Max ◈ {p1}",
+	"{p0} pending": "{p0} pending",
+	"Discount ◈ {p0}": "Discount ◈ {p0}",
+	"Bid submitted": "Bid submitted",
+	"Auction details": "Auction details"
 }

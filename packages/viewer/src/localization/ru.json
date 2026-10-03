@@ -1188,5 +1188,12 @@
 	"Always take maximum Megas": "Всегда брать максимум Мега",
 	"Always take singles": "Всегда брать обычные карты",
 	"Automatically submits each round, including this round if you haven't chosen yet.": "Подтверждает автоматически каждый раунд, включая текущий, если вы ещё не выбрали.",
-	"Megas: ask each round": "Мега: спрашивать каждый раунд"
+	"Megas: ask each round": "Мега: спрашивать каждый раунд",
+	"Your sealed bid": "Ваша закрытая ставка",
+	"Your bid": "Ваша ставка",
+	"Min ◈ {p0} · Max ◈ {p1}": "Мин. ◈ {p0} · Макс. ◈ {p1}",
+	"{p0} pending": "Ожидается: {p0}",
+	"Discount ◈ {p0}": "Скидка ◈ {p0}",
+	"Bid submitted": "Ставка отправлена",
+	"Auction details": "Подробности аукциона"
 }

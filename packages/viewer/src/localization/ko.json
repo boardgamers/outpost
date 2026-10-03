@@ -1188,5 +1188,12 @@
 	"Always take maximum Megas": "항상 메가 최대 수량 선택",
 	"Always take singles": "항상 일반 카드 선택",
 	"Automatically submits each round, including this round if you haven't chosen yet.": "아직 선택하지 않았다면 이번 라운드를 포함하여 매 라운드 자동으로 확정합니다.",
-	"Megas: ask each round": "메가: 매 라운드 묻기"
+	"Megas: ask each round": "메가: 매 라운드 묻기",
+	"Your sealed bid": "내 비공개 입찰",
+	"Your bid": "내 입찰",
+	"Min ◈ {p0} · Max ◈ {p1}": "최소 ◈ {p0} · 최대 ◈ {p1}",
+	"{p0} pending": "{p0}명 대기 중",
+	"Discount ◈ {p0}": "할인 ◈ {p0}",
+	"Bid submitted": "입찰 제출 완료",
+	"Auction details": "경매 안내"
 }

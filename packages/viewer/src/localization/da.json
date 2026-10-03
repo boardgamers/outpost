@@ -1188,5 +1188,12 @@
 	"Always take maximum Megas": "Tag altid flest mulige Mega",
 	"Always take singles": "Tag altid enkeltkort",
 	"Automatically submits each round, including this round if you haven't chosen yet.": "Bekræfter automatisk hver runde, også denne, hvis du ikke har valgt endnu.",
-	"Megas: ask each round": "Mega: spørg hver runde"
+	"Megas: ask each round": "Mega: spørg hver runde",
+	"Your sealed bid": "Dit hemmelige bud",
+	"Your bid": "Dit bud",
+	"Min ◈ {p0} · Max ◈ {p1}": "Min. ◈ {p0} · Maks. ◈ {p1}",
+	"{p0} pending": "{p0} mangler",
+	"Discount ◈ {p0}": "Rabat ◈ {p0}",
+	"Bid submitted": "Bud afgivet",
+	"Auction details": "Auktionsdetaljer"
 }

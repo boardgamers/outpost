@@ -1188,5 +1188,12 @@
 	"Always take maximum Megas": "Πάντα ο μέγιστος αριθμός Mega",
 	"Always take singles": "Πάντα μονές κάρτες",
 	"Automatically submits each round, including this round if you haven't chosen yet.": "Υποβάλλει αυτόματα κάθε γύρο, συμπεριλαμβανομένου αυτού αν δεν έχεις επιλέξει ακόμα.",
-	"Megas: ask each round": "Mega: ερώτηση κάθε γύρο"
+	"Megas: ask each round": "Mega: ερώτηση κάθε γύρο",
+	"Your sealed bid": "Η κρυφή προσφορά σου",
+	"Your bid": "Η προσφορά σου",
+	"Min ◈ {p0} · Max ◈ {p1}": "Ελάχ. ◈ {p0} · Μέγ. ◈ {p1}",
+	"{p0} pending": "Σε αναμονή: {p0}",
+	"Discount ◈ {p0}": "Έκπτωση ◈ {p0}",
+	"Bid submitted": "Η προσφορά υποβλήθηκε",
+	"Auction details": "Λεπτομέρειες δημοπρασίας"
 }

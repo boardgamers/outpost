@@ -1188,5 +1188,12 @@
 	"Always take maximum Megas": "हमेशा अधिकतम मेगा लें",
 	"Always take singles": "हमेशा सामान्य कार्ड लें",
 	"Automatically submits each round, including this round if you haven't chosen yet.": "हर दौर में अपने आप जमा करता है, इस दौर में भी यदि आपने अभी तक नहीं चुना है।",
-	"Megas: ask each round": "मेगा: हर दौर में पूछें"
+	"Megas: ask each round": "मेगा: हर दौर में पूछें",
+	"Your sealed bid": "आपकी गुप्त बोली",
+	"Your bid": "आपकी बोली",
+	"Min ◈ {p0} · Max ◈ {p1}": "न्यूनतम ◈ {p0} · अधिकतम ◈ {p1}",
+	"{p0} pending": "{p0} बाकी",
+	"Discount ◈ {p0}": "छूट ◈ {p0}",
+	"Bid submitted": "बोली भेजी गई",
+	"Auction details": "नीलामी का विवरण"
 }

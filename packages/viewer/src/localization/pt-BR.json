@@ -1188,5 +1188,12 @@
 	"Always take maximum Megas": "Sempre pegar o máximo de Megas",
 	"Always take singles": "Sempre pegar cartas simples",
 	"Automatically submits each round, including this round if you haven't chosen yet.": "Confirma automaticamente a cada rodada, incluindo esta se você ainda não escolheu.",
-	"Megas: ask each round": "Megas: perguntar a cada rodada"
+	"Megas: ask each round": "Megas: perguntar a cada rodada",
+	"Your sealed bid": "Seu lance secreto",
+	"Your bid": "Seu lance",
+	"Min ◈ {p0} · Max ◈ {p1}": "Mín. ◈ {p0} · Máx. ◈ {p1}",
+	"{p0} pending": "{p0} pendentes",
+	"Discount ◈ {p0}": "Desconto ◈ {p0}",
+	"Bid submitted": "Lance enviado",
+	"Auction details": "Detalhes do leilão"
 }

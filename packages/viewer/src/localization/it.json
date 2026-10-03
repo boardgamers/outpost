@@ -1188,5 +1188,12 @@
 	"Always take maximum Megas": "Prendi sempre il massimo di Mega",
 	"Always take singles": "Prendi sempre carte singole",
 	"Automatically submits each round, including this round if you haven't chosen yet.": "Conferma automaticamente ogni round, incluso questo se non hai ancora scelto.",
-	"Megas: ask each round": "Mega: chiedi a ogni round"
+	"Megas: ask each round": "Mega: chiedi a ogni round",
+	"Your sealed bid": "La tua offerta segreta",
+	"Your bid": "La tua offerta",
+	"Min ◈ {p0} · Max ◈ {p1}": "Min. ◈ {p0} · Max. ◈ {p1}",
+	"{p0} pending": "In attesa: {p0}",
+	"Discount ◈ {p0}": "Sconto ◈ {p0}",
+	"Bid submitted": "Offerta inviata",
+	"Auction details": "Dettagli dell’asta"
 }

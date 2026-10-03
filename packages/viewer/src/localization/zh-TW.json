@@ -1188,5 +1188,12 @@
 	"Always take maximum Megas": "一律選擇最多 Mega 卡",
 	"Always take singles": "一律選擇普通卡",
 	"Automatically submits each round, including this round if you haven't chosen yet.": "每回合自動確認，若本回合尚未選擇，也會自動確認。",
-	"Megas: ask each round": "Mega：每回合詢問"
+	"Megas: ask each round": "Mega：每回合詢問",
+	"Your sealed bid": "你的秘密出價",
+	"Your bid": "你的出價",
+	"Min ◈ {p0} · Max ◈ {p1}": "最低 ◈ {p0} · 最高 ◈ {p1}",
+	"{p0} pending": "{p0} 人待出價",
+	"Discount ◈ {p0}": "折扣 ◈ {p0}",
+	"Bid submitted": "已提交出價",
+	"Auction details": "拍賣詳情"
 }
