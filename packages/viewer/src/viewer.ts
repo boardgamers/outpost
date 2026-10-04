@@ -35,7 +35,7 @@ registerViewer<GameState, Move>(
 				await tick();
 			},
 			onPlayer({ index }) {
-				store.playerIndex = index;
+				store.setPlayer(index);
 			},
 			onAvatars(avatars) {
 				store.avatars = avatars;

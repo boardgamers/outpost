@@ -1196,5 +1196,7 @@
 	"Discount ◈ {p0}": "Zniżka ◈ {p0}",
 	"Bid submitted": "Oferta wysłana",
 	"Auction details": "Szczegóły aukcji",
-	"Revealed bids": "Ujawnione oferty"
+	"Revealed bids": "Ujawnione oferty",
+	"Paid ◈ {p0}": "Zapłacono ◈ {p0}",
+	"Due ◈ {p0}": "Do zapłaty ◈ {p0}"
 }

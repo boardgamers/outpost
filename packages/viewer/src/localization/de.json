@@ -1196,5 +1196,7 @@
 	"Discount ◈ {p0}": "Rabatt ◈ {p0}",
 	"Bid submitted": "Gebot abgegeben",
 	"Auction details": "Auktionsdetails",
-	"Revealed bids": "Aufgedeckte Gebote"
+	"Revealed bids": "Aufgedeckte Gebote",
+	"Paid ◈ {p0}": "Bezahlt ◈ {p0}",
+	"Due ◈ {p0}": "Fällig ◈ {p0}"
 }

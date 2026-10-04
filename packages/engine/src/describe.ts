@@ -1,5 +1,4 @@
 import { FACTORIES, KICKER_SPECS, UPGRADE_SPECS } from "./data.js";
-import { sealedAuctionHistory } from "./auction-history.js";
 import type { GameState, LogEntry, MoveInfo } from "./types.js";
 
 /** Display name of the card a move concerns (colony upgrade or Kicker card). */
@@ -11,11 +10,6 @@ function cardName(info: MoveInfo | undefined, fallback: string): string {
 		return UPGRADE_SPECS[info.upgrade].name;
 	}
 	return fallback;
-}
-
-function sealedPrice(info: MoveInfo): number {
-	const floor = info.kicker ? KICKER_SPECS[info.kicker].price : info.upgrade ? UPGRADE_SPECS[info.upgrade].price : 0;
-	return Math.min(info.winningBid ?? 0, Math.max(floor, (info.secondBid ?? 0) + 1));
 }
 
 function playerName(state: GameState, seat: number): string {
@@ -37,22 +31,7 @@ function autoPassSuffix(state: GameState, info: MoveInfo | undefined): string {
 	return ` — ${seats.map((s) => playerName(state, s)).join(", ")} auto-pass${seats.length === 1 ? "es" : ""} (can't reach the price)`;
 }
 
-/**
- * fastBid keeps its moveset quiet while an auction collects sealed bids:
- * the opening, every bid and every pass of an unresolved auction all read
- * as a neutral "sealed auction in progress" — no amounts, no pass-vs-bid,
- * no auto-pass names. Once the resolving move is logged the real moves are
- * revealed (amounts, passes) by the wrapper's unmasking and described fully.
- */
-function sealedQuiet(state: GameState, entry: LogEntry, revealed?: boolean): boolean {
-	return (
-		state.phase === "auction" &&
-		state.auction?.bids !== undefined &&
-		!(revealed ?? sealedAuctionHistory(state.log).revealed.has(state.log.indexOf(entry)))
-	);
-}
-
-export function describeLogEntry(state: GameState, entry: LogEntry, sealedBidVisible?: boolean): string {
+export function describeLogEntry(state: GameState, entry: LogEntry, viewer?: number): string {
 	switch (entry.type) {
 		case "init":
 			return `Game started with ${entry.players} players`;
@@ -71,6 +50,7 @@ export function describeLogEntry(state: GameState, entry: LogEntry, sealedBidVis
 			const name = playerName(state, entry.player);
 			const move = entry.move;
 			const info = entry.info;
+			const sealed = state.options.fastBid === true;
 			switch (move.action) {
 				case "mega": {
 					if (info?.megaSealed) {
@@ -84,36 +64,24 @@ export function describeLogEntry(state: GameState, entry: LogEntry, sealedBidVis
 				case "discard":
 					return `${name} discards ${info?.discarded ?? move.cards.length} card(s)`;
 				case "auction":
-					// fastBid: while the sealed bids are collected, the opening is
-					// neutral for everyone (even the auctioneer — the amount is
-					// sealed). After resolution the wrapper reveals the bid.
-					if (sealedQuiet(state, entry, sealedBidVisible) || move.bid < 0) {
+					if ((sealed && entry.player !== viewer) || move.bid < 0) {
 						return `${name} puts ${cardName(info, "an upgrade")} up for sealed auction`;
 					}
 					return (
-						`${name} puts ${cardName(info, "an upgrade")} up for auction at ${move.bid}` + autoPassSuffix(state, info)
+						`${name} puts ${cardName(info, "an upgrade")} up for auction at ${move.bid}` +
+						(sealed ? "" : autoPassSuffix(state, info))
 					);
 				case "bid": {
-					// fastBid: the resolving move carries the outcome in its info.
-					if (info?.winningBid !== undefined) {
-						const won = playerName(state, info.winner ?? entry.player);
-						return `${name} bids ${move.amount} (sealed) — ${won} wins at ${sealedPrice(info)}`;
-					}
-					if (sealedQuiet(state, entry, sealedBidVisible) || move.amount < 0) {
+					if ((sealed && entry.player !== viewer) || move.amount < 0) {
 						return `${name} takes part in the sealed auction`;
 					}
-					return `${name} bids ${move.amount}` + autoPassSuffix(state, info);
+					return `${name} bids ${move.amount}` + (sealed ? "" : autoPassSuffix(state, info));
 				}
 				case "bidPass":
-					// fastBid: a pass can be the resolving move — it carries the outcome.
-					if (info?.winningBid !== undefined) {
-						const won = playerName(state, info.winner ?? entry.player);
-						return `${name} passes — ${won} wins the sealed auction at ${sealedPrice(info)}`;
-					}
-					if (sealedQuiet(state, entry, sealedBidVisible)) {
+					if (sealed && entry.player !== viewer) {
 						return `${name} takes part in the sealed auction`;
 					}
-					return `${name} passes on the auction` + autoPassSuffix(state, info);
+					return `${name} passes on the auction` + (sealed ? "" : autoPassSuffix(state, info));
 				case "pay":
 					return `${name} buys ${cardName(info, "the upgrade")} (paid ${info?.paid ?? 0})`;
 				case "exchange": {
@@ -162,7 +130,6 @@ export function describeLogEntry(state: GameState, entry: LogEntry, sealedBidVis
 	}
 }
 
-export function describeLog(state: GameState): string[] {
-	const { revealed } = sealedAuctionHistory(state.log);
-	return state.log.map((entry, index) => describeLogEntry(state, entry, revealed.has(index)));
+export function describeLog(state: GameState, viewer?: number): string[] {
+	return state.log.map((entry) => describeLogEntry(state, entry, viewer));
 }

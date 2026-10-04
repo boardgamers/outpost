@@ -1196,5 +1196,7 @@
 	"Discount ◈ {p0}": "Korting ◈ {p0}",
 	"Bid submitted": "Bod ingediend",
 	"Auction details": "Veilingdetails",
-	"Revealed bids": "Onthulde biedingen"
+	"Revealed bids": "Onthulde biedingen",
+	"Paid ◈ {p0}": "Betaald ◈ {p0}",
+	"Due ◈ {p0}": "Te betalen ◈ {p0}"
 }

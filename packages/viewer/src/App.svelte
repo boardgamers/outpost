@@ -26,7 +26,7 @@
 {#if state}
 	<div class="board">
 		<div class="page">
-			<ReplayBar {store} />
+			{#if __DEV__}<ReplayBar {store} />{/if}
 			<HeaderStrip {state} />
 			<GameEndBanner {store} />
 

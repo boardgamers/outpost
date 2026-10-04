@@ -125,10 +125,12 @@ try {
 			assert.equal(await frame.evaluate(() => settingsChanges.length), 0, "swiping does not change settings");
 			await pageScrollsFrom(frame.locator(".market .ucard").first(), "market card");
 			await pageScrollsFrom(frame.locator(".factory-buttons button:not(:disabled) svg").first(), "resource icon");
+			const logLength = await frame.locator(".feed .entry").count();
 			await frame.evaluate(() => emitter.emit("player", { index: 1 }));
 			await pageScrollsFrom(frame.locator(".market .ucard:disabled").first(), "disabled market card");
 			await pageScrollsFrom(frame.locator(".pcard:disabled").first(), "disabled hand card");
 			await frame.evaluate(() => emitter.emit("player", { index: 0 }));
+			assert.equal(await frame.locator(".feed .entry").count(), logLength, "player changes preserve appended events");
 			for (const name of ["Chat messages", "Recent events"]) {
 				const feed = frame.getByRole("region", { name, exact: true });
 				await center(feed);
@@ -177,11 +179,8 @@ try {
 				assert.ok((await page.evaluate(() => scrollY)) > beforeBottom + 30, `${name}: bottom edge releases to page`);
 			}
 			await frame.evaluate(() => emitter.emit("replay:start"));
-			const marks = frame.locator(".marks");
-			await center(marks);
-			await swipe(marks, 0, -85);
-			assert.ok((await marks.evaluate((el) => el.scrollLeft)) > 30, "replay timeline still scrolls horizontally");
-			await pageScrollsFrom(marks, "replay timeline vertical gesture");
+			assert.equal(await frame.locator(".replaybar").count(), 0, "the BGS host supplies replay navigation");
+			await frame.evaluate(() => emitter.emit("replay:to", 1));
 			await frame.evaluate(() => emitter.emit("replay:end"));
 			await frame.locator(".factory-buttons button:not(:disabled)").last().tap();
 			assert.equal(await frame.locator(".factory-buttons").count(), 0, "a tap still opens a purchase");

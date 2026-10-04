@@ -1196,5 +1196,7 @@
 	"Discount ◈ {p0}": "छूट ◈ {p0}",
 	"Bid submitted": "बोली भेजी गई",
 	"Auction details": "नीलामी का विवरण",
-	"Revealed bids": "प्रकट की गई बोलियाँ"
+	"Revealed bids": "प्रकट की गई बोलियाँ",
+	"Paid ◈ {p0}": "भुगतान ◈ {p0}",
+	"Due ◈ {p0}": "देय ◈ {p0}"
 }

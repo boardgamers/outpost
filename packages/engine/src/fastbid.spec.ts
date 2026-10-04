@@ -162,7 +162,7 @@ test("fastBid: a sole bidder pays the list price", () => {
 	assert.equal(state.phase, "auctionPayment");
 	assert.equal(state.auction?.highBidder, opener);
 	assert.equal(state.auction?.highBid, 25);
-	assert.match(describeLogEntry(state, state.log.at(-1)!), /wins the sealed auction at 25$/);
+	assert.match(describeLogEntry(state, state.log.at(-1)!), /takes part in the sealed auction$/);
 });
 
 test("fastBid: overbidding the opening still pays only the list price when everyone passes", () => {
@@ -177,7 +177,7 @@ test("fastBid: overbidding the opening still pays only the list price when every
 	assert.equal(state.phase, "auctionPayment");
 	assert.equal(state.auction?.highBidder, opener);
 	assert.equal(state.auction?.highBid, 25);
-	assert.match(describeLogEntry(state, state.log.at(-1)!), /wins the sealed auction at 25$/);
+	assert.match(describeLogEntry(state, state.log.at(-1)!), /takes part in the sealed auction$/);
 });
 
 test("fastBid: bid below list price is rejected", () => {

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { tick, untrack } from "svelte";
-	import { sealedAuctionHistory } from "outpost-engine";
+	import { sealedAuctionHistory, upgradeDiscount } from "outpost-engine";
 	import type { ViewerStore } from "./store.svelte";
 
 	interface Props {
@@ -10,6 +10,24 @@
 	let { store }: Props = $props();
 	const lines = $derived(store.logLines);
 	const results = $derived(sealedAuctionHistory(store.liveState?.log ?? []).results);
+	const pendingPayment = $derived.by(() => {
+		const state = store.liveState;
+		const auction = state?.auction;
+		if (!state || state.phase !== "auctionPayment" || !auction?.bids) {
+			return null;
+		}
+		const index = [...results.keys()].at(-1);
+		const winner = state.players[auction.highBidder];
+		if (
+			index === undefined ||
+			!winner ||
+			state.log.slice(index + 1).some((entry) => entry.type === "move" && entry.move.action === "auction")
+		) {
+			return null;
+		}
+		const discount = auction.upgrade ? upgradeDiscount(winner, auction.upgrade) : 0;
+		return { index, due: Math.max(0, auction.highBid - discount) };
+	});
 	const recent = $derived(lines.map((line, index) => ({ line, index })).slice(-150));
 	let feed = $state<HTMLDivElement>();
 	let content = $state<HTMLDivElement>();
@@ -80,7 +98,16 @@
 									<span class="bidder" translate="no"
 										>{store.liveState?.players[bid.player]?.name ?? `Player ${bid.player + 1}`}</span
 									>
-									<strong>{bid.amount === 0 ? "Pass" : `◈ ${bid.amount}`}</strong>
+									<span class="bid-value">
+										<strong>{bid.amount === 0 ? "Pass" : `◈ ${bid.amount}`}</strong>
+										{#if bid.player === result.winner}
+											{#if result.paid !== undefined}
+												<span class="payment">{`Paid ◈ ${result.paid}`}</span>
+											{:else if pendingPayment?.index === item.index}
+												<span class="payment">{`Due ◈ ${pendingPayment.due}`}</span>
+											{/if}
+										{/if}
+									</span>
 								</li>
 							{/each}
 						</ul>
@@ -123,6 +150,17 @@
 	.bidder {
 		min-width: 0;
 		overflow-wrap: anywhere;
+	}
+	.bid-value {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		white-space: nowrap;
+	}
+	.payment {
+		color: var(--text-mid);
+		font-size: 10.5px;
+		font-weight: 500;
 	}
 	.auction-result strong {
 		white-space: nowrap;

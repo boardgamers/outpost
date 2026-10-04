@@ -1196,5 +1196,7 @@
 	"Discount ◈ {p0}": "Discount ◈ {p0}",
 	"Bid submitted": "Bid submitted",
 	"Auction details": "Auction details",
-	"Revealed bids": "Revealed bids"
+	"Revealed bids": "Revealed bids",
+	"Paid ◈ {p0}": "Paid ◈ {p0}",
+	"Due ◈ {p0}": "Due ◈ {p0}"
 }

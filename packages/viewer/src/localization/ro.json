@@ -1196,5 +1196,7 @@
 	"Discount ◈ {p0}": "Reducere ◈ {p0}",
 	"Bid submitted": "Ofertă trimisă",
 	"Auction details": "Detaliile licitației",
-	"Revealed bids": "Oferte dezvăluite"
+	"Revealed bids": "Oferte dezvăluite",
+	"Paid ◈ {p0}": "Plătit ◈ {p0}",
+	"Due ◈ {p0}": "De plătit ◈ {p0}"
 }

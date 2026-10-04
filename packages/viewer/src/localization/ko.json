@@ -1196,5 +1196,7 @@
 	"Discount ◈ {p0}": "할인 ◈ {p0}",
 	"Bid submitted": "입찰 제출 완료",
 	"Auction details": "경매 안내",
-	"Revealed bids": "공개된 입찰"
+	"Revealed bids": "공개된 입찰",
+	"Paid ◈ {p0}": "지불 ◈ {p0}",
+	"Due ◈ {p0}": "지불할 금액 ◈ {p0}"
 }

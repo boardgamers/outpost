@@ -1196,5 +1196,7 @@
 	"Discount ◈ {p0}": "Giảm giá ◈ {p0}",
 	"Bid submitted": "Đã gửi giá đấu",
 	"Auction details": "Chi tiết đấu giá",
-	"Revealed bids": "Giá đấu đã công bố"
+	"Revealed bids": "Giá đấu đã công bố",
+	"Paid ◈ {p0}": "Đã trả ◈ {p0}",
+	"Due ◈ {p0}": "Cần trả ◈ {p0}"
 }

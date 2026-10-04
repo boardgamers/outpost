@@ -67,6 +67,13 @@ export function replay(state: GameState, options?: { to?: number; trackKnowledge
 				}
 				setReplayExchangeTake(entry.info?.exchangeTake ?? -1);
 				applyMove(replayed, entry.move, entry.player);
+				if (entry.move.action === "pay" && entry.info?.paid !== undefined) {
+					// The public payment is known even when the replay's card values are masked.
+					const applied = replayed.log[i];
+					if (applied?.type === "move") {
+						applied.info = { ...applied.info, paid: entry.info.paid };
+					}
+				}
 				if (entry.info?.megaSealed) {
 					const applied = replayed.log.at(-1);
 					if (applied?.type === "move") {

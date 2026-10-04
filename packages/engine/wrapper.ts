@@ -321,10 +321,9 @@ export function logSlice(data: GameState, options?: LogSliceOptions): LogSliceRe
 	// in the game list, and our structured entries otherwise stringify to noise.
 	// describeLogEntry never reveals hidden values (unresolved sealed bids,
 	// exchange takes).
-	const { revealed } = sealedAuctionHistory(data.log);
-	const log = maskLog(data, viewer, start, end).map((masked, index) => ({
+	const log = maskLog(data, viewer, start, end).map((masked) => ({
 		...masked,
-		simple: describeLogEntry(data, masked, revealed.has(start + index)),
+		simple: describeLogEntry(data, masked, viewer),
 	}));
 	const result: LogSliceResult = { log };
 	if (options?.end === undefined) {

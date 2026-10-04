@@ -55,7 +55,7 @@ test("sealed history stays private until completion, including passes and the op
 	}
 });
 
-test("completed bids remain public during the next sealed auction, including sliced descriptions", () => {
+test("completed results keep every bid while descriptions show only the viewer's own amount", () => {
 	const state = game();
 	const [opener, winner, passer, last] = open(state);
 	const openingIndex = state.log.length - 1;
@@ -68,14 +68,29 @@ test("completed bids remain public during the next sealed auction, including sli
 	applyMove(state, { action: "bidPass" }, winner);
 	for (const viewer of [undefined, opener, winner, passer, last]) {
 		const visible = stripSecret(state, viewer);
-		const lines = describeLog(visible);
-		assert.match(lines[openingIndex]!, /up for auction at 25/);
-		assert.equal(lines[openingIndex + 1], `${state.players[winner]!.name} bids 40`);
-		assert.equal(lines[openingIndex + 2], `${state.players[passer]!.name} passes on the auction`);
-		assert.equal(describeLogEntry(visible, visible.log[openingIndex + 1]!), lines[openingIndex + 1]);
-		assert.match(lines.at(-2)!, /up for sealed auction$/);
-		assert.match(lines.at(-1)!, /takes part in the sealed auction$/);
+		const lines = describeLog(visible, viewer);
+		assert.match(lines[openingIndex]!, viewer === opener ? /up for auction at 25$/ : /up for sealed auction$/);
+		assert.equal(
+			lines[openingIndex + 1],
+			`${state.players[winner]!.name} ${viewer === winner ? "bids 40" : "takes part in the sealed auction"}`
+		);
+		assert.equal(
+			lines[openingIndex + 2],
+			`${state.players[passer]!.name} ${viewer === passer ? "passes on the auction" : "takes part in the sealed auction"}`
+		);
+		assert.equal(describeLogEntry(visible, visible.log[openingIndex + 1]!, viewer), lines[openingIndex + 1]);
+		assert.match(lines.at(-2)!, viewer === opener ? /up for auction at 25$/ : /up for sealed auction$/);
+		assert.match(lines.at(-1)!, viewer === winner ? /passes on the auction$/ : /takes part in the sealed auction$/);
+		assert.ok(lines.every((line) => !line.includes(" wins ")));
+		assert.match(lines[resultIndex + 1]!, /buys .* \(paid 40\)$/);
 		assert.deepEqual([...sealedAuctionHistory(visible.log).results.keys()], [resultIndex]);
+		assert.deepEqual(
+			sealedAuctionHistory(visible.log)
+				.results.get(resultIndex)
+				?.bids.map((bid) => bid.amount),
+			[40, 30, 25, 0]
+		);
+		assert.equal(sealedAuctionHistory(visible.log).results.get(resultIndex)?.paid, 40);
 		const slice = logSlice(state, { player: viewer, start: openingIndex + 1, end: openingIndex + 3 });
 		assert.deepEqual(
 			slice.log.map((entry) => entry.simple),
@@ -84,6 +99,26 @@ test("completed bids remain public during the next sealed auction, including sli
 	}
 	const replayed = replay(stripSecret(state));
 	assert.deepEqual(sealedAuctionHistory(replayed.log), sealedAuctionHistory(stripSecret(state).log));
+});
+
+test("own sealed bids remain visible while collecting bids without revealing other players' actions", () => {
+	const state = game();
+	const [opener, bidder, passer] = open(state);
+	const openingIndex = state.log.length - 1;
+	applyMove(state, { action: "bid", amount: 40 }, bidder);
+	applyMove(state, { action: "bidPass" }, passer);
+	for (const viewer of [undefined, opener, bidder, passer]) {
+		const visible = stripSecret(state, viewer);
+		const lines = describeLog(visible, viewer);
+		assert.match(lines[openingIndex]!, viewer === opener ? /up for auction at 25$/ : /up for sealed auction$/);
+		assert.match(lines.at(-2)!, viewer === bidder ? /bids 40$/ : /takes part in the sealed auction$/);
+		assert.match(lines.at(-1)!, viewer === passer ? /passes on the auction$/ : /takes part in the sealed auction$/);
+		assert.equal(sealedAuctionHistory(visible.log).results.size, 0);
+		assert.deepEqual(
+			logSlice(state, { player: viewer }).log.map((entry) => entry.simple),
+			lines
+		);
+	}
 });
 
 test("an immediately resolved auction reveals the opener and every automatic pass", () => {

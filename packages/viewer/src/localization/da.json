@@ -1196,5 +1196,7 @@
 	"Discount ◈ {p0}": "Rabat ◈ {p0}",
 	"Bid submitted": "Bud afgivet",
 	"Auction details": "Auktionsdetaljer",
-	"Revealed bids": "Afslørede bud"
+	"Revealed bids": "Afslørede bud",
+	"Paid ◈ {p0}": "Betalt ◈ {p0}",
+	"Due ◈ {p0}": "At betale ◈ {p0}"
 }

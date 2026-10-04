@@ -1196,5 +1196,7 @@
 	"Discount ◈ {p0}": "Desconto ◈ {p0}",
 	"Bid submitted": "Lance enviado",
 	"Auction details": "Detalhes do leilão",
-	"Revealed bids": "Lances revelados"
+	"Revealed bids": "Lances revelados",
+	"Paid ◈ {p0}": "Pago ◈ {p0}",
+	"Due ◈ {p0}": "A pagar ◈ {p0}"
 }

@@ -215,6 +215,7 @@ export class ViewerStore {
 	preferences = $state<Record<string, unknown>>({});
 	settings = $state<Record<string, unknown> | null>(null);
 	logLines = $state<string[]>([]);
+	private logEntries: GameState["log"] = [];
 	seenLog = $state(0);
 	lastMoveAt = $state<number>(0);
 	chat = new ChatController();
@@ -311,14 +312,23 @@ export class ViewerStore {
 
 	setState(state: GameState): void {
 		this.liveState = state;
+		this.logEntries = [...state.log];
 		this.seenLog = state.log.length;
-		this.logLines = describeLog(state);
+		this.logLines = describeLog(state, this.playerIndex);
 		if (!this.replay.active) {
 			this.cancel();
 			this.lastMoveAt = Date.now();
 		}
 		this.rebuildDraft();
 		this.commands.replaceLog([...this.logLines]);
+	}
+
+	setPlayer(index?: number): void {
+		this.playerIndex = index;
+		if (this.liveState) {
+			this.logLines = this.logEntries.map((entry) => describeLogEntry(this.liveState!, entry, index));
+			this.commands.replaceLog([...this.logLines]);
+		}
 	}
 
 	// Re-apply the staged buys on top of the (new) live state; drop them when
@@ -360,8 +370,9 @@ export class ViewerStore {
 			this.commands.fetchState();
 			return;
 		}
-		if (payload.start >= this.logLines.length) {
-			const appended = entries.map((entry) => describeLogEntry(base, entry));
+		if (payload.start === this.logEntries.length) {
+			this.logEntries = [...this.logEntries, ...entries];
+			const appended = entries.map((entry) => describeLogEntry(base, entry, this.playerIndex));
 			this.logLines = [...this.logLines, ...appended];
 			this.seenLog = base.log.length;
 			this.commands.replaceLog([...this.logLines]);

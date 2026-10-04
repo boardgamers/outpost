@@ -3,6 +3,7 @@ import type { LogEntry } from "./types.js";
 export interface SealedAuctionResult {
 	winner: number;
 	bids: { player: number; amount: number }[];
+	paid?: number;
 }
 
 export function sealedAuctionHistory(log: LogEntry[]): {
@@ -13,17 +14,25 @@ export function sealedAuctionHistory(log: LogEntry[]): {
 	const results = new Map<number, SealedAuctionResult>();
 	let pending: number[] = [];
 	let bids = new Map<number, number>();
+	let awaitingPayment: SealedAuctionResult | undefined;
 	for (const [index, entry] of log.entries()) {
 		if (entry.type !== "move") {
 			continue;
 		}
 		if (entry.move.action === "auction") {
+			awaitingPayment = undefined;
 			pending = [];
 			bids = new Map([[entry.player, entry.move.bid]]);
 		} else if (entry.move.action === "bid") {
 			bids.set(entry.player, entry.move.amount);
 		} else if (entry.move.action === "bidPass") {
 			bids.set(entry.player, 0);
+		} else if (entry.move.action === "pay") {
+			if (awaitingPayment?.winner === entry.player && entry.info?.paid !== undefined) {
+				awaitingPayment.paid = entry.info.paid;
+			}
+			awaitingPayment = undefined;
+			continue;
 		} else {
 			continue;
 		}
@@ -36,7 +45,7 @@ export function sealedAuctionHistory(log: LogEntry[]): {
 				revealed.add(bidIndex);
 			}
 			const winner = entry.info.winner ?? entry.player;
-			results.set(index, {
+			awaitingPayment = {
 				winner,
 				bids: [...bids]
 					.filter(([, amount]) => amount >= 0)
@@ -45,7 +54,8 @@ export function sealedAuctionHistory(log: LogEntry[]): {
 						(a, b) =>
 							b.amount - a.amount || Number(b.player === winner) - Number(a.player === winner) || a.player - b.player
 					),
-			});
+			};
+			results.set(index, awaitingPayment);
 			pending = [];
 			bids.clear();
 		}
