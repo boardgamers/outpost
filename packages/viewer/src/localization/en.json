@@ -1198,5 +1198,8 @@
 	"Auction details": "Auction details",
 	"Revealed bids": "Revealed bids",
 	"Paid ◈ {p0}": "Paid ◈ {p0}",
-	"Due ◈ {p0}": "Due ◈ {p0}"
+	"Due ◈ {p0}": "Due ◈ {p0}",
+	"Change bid": "Change bid",
+	"Change choice": "Change choice",
+	"Production choice submitted.": "Production choice submitted."
 }

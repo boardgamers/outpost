@@ -24,7 +24,7 @@
 	);
 	const due = $derived(store.auctionDue());
 	const fast = $derived(!!auction?.bids);
-	const minBid = $derived(fast ? (spec?.price ?? 0) + 1 : (auction?.highBid ?? 0) + 1);
+	const minBid = $derived(store.minBid);
 	const maxBid = $derived(store.maxBid);
 	const pendingSeats = $derived(
 		state.players.flatMap((player, seat) => (!player.dropped && auction?.bids?.[seat] === undefined ? [seat] : []))
@@ -108,7 +108,10 @@
 									>
 								</div>
 								<div class="actions">
-									<button class="pass" onclick={() => store.passBid()}>Pass</button>
+									{#if store.changingChoice}<button class="pass" onclick={() => store.cancel()}>Cancel</button>{/if}
+									{#if !fast || auction.auctioneer !== meIndex}<button class="pass" onclick={() => store.passBid()}
+											>Pass</button
+										>{/if}
 									<button class="confirm" disabled={!validBid} onclick={() => store.confirmBid()}
 										>Bid ◈ {store.bidAmount}</button
 									>
@@ -127,6 +130,8 @@
 					{:else if fast}
 						{#if meIndex !== undefined && auction.bids?.[meIndex] !== undefined}
 							<div class="turn">Bid submitted</div>
+							{#if store.revisableChoice}<button class="confirm" onclick={() => store.changeChoice()}>Change bid</button
+								>{/if}
 						{/if}
 						<div class="waiting">Waiting for {pendingNames} to bid…</div>
 					{:else}

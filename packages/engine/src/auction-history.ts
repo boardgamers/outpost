@@ -12,7 +12,7 @@ export function sealedAuctionHistory(log: LogEntry[]): {
 } {
 	const revealed = new Set<number>();
 	const results = new Map<number, SealedAuctionResult>();
-	let pending: number[] = [];
+	let pending = new Map<number, number>();
 	let bids = new Map<number, number>();
 	let awaitingPayment: SealedAuctionResult | undefined;
 	for (const [index, entry] of log.entries()) {
@@ -21,7 +21,7 @@ export function sealedAuctionHistory(log: LogEntry[]): {
 		}
 		if (entry.move.action === "auction") {
 			awaitingPayment = undefined;
-			pending = [];
+			pending = new Map();
 			bids = new Map([[entry.player, entry.move.bid]]);
 		} else if (entry.move.action === "bid") {
 			bids.set(entry.player, entry.move.amount);
@@ -36,12 +36,12 @@ export function sealedAuctionHistory(log: LogEntry[]): {
 		} else {
 			continue;
 		}
-		pending.push(index);
+		pending.set(entry.player, index);
 		for (const seat of entry.info?.autoPassed ?? []) {
 			bids.set(seat, 0);
 		}
 		if (entry.info?.winningBid !== undefined) {
-			for (const bidIndex of pending) {
+			for (const bidIndex of pending.values()) {
 				revealed.add(bidIndex);
 			}
 			const winner = entry.info.winner ?? entry.player;
@@ -56,7 +56,7 @@ export function sealedAuctionHistory(log: LogEntry[]): {
 					),
 			};
 			results.set(index, awaitingPayment);
-			pending = [];
+			pending = new Map();
 			bids.clear();
 		}
 	}

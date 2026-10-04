@@ -1198,5 +1198,8 @@
 	"Auction details": "경매 안내",
 	"Revealed bids": "공개된 입찰",
 	"Paid ◈ {p0}": "지불 ◈ {p0}",
-	"Due ◈ {p0}": "지불할 금액 ◈ {p0}"
+	"Due ◈ {p0}": "지불할 금액 ◈ {p0}",
+	"Change bid": "입찰 변경",
+	"Change choice": "선택 변경",
+	"Production choice submitted.": "생산 선택을 제출했습니다."
 }

@@ -1,4 +1,5 @@
 export * from "./src/types.js";
+export * from "./src/choice-revisions.js";
 export * from "./src/data.js";
 export * from "./src/prng.js";
 export * from "./src/sanitize.js";

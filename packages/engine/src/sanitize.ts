@@ -81,6 +81,12 @@ export function sanitizeMove(raw: unknown): Move {
 	if (typeof action !== "string") {
 		fail("missing action");
 	}
+	const revision =
+		move.revision === undefined
+			? {}
+			: typeof move.revision === "string" && move.revision.length <= 100
+				? { revision: move.revision }
+				: fail("invalid revision");
 	switch (action) {
 		case "mega": {
 			// Blind mega election (rule 12.1): a record of mega resource -> count.
@@ -91,7 +97,7 @@ export function sanitizeMove(raw: unknown): Move {
 					take[resource] = int(rawTake[resource], `take.${resource}`, 0, 100);
 				}
 			}
-			return { action, take };
+			return { action, take, ...revision };
 		}
 		case "discard":
 			return { action, cards: intArray(move.cards, "cards") };
@@ -107,9 +113,9 @@ export function sanitizeMove(raw: unknown): Move {
 		case "bid":
 			// -1 is the masked value of another player's sealed bid in a stripped
 			// log (fastBid); the live game never sends it, replay does.
-			return { action, amount: int(move.amount, "amount", -1) };
+			return { action, amount: int(move.amount, "amount", -1), ...revision };
 		case "bidPass":
-			return { action };
+			return { action, ...revision };
 		case "pay":
 			return { action, cards: intArray(move.cards, "cards") };
 		case "exchange":

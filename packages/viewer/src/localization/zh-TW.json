@@ -1198,5 +1198,8 @@
 	"Auction details": "拍賣詳情",
 	"Revealed bids": "已揭曉的出價",
 	"Paid ◈ {p0}": "已支付 ◈ {p0}",
-	"Due ◈ {p0}": "應付 ◈ {p0}"
+	"Due ◈ {p0}": "應付 ◈ {p0}",
+	"Change bid": "更改出價",
+	"Change choice": "更改選擇",
+	"Production choice submitted.": "已提交生產選擇。"
 }

@@ -1,3 +1,4 @@
+import { canReviseChoice } from "./choice-revisions.js";
 import { FACTORIES, KICKER_SPECS, MEGA_CARDS, ROBOT_COST, UPGRADE_SPECS, VICTORY_VP } from "./data.js";
 import { colonyEra, refillKickers, refillMarket, updateEraStreaks } from "./market.js";
 import { dealStartingHand, producePlayer } from "./production.js";
@@ -340,6 +341,10 @@ export function applyMove(state: GameState, rawMove: Move | unknown, seat: numbe
 		err("invalid player");
 	}
 	const player = getPlayer(state, seat);
+	const revision = "revision" in move && move.revision !== undefined;
+	if (revision && !canReviseChoice(state, move, seat)) {
+		err("this choice can no longer be changed");
+	}
 	let info: MoveInfo | undefined;
 
 	switch (move.action) {
@@ -374,6 +379,7 @@ export function applyMove(state: GameState, rawMove: Move | unknown, seat: numbe
 			err(`unknown action ${String((move as { action: string }).action)}`);
 	}
 
+	state.liveUpdate = revision;
 	state.moveCount += 1;
 	state.log.push(info ? { type: "move", player: seat, move, info } : { type: "move", player: seat, move });
 	postMove(state, move);
@@ -397,7 +403,7 @@ function postMove(state: GameState, move: Move): void {
 }
 
 function moveMega(state: GameState, move: Move & { action: "mega" }, player: PlayerState): MoveInfo {
-	if (state.phase !== "mega" || !needsMegaChoice(player)) {
+	if (state.phase !== "mega" || (!needsMegaChoice(player) && !move.revision)) {
 		err("no production pending for this player");
 	}
 	// The election is blind (rule 12.1): the player commits to a number of Mega
@@ -660,13 +666,13 @@ function moveBid(state: GameState, move: Move & { action: "bid" }, seat: number,
 	return autoPassed.length > 0 ? { ...info, autoPassed } : info;
 }
 
-function moveBidPass(state: GameState, _move: Move & { action: "bidPass" }, seat: number): MoveInfo {
+function moveBidPass(state: GameState, move: Move & { action: "bidPass" }, seat: number): MoveInfo {
 	const auction = state.auction;
 	if (state.phase !== "auction" || !auction) {
 		err("not this player's turn to bid");
 	}
 	if (auction.bids) {
-		return moveFastBidPass(state, seat, auction);
+		return moveFastBidPass(state, seat, auction, move.revision !== undefined);
 	}
 	if (auction.activeBidder !== seat) {
 		err("not this player's turn to bid");
@@ -733,15 +739,16 @@ function moveFastBid(
 	if (!bids) {
 		err("not a sealed-bid auction");
 	}
-	if (bids[seat] !== undefined) {
+	if (bids[seat] !== undefined && !move.revision) {
 		err("this player has already bid");
 	}
 	// A stripped log masks other players' sealed bids as -1; replay stores the
 	// placeholder (the resolution comes from the recorded MoveInfo) and skips
 	// validation, which the server already did live.
 	if (!replayMode) {
-		if (!Number.isInteger(move.amount) || move.amount < auctionPrice(auction) + 1) {
-			err(`bid must be at least ${auctionPrice(auction) + 1}`);
+		const minimum = auctionPrice(auction) + (seat === auction.auctioneer ? 0 : 1);
+		if (!Number.isInteger(move.amount) || move.amount < minimum) {
+			err(`bid must be at least ${minimum}`);
 		}
 		assertCanPayBidFor(player, auction, move.amount);
 	}
@@ -749,9 +756,14 @@ function moveFastBid(
 	return fastBidMaybeResolve(state, auction);
 }
 
-function moveFastBidPass(state: GameState, seat: number, auction: NonNullable<GameState["auction"]>): MoveInfo {
+function moveFastBidPass(
+	state: GameState,
+	seat: number,
+	auction: NonNullable<GameState["auction"]>,
+	revision = false
+): MoveInfo {
 	const bids = auction.bids;
-	if (!bids || bids[seat] !== undefined) {
+	if (!bids || (bids[seat] !== undefined && !revision)) {
 		err("not this player's turn to bid");
 	}
 	bids[seat] = 0;

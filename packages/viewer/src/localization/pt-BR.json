@@ -1198,5 +1198,8 @@
 	"Auction details": "Detalhes do leilão",
 	"Revealed bids": "Lances revelados",
 	"Paid ◈ {p0}": "Pago ◈ {p0}",
-	"Due ◈ {p0}": "A pagar ◈ {p0}"
+	"Due ◈ {p0}": "A pagar ◈ {p0}",
+	"Change bid": "Alterar lance",
+	"Change choice": "Alterar escolha",
+	"Production choice submitted.": "Escolha de produção enviada."
 }

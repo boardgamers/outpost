@@ -1198,5 +1198,8 @@
 	"Auction details": "Dettagli dell’asta",
 	"Revealed bids": "Offerte rivelate",
 	"Paid ◈ {p0}": "Pagato ◈ {p0}",
-	"Due ◈ {p0}": "Da pagare ◈ {p0}"
+	"Due ◈ {p0}": "Da pagare ◈ {p0}",
+	"Change bid": "Modifica offerta",
+	"Change choice": "Modifica scelta",
+	"Production choice submitted.": "Scelta di produzione inviata."
 }

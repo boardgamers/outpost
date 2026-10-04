@@ -1198,5 +1198,8 @@
 	"Auction details": "Auktionsdetails",
 	"Revealed bids": "Aufgedeckte Gebote",
 	"Paid ◈ {p0}": "Bezahlt ◈ {p0}",
-	"Due ◈ {p0}": "Fällig ◈ {p0}"
+	"Due ◈ {p0}": "Fällig ◈ {p0}",
+	"Change bid": "Gebot ändern",
+	"Change choice": "Auswahl ändern",
+	"Production choice submitted.": "Produktionsauswahl gesendet."
 }

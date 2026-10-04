@@ -1198,5 +1198,8 @@
 	"Auction details": "Chi tiết đấu giá",
 	"Revealed bids": "Giá đấu đã công bố",
 	"Paid ◈ {p0}": "Đã trả ◈ {p0}",
-	"Due ◈ {p0}": "Cần trả ◈ {p0}"
+	"Due ◈ {p0}": "Cần trả ◈ {p0}",
+	"Change bid": "Đổi giá đấu",
+	"Change choice": "Đổi lựa chọn",
+	"Production choice submitted.": "Đã gửi lựa chọn sản xuất."
 }

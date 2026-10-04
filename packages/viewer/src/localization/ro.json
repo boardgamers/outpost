@@ -1198,5 +1198,8 @@
 	"Auction details": "Detaliile licitației",
 	"Revealed bids": "Oferte dezvăluite",
 	"Paid ◈ {p0}": "Plătit ◈ {p0}",
-	"Due ◈ {p0}": "De plătit ◈ {p0}"
+	"Due ◈ {p0}": "De plătit ◈ {p0}",
+	"Change bid": "Modifică oferta",
+	"Change choice": "Modifică alegerea",
+	"Production choice submitted.": "Alegerea producției a fost trimisă."
 }

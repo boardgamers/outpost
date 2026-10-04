@@ -163,11 +163,11 @@ export type TurnBuy =
 export type Move =
 	// Mega election (rule 12.1): how many Mega cards to take per resource, blind
 	// (before the pending draw values are revealed). The rest are kept as draws.
-	| { action: "mega"; take: Partial<Record<Resource, number>> }
+	| { action: "mega"; take: Partial<Record<Resource, number>>; revision?: string }
 	| { action: "discard"; cards: number[] }
 	| { action: "auction"; marketIndex: number; bid: number; kicker?: boolean }
-	| { action: "bid"; amount: number }
-	| { action: "bidPass" }
+	| { action: "bid"; amount: number; revision?: string }
+	| { action: "bidPass"; revision?: string }
 	| { action: "pay"; cards: number[] }
 	// Wily Trader / Merchant House: hand one of your own cards (index into the
 	// hand) to `target`, who must return a higher-valued card of the same type.
@@ -245,6 +245,7 @@ export interface MoveInfo {
 }
 
 export interface GameState {
+	liveUpdate?: boolean;
 	analysisKnowledge?: { hands: ProductionCard[][]; bidFloors: number[]; parked?: { min: number; max?: number }[] };
 	players: PlayerState[];
 	round: number;

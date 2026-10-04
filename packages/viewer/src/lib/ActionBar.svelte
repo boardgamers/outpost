@@ -131,6 +131,7 @@
 							</span>
 						</div>
 					{/each}
+					{#if store.changingChoice}<button class="cancel" onclick={() => store.cancel()}>Cancel</button>{/if}
 					<button class="confirm" onclick={() => store.confirmMega()}>
 						{store.megaTakeCount > 0 ? `Take ${store.megaTakeCount} mega` : "Take all as singles"}
 					</button>
@@ -284,7 +285,9 @@
 			{:else}
 				<div class="flow">
 					{#if state?.phase === "mega" && me?.megaChoice !== undefined}
-						<span class="hint">Production choice locked.</span>
+						<span class="hint">Production choice submitted.</span>
+						{#if store.revisableChoice}<button class="end" onclick={() => store.changeChoice()}>Change choice</button
+							>{/if}
 						<span class="hint dim">Choices stay hidden until everyone has confirmed.</span>
 					{/if}
 					<span class="hint dim">{waitingOn}</span>

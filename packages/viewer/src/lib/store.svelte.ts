@@ -12,6 +12,7 @@ import {
 	bestPayment,
 	canBuyFactory,
 	countingHandSize,
+	choiceRevision,
 	describeLog,
 	describeLogEntry,
 	exchangeResources,
@@ -226,6 +227,7 @@ export class ViewerStore {
 
 	cardPick = $state<number[]>([]);
 	/** Mega cards to take per resource (rule 12.1 blind election). */
+	editingChoice = $state<string | undefined>();
 	megaTake = $state<Partial<Record<string, number>>>({});
 	pending = $state<PendingKind | null>(null);
 	auctionPick = $state<{ marketIndex: number; bid: number; kicker?: boolean } | null>(null);
@@ -275,7 +277,12 @@ export class ViewerStore {
 	private automaticMegaRound = "";
 
 	submitAutomaticMega(): void {
-		if (!this.canEditSettings || !this.myMega || !["maximum", "singles"].includes(this.autoMega)) {
+		if (
+			this.editingChoice ||
+			!this.canEditSettings ||
+			!this.myMega ||
+			!["maximum", "singles"].includes(this.autoMega)
+		) {
 			return;
 		}
 		const key = `${this.playerIndex}:${this.liveState?.round}`;
@@ -422,10 +429,34 @@ export class ViewerStore {
 		return !!s && !s.ended && s.phase === "discard" && !this.replay.active && (this.me?.mustDiscard ?? false);
 	}
 
+	get revisableChoice(): string | undefined {
+		return this.liveState && this.playerIndex !== undefined && !this.replay.active
+			? choiceRevision(this.liveState, this.playerIndex)
+			: undefined;
+	}
+	get changingChoice(): boolean {
+		return !!this.editingChoice && this.editingChoice === this.revisableChoice;
+	}
+	changeChoice(): void {
+		const key = this.revisableChoice;
+		if (!key) {
+			return;
+		}
+		this.editingChoice = key;
+		this.megaTake = { ...this.me?.megaChoice };
+		this.prepareBid();
+	}
 	/** Mega phase: I have staged production draws awaiting the mega-vs-singles choice. */
 	get myMega(): boolean {
 		const s = this.liveState;
-		return !!s && !s.ended && s.phase === "mega" && !this.replay.active && !!this.me && needsMegaChoice(this.me);
+		return (
+			!!s &&
+			!s.ended &&
+			s.phase === "mega" &&
+			!this.replay.active &&
+			!!this.me &&
+			(needsMegaChoice(this.me) || this.changingChoice)
+		);
 	}
 
 	/** Mega conversions available from my staged draws (resource -> groups of 4). */
@@ -458,7 +489,7 @@ export class ViewerStore {
 		}
 		// fastBid: I owe a sealed bid while mine isn't in yet.
 		if (s.auction?.bids) {
-			return s.auction.bids[this.playerIndex] === undefined;
+			return s.auction.bids[this.playerIndex] === undefined || this.changingChoice;
 		}
 		return s.auction?.activeBidder === this.playerIndex;
 	}
@@ -776,13 +807,27 @@ export class ViewerStore {
 		});
 	}
 
+	get minBid(): number {
+		const auction = this.liveState?.auction;
+		if (!auction) {
+			return 0;
+		}
+		return auction.bids
+			? auctionCard(auction).price + (auction.auctioneer === this.playerIndex ? 0 : 1)
+			: auction.highBid + 1;
+	}
+
 	prepareBid(): void {
 		const s = this.liveState;
 		if (!s?.auction) {
 			return;
 		}
 		// fastBid: the floor is the list price, not the (hidden) high bid.
-		this.bidAmount = s.auction.bids ? auctionCard(s.auction).price + 1 : s.auction.highBid + 1;
+		this.bidAmount = this.changingChoice
+			? Math.max(this.minBid, s.auction.bids?.[this.playerIndex!] ?? 0)
+			: s.auction.bids
+				? auctionCard(s.auction).price + 1
+				: s.auction.highBid + 1;
 	}
 
 	/** Clamp a typed bid into [min, maxBid] so the input never holds an unaffordable/illegal value. */
@@ -791,7 +836,7 @@ export class ViewerStore {
 		if (!s?.auction || !Number.isFinite(value)) {
 			return;
 		}
-		const min = s.auction.bids ? auctionCard(s.auction).price + 1 : s.auction.highBid + 1;
+		const min = this.minBid;
 		this.bidAmount = Math.min(this.maxBid, Math.max(min, Math.floor(value)));
 	}
 
@@ -801,7 +846,7 @@ export class ViewerStore {
 			return;
 		}
 		const amount = Math.floor(this.bidAmount);
-		const min = s.auction.bids ? auctionCard(s.auction).price + 1 : s.auction.highBid + 1;
+		const min = this.minBid;
 		if (!Number.isInteger(amount) || amount < min || amount > this.maxBid) {
 			return;
 		}
@@ -1045,6 +1090,7 @@ export class ViewerStore {
 	}
 
 	cancel(): void {
+		this.editingChoice = undefined;
 		this.cardPick = [];
 		this.megaTake = {};
 		this.pending = null;
@@ -1065,6 +1111,9 @@ export class ViewerStore {
 	}
 
 	private send(move: Move): void {
+		if (this.changingChoice && (move.action === "mega" || move.action === "bid" || move.action === "bidPass")) {
+			move = { ...move, revision: this.editingChoice };
+		}
 		this.commands.move($state.snapshot(move));
 		this.cancel();
 		if (this.optimistic) {

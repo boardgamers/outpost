@@ -1,3 +1,4 @@
+import { canReviseChoice } from "./src/choice-revisions.js";
 import { PRODUCTION_DECKS, KICKER_SPECS, UPGRADE_SPECS } from "./src/data.js";
 import { nextInt, shuffle } from "./src/prng.js";
 import { RESOURCES } from "./src/types.js";
@@ -40,6 +41,9 @@ export async function move(data: GameState, mv: unknown, player: number): Promis
 	return applyMove(data, mv as Move, player);
 }
 
+export const canMoveOutOfTurn = canReviseChoice;
+export const isLiveUpdate = (data: GameState): boolean => data.liveUpdate === true;
+
 export function ended(data: GameState): boolean {
 	return data.ended;
 }
@@ -53,10 +57,12 @@ export function rankings(data: GameState): number[] {
 }
 
 export async function dropPlayer(data: GameState, player: number): Promise<GameState> {
+	data.liveUpdate = false;
 	return dropPlayerCore(data, player);
 }
 
 export async function moveAI(data: GameState, player: number): Promise<GameState> {
+	data.liveUpdate = false;
 	return moveAICore(data, player);
 }
 
@@ -123,7 +129,7 @@ function hideProduced(
 		// fastBid: another player's sealed bid stays hidden while its auction
 		// runs; once the auction resolves every bid is revealed, including
 		// losing ones. Sequential auctions keep every bid public throughout.
-		return { ...entry, move: { action: "bid", amount: -1 } };
+		return { ...entry, move: { ...entry.move, amount: -1 } };
 	}
 	if (
 		fastBid &&
@@ -285,7 +291,7 @@ function maskLog(
 			entry.move.action === "mega" &&
 			entry.player !== viewer
 		) {
-			return { ...entry, move: { action: "mega" as const, take: {} }, info: { megaSealed: true as const } };
+			return { ...entry, move: { ...entry.move, take: {} }, info: { megaSealed: true as const } };
 		}
 		return hideProduced(
 			entry,

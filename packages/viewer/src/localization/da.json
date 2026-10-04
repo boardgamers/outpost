@@ -1198,5 +1198,8 @@
 	"Auction details": "Auktionsdetaljer",
 	"Revealed bids": "Afslørede bud",
 	"Paid ◈ {p0}": "Betalt ◈ {p0}",
-	"Due ◈ {p0}": "At betale ◈ {p0}"
+	"Due ◈ {p0}": "At betale ◈ {p0}",
+	"Change bid": "Ændr bud",
+	"Change choice": "Ændr valg",
+	"Production choice submitted.": "Produktionsvalg indsendt."
 }

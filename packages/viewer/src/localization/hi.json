@@ -1198,5 +1198,8 @@
 	"Auction details": "नीलामी का विवरण",
 	"Revealed bids": "प्रकट की गई बोलियाँ",
 	"Paid ◈ {p0}": "भुगतान ◈ {p0}",
-	"Due ◈ {p0}": "देय ◈ {p0}"
+	"Due ◈ {p0}": "देय ◈ {p0}",
+	"Change bid": "बोली बदलें",
+	"Change choice": "चयन बदलें",
+	"Production choice submitted.": "उत्पादन का चयन भेज दिया गया।"
 }

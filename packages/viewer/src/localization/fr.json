@@ -1198,5 +1198,8 @@
 	"Auction details": "Détails de l’enchère",
 	"Revealed bids": "Enchères révélées",
 	"Paid ◈ {p0}": "Payé ◈ {p0}",
-	"Due ◈ {p0}": "À payer ◈ {p0}"
+	"Due ◈ {p0}": "À payer ◈ {p0}",
+	"Change bid": "Modifier l’enchère",
+	"Change choice": "Modifier mon choix",
+	"Production choice submitted.": "Choix de production envoyé."
 }
