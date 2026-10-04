@@ -1195,5 +1195,6 @@
 	"{p0} pending": "{p0} mangler",
 	"Discount ◈ {p0}": "Rabat ◈ {p0}",
 	"Bid submitted": "Bud afgivet",
-	"Auction details": "Auktionsdetaljer"
+	"Auction details": "Auktionsdetaljer",
+	"Revealed bids": "Afslørede bud"
 }

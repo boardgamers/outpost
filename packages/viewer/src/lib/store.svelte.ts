@@ -355,6 +355,11 @@ export class ViewerStore {
 			this.commands.fetchState();
 			return;
 		}
+		if (entries.some((entry) => entry.type === "move" && entry.info?.winningBid !== undefined)) {
+			// The resolution also reveals earlier bid entries, so refresh the full log.
+			this.commands.fetchState();
+			return;
+		}
 		if (payload.start >= this.logLines.length) {
 			const appended = entries.map((entry) => describeLogEntry(base, entry));
 			this.logLines = [...this.logLines, ...appended];

@@ -1195,5 +1195,6 @@
 	"{p0} pending": "{p0} 人待出價",
 	"Discount ◈ {p0}": "折扣 ◈ {p0}",
 	"Bid submitted": "已提交出價",
-	"Auction details": "拍賣詳情"
+	"Auction details": "拍賣詳情",
+	"Revealed bids": "已揭曉的出價"
 }

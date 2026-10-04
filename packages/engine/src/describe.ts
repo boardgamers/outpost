@@ -1,4 +1,5 @@
 import { FACTORIES, KICKER_SPECS, UPGRADE_SPECS } from "./data.js";
+import { sealedAuctionHistory } from "./auction-history.js";
 import type { GameState, LogEntry, MoveInfo } from "./types.js";
 
 /** Display name of the card a move concerns (colony upgrade or Kicker card). */
@@ -43,11 +44,15 @@ function autoPassSuffix(state: GameState, info: MoveInfo | undefined): string {
  * no auto-pass names. Once the resolving move is logged the real moves are
  * revealed (amounts, passes) by the wrapper's unmasking and described fully.
  */
-function sealedQuiet(state: GameState): boolean {
-	return state.phase === "auction" && state.auction?.bids !== undefined;
+function sealedQuiet(state: GameState, entry: LogEntry, revealed?: boolean): boolean {
+	return (
+		state.phase === "auction" &&
+		state.auction?.bids !== undefined &&
+		!(revealed ?? sealedAuctionHistory(state.log).revealed.has(state.log.indexOf(entry)))
+	);
 }
 
-export function describeLogEntry(state: GameState, entry: LogEntry): string {
+export function describeLogEntry(state: GameState, entry: LogEntry, sealedBidVisible?: boolean): string {
 	switch (entry.type) {
 		case "init":
 			return `Game started with ${entry.players} players`;
@@ -82,7 +87,7 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 					// fastBid: while the sealed bids are collected, the opening is
 					// neutral for everyone (even the auctioneer — the amount is
 					// sealed). After resolution the wrapper reveals the bid.
-					if (sealedQuiet(state) || move.bid < 0) {
+					if (sealedQuiet(state, entry, sealedBidVisible) || move.bid < 0) {
 						return `${name} puts ${cardName(info, "an upgrade")} up for sealed auction`;
 					}
 					return (
@@ -94,7 +99,7 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 						const won = playerName(state, info.winner ?? entry.player);
 						return `${name} bids ${move.amount} (sealed) — ${won} wins at ${sealedPrice(info)}`;
 					}
-					if (sealedQuiet(state) || move.amount < 0) {
+					if (sealedQuiet(state, entry, sealedBidVisible) || move.amount < 0) {
 						return `${name} takes part in the sealed auction`;
 					}
 					return `${name} bids ${move.amount}` + autoPassSuffix(state, info);
@@ -105,7 +110,7 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 						const won = playerName(state, info.winner ?? entry.player);
 						return `${name} passes — ${won} wins the sealed auction at ${sealedPrice(info)}`;
 					}
-					if (sealedQuiet(state)) {
+					if (sealedQuiet(state, entry, sealedBidVisible)) {
 						return `${name} takes part in the sealed auction`;
 					}
 					return `${name} passes on the auction` + autoPassSuffix(state, info);
@@ -158,5 +163,6 @@ export function describeLogEntry(state: GameState, entry: LogEntry): string {
 }
 
 export function describeLog(state: GameState): string[] {
-	return state.log.map((entry) => describeLogEntry(state, entry));
+	const { revealed } = sealedAuctionHistory(state.log);
+	return state.log.map((entry, index) => describeLogEntry(state, entry, revealed.has(index)));
 }

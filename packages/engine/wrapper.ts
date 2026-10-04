@@ -4,6 +4,7 @@ import { RESOURCES } from "./src/types.js";
 import { maxBid, needsMegaChoice } from "./src/state.js";
 import { moveAI as moveAICore } from "./src/ai.js";
 import { describeLogEntry } from "./src/describe.js";
+import { sealedAuctionHistory } from "./src/auction-history.js";
 import { applyMove, dropPlayer as dropPlayerCore, initGame } from "./src/moves.js";
 import { rankings as computeRankings } from "./src/rankings.js";
 import { replay as replayCore } from "./src/replay.js";
@@ -183,43 +184,6 @@ function hideProduced(
 	};
 }
 
-/**
- * fastBid reveal: the log indexes whose sealed bids are public because their
- * auction has already resolved by that point. The resolving move itself (the
- * one carrying info.winningBid) is where the bids turn visible, so its own
- * index is included. A stripped log is the source of truth for replays, so
- * the reveal must be derivable from the stripped entries alone — it is: the
- * resolution outcome (winningBid/secondBid/winner) is deliberately never
- * masked, and auction boundaries are marked by "auction" moves.
- */
-function revealedBidIndexes(log: LogEntry[]): Set<number> {
-	const revealed = new Set<number>();
-	// Indexes of the bid moves of the auction currently collecting sealed bids.
-	let pending: number[] = [];
-	for (let i = 0; i < log.length; i++) {
-		const entry = log[i] as LogEntry;
-		if (entry.type !== "move") {
-			continue;
-		}
-		if (entry.move.action === "auction") {
-			pending = [i];
-			continue;
-		}
-		if (entry.move.action === "bid") {
-			pending.push(i);
-		}
-		if (entry.info?.winningBid !== undefined) {
-			// The auction resolves here: every sealed bid of it is revealed.
-			for (const j of pending) {
-				revealed.add(j);
-			}
-			revealed.add(i);
-			pending = [];
-		}
-	}
-	return revealed;
-}
-
 export function stripSecret(data: GameState, player?: number): GameState {
 	const viewer = player !== undefined && player >= 0 ? player : undefined;
 	// fastBid: other players' sealed bids are hidden while the auction runs.
@@ -303,7 +267,7 @@ function maskLog(
 	start = 0,
 	end = data.log.length
 ): (LogEntry & { simple?: string })[] {
-	const revealed = revealedBidIndexes(data.log);
+	const { revealed } = sealedAuctionHistory(data.log);
 	const hideOwn = hideOwnProduction(data, viewer);
 	// An exchange's received card is parked on the upgrade until the exchange
 	// step (end of the discard phase) closes, i.e. while data.exchange is set.
@@ -357,9 +321,10 @@ export function logSlice(data: GameState, options?: LogSliceOptions): LogSliceRe
 	// in the game list, and our structured entries otherwise stringify to noise.
 	// describeLogEntry never reveals hidden values (unresolved sealed bids,
 	// exchange takes).
-	const log = maskLog(data, viewer, start, end).map((masked) => ({
+	const { revealed } = sealedAuctionHistory(data.log);
+	const log = maskLog(data, viewer, start, end).map((masked, index) => ({
 		...masked,
-		simple: describeLogEntry(data, masked),
+		simple: describeLogEntry(data, masked, revealed.has(start + index)),
 	}));
 	const result: LogSliceResult = { log };
 	if (options?.end === undefined) {

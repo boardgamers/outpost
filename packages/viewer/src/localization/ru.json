@@ -1195,5 +1195,6 @@
 	"{p0} pending": "Ожидается: {p0}",
 	"Discount ◈ {p0}": "Скидка ◈ {p0}",
 	"Bid submitted": "Ставка отправлена",
-	"Auction details": "Подробности аукциона"
+	"Auction details": "Подробности аукциона",
+	"Revealed bids": "Раскрытые ставки"
 }

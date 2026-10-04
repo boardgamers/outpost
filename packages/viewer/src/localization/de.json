@@ -1195,5 +1195,6 @@
 	"{p0} pending": "{p0} ausstehend",
 	"Discount ◈ {p0}": "Rabatt ◈ {p0}",
 	"Bid submitted": "Gebot abgegeben",
-	"Auction details": "Auktionsdetails"
+	"Auction details": "Auktionsdetails",
+	"Revealed bids": "Aufgedeckte Gebote"
 }

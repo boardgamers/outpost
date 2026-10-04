@@ -1195,5 +1195,6 @@
 	"{p0} pending": "{p0} pendentes",
 	"Discount ◈ {p0}": "Desconto ◈ {p0}",
 	"Bid submitted": "Lance enviado",
-	"Auction details": "Detalhes do leilão"
+	"Auction details": "Detalhes do leilão",
+	"Revealed bids": "Lances revelados"
 }

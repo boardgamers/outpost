@@ -1195,5 +1195,6 @@
 	"{p0} pending": "{p0} pending",
 	"Discount ◈ {p0}": "Discount ◈ {p0}",
 	"Bid submitted": "Bid submitted",
-	"Auction details": "Auction details"
+	"Auction details": "Auction details",
+	"Revealed bids": "Revealed bids"
 }

@@ -1195,5 +1195,6 @@
 	"{p0} pending": "{p0} در انتظار",
 	"Discount ◈ {p0}": "تخفیف ◈ {p0}",
 	"Bid submitted": "پیشنهاد ثبت شد",
-	"Auction details": "جزئیات حراج"
+	"Auction details": "جزئیات حراج",
+	"Revealed bids": "پیشنهادهای آشکارشده"
 }

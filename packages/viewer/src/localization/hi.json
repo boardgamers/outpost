@@ -1195,5 +1195,6 @@
 	"{p0} pending": "{p0} बाकी",
 	"Discount ◈ {p0}": "छूट ◈ {p0}",
 	"Bid submitted": "बोली भेजी गई",
-	"Auction details": "नीलामी का विवरण"
+	"Auction details": "नीलामी का विवरण",
+	"Revealed bids": "प्रकट की गई बोलियाँ"
 }

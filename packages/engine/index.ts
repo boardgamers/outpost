@@ -8,5 +8,6 @@ export * from "./src/production.js";
 export * from "./src/moves.js";
 export * from "./src/rankings.js";
 export * from "./src/describe.js";
+export * from "./src/auction-history.js";
 export * from "./src/replay.js";
 export * from "./src/ai.js";

@@ -1195,5 +1195,6 @@
 	"{p0} pending": "Còn chờ: {p0}",
 	"Discount ◈ {p0}": "Giảm giá ◈ {p0}",
 	"Bid submitted": "Đã gửi giá đấu",
-	"Auction details": "Chi tiết đấu giá"
+	"Auction details": "Chi tiết đấu giá",
+	"Revealed bids": "Giá đấu đã công bố"
 }

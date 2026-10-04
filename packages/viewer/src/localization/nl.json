@@ -1195,5 +1195,6 @@
 	"{p0} pending": "Nog te bieden: {p0}",
 	"Discount ◈ {p0}": "Korting ◈ {p0}",
 	"Bid submitted": "Bod ingediend",
-	"Auction details": "Veilingdetails"
+	"Auction details": "Veilingdetails",
+	"Revealed bids": "Onthulde biedingen"
 }

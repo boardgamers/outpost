@@ -1195,5 +1195,6 @@
 	"{p0} pending": "În așteptare: {p0}",
 	"Discount ◈ {p0}": "Reducere ◈ {p0}",
 	"Bid submitted": "Ofertă trimisă",
-	"Auction details": "Detaliile licitației"
+	"Auction details": "Detaliile licitației",
+	"Revealed bids": "Oferte dezvăluite"
 }

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { tick, untrack } from "svelte";
+	import { sealedAuctionHistory } from "outpost-engine";
 	import type { ViewerStore } from "./store.svelte";
 
 	interface Props {
@@ -8,6 +9,7 @@
 
 	let { store }: Props = $props();
 	const lines = $derived(store.logLines);
+	const results = $derived(sealedAuctionHistory(store.liveState?.log ?? []).results);
 	const recent = $derived(lines.map((line, index) => ({ line, index })).slice(-150));
 	let feed = $state<HTMLDivElement>();
 	let content = $state<HTMLDivElement>();
@@ -68,6 +70,22 @@
 				{:else}
 					<div class="entry" class:latest={item.index === lines.length - 1}>{item.line}</div>
 				{/if}
+				{#if results.get(item.index)}
+					{@const result = results.get(item.index)!}
+					<div class="auction-result">
+						<div class="result-label">Revealed bids</div>
+						<ul>
+							{#each result.bids as bid (bid.player)}
+								<li class:winner={bid.player === result.winner}>
+									<span class="bidder" translate="no"
+										>{store.liveState?.players[bid.player]?.name ?? `Player ${bid.player + 1}`}</span
+									>
+									<strong>{bid.amount === 0 ? "Pass" : `◈ ${bid.amount}`}</strong>
+								</li>
+							{/each}
+						</ul>
+					</div>
+				{/if}
 			{/each}
 			{#if recent.length === 0}
 				<div class="entry dim">No events yet</div>
@@ -77,6 +95,43 @@
 </div>
 
 <style>
+	.auction-result {
+		border-left: 2px solid var(--gold);
+		padding: 5px 8px;
+		margin: 1px 0 5px;
+		background: color-mix(in srgb, var(--gold) 5%, transparent);
+		font-size: 12px;
+	}
+	.result-label {
+		color: var(--text-mid);
+		font-size: 10px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+	}
+	.auction-result ul {
+		list-style: none;
+		margin: 3px 0 0;
+		padding: 0;
+	}
+	.auction-result li {
+		display: flex;
+		justify-content: space-between;
+		gap: 12px;
+		color: var(--text);
+	}
+	.bidder {
+		min-width: 0;
+		overflow-wrap: anywhere;
+	}
+	.auction-result strong {
+		white-space: nowrap;
+		font-variant-numeric: tabular-nums;
+	}
+	.auction-result .winner {
+		color: var(--gold);
+		font-weight: 600;
+	}
 	.side {
 		display: flex;
 		flex-direction: column;

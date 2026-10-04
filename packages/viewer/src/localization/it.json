@@ -1195,5 +1195,6 @@
 	"{p0} pending": "In attesa: {p0}",
 	"Discount ◈ {p0}": "Sconto ◈ {p0}",
 	"Bid submitted": "Offerta inviata",
-	"Auction details": "Dettagli dell’asta"
+	"Auction details": "Dettagli dell’asta",
+	"Revealed bids": "Offerte rivelate"
 }

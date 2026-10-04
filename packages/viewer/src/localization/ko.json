@@ -1195,5 +1195,6 @@
 	"{p0} pending": "{p0}명 대기 중",
 	"Discount ◈ {p0}": "할인 ◈ {p0}",
 	"Bid submitted": "입찰 제출 완료",
-	"Auction details": "경매 안내"
+	"Auction details": "경매 안내",
+	"Revealed bids": "공개된 입찰"
 }
