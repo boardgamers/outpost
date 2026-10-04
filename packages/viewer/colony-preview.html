@@ -1,0 +1,33 @@
+<meta charset="utf-8" />
+<title>Outpost — colony design preview</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<div id="app" style="max-width: 1200px; margin: 16px auto; padding: 0 16px"></div>
+<script type="module">
+	import { mount } from "svelte";
+	import ColonyScene from "./src/lib/ColonyScene.svelte";
+	import { initGame } from "../engine/src/moves.ts";
+	import "./src/lib/theme.css";
+	const state = initGame(3, { kicker: true }, "colony-review");
+	state.round = 14;
+	state.players[0].name = "Developed colony";
+	state.players[0].factories = [
+		{ type: "ore", manned: true },
+		{ type: "ore", manned: false },
+		{ type: "water", manned: true },
+		{ type: "titanium", manned: true },
+		{ type: "research", manned: true },
+		{ type: "newChemicals", manned: true },
+		{ type: "water", manned: false },
+		{ type: "titanium", manned: true },
+	];
+	for (const upgrade of Object.keys(state.players[0].upgrades)) {
+		state.players[0].upgrades[upgrade] = 1;
+	}
+	for (const kicker of Object.keys(state.players[0].kickers)) {
+		state.players[0].kickers[kicker] = 1;
+	}
+	state.players[1].name = "Idle colony";
+	state.players[2].name = "Starting colony";
+	state.players[1].factories.forEach((f) => (f.manned = false));
+	mount(ColonyScene, { target: document.querySelector("#app"), props: { state, playerIndex: 0 } });
+</script>

@@ -10,6 +10,7 @@
 	import LogFeed from "./lib/LogFeed.svelte";
 	import ChatPanel from "./lib/ChatPanel.svelte";
 	import SpaceScene from "./lib/SpaceScene.svelte";
+	import ColonyScene from "./lib/ColonyScene.svelte";
 
 	interface Props {
 		store: ViewerStore;
@@ -20,7 +21,7 @@
 	const state = $derived(store.state);
 </script>
 
-<SpaceScene gameState={state} {store} />
+<SpaceScene />
 
 {#if state}
 	<div class="board">
@@ -57,6 +58,9 @@
 					<MarketPanel {state} {store} />
 				</div>
 			</div>
+			{#if store.preferences.showColony !== false}
+				<ColonyScene {state} {store} playerIndex={store.playerIndex} locale={store.preferences.locale} />
+			{/if}
 		</div>
 	</div>
 {:else}

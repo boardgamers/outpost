@@ -18,7 +18,17 @@ if (kicker) {
 }
 
 const emitter = window.outpost.launch("#app");
-mountSoundTests((sound) => emitter.emit("preferences", { sound }));
+const previewPreferences = { sound: true, showColony: true };
+mountSoundTests(
+	(sound) => {
+		previewPreferences.sound = sound;
+		emitter.emit("preferences", { ...previewPreferences });
+	},
+	(showColony) => {
+		previewPreferences.showColony = showColony;
+		emitter.emit("preferences", { ...previewPreferences });
+	}
+);
 startDevBackend(emitter, { players, seed, auto, delayMs, gameOptions });
 
 (window as unknown as { outpostDev?: unknown }).outpostDev = {
