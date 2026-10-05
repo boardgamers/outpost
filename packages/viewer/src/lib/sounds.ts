@@ -137,15 +137,12 @@ export function createActionSounds() {
 	};
 }
 
-export function mountSoundTests(
-	onPreferenceChange: (sound: boolean) => void,
-	onColonyPreferenceChange?: (visible: boolean) => void
-): void {
+export function mountSoundTests(onPreferenceChange: (sound: boolean) => void): void {
 	const panel = document.createElement("details");
 	panel.style.cssText =
 		"position:relative;z-index:5;padding:10px 16px;margin:8px;background:#172638;color:#f0f4f8;border:1px solid #56718a;border-radius:8px;font:14px system-ui";
 	const summary = document.createElement("summary");
-	summary.textContent = "Playtest tools · preferences and sounds";
+	summary.textContent = "Playtest tools · sounds";
 	panel.append(summary);
 	const label = document.createElement("label");
 	label.style.margin = "10px";
@@ -166,25 +163,6 @@ export function mountSoundTests(
 			"margin:8px 4px;padding:7px 12px;color:#f0f4f8;background:#294663;border:1px solid #7391ad;border-radius:5px;cursor:pointer";
 		button.onclick = () => playSound(name);
 		panel.append(button);
-	}
-	if (onColonyPreferenceChange) {
-		const colonyLabel = document.createElement("label");
-		colonyLabel.style.margin = "10px";
-		const colonyToggle = document.createElement("input");
-		colonyToggle.type = "checkbox";
-		colonyToggle.checked = true;
-		try {
-			colonyToggle.checked = localStorage.getItem("outpost.showColony") !== "false";
-		} catch {}
-		colonyToggle.onchange = () => {
-			try {
-				localStorage.setItem("outpost.showColony", String(colonyToggle.checked));
-			} catch {}
-			onColonyPreferenceChange(colonyToggle.checked);
-		};
-		colonyLabel.append(colonyToggle, " Show colony surface");
-		panel.append(colonyLabel);
-		onColonyPreferenceChange(colonyToggle.checked);
 	}
 	document.body.prepend(panel);
 }

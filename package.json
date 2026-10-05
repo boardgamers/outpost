@@ -20,7 +20,8 @@
 		"test:tutorial:browser": "node tests/tutorial-browser.mjs",
 		"preview:tutorial": "node tests/tutorial-preview.mjs",
 		"test:locales": "node scripts/check-locales.mjs packages/viewer/src/localization && node --test scripts/localization.test.mjs",
-		"test:scroll": "node tests/mobile-scroll.mjs"
+		"test:scroll": "node tests/mobile-scroll.mjs",
+		"test:bulk": "node tests/bulk-purchase-browser.mjs"
 	},
 	"devDependencies": {
 		"oxfmt": "0.61.0",

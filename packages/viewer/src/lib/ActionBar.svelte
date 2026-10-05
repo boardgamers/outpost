@@ -19,7 +19,7 @@
 
 	let { store }: Props = $props();
 
-	const state = $derived(store.state);
+	const gameState = $derived(store.state);
 	$effect(() => {
 		store.submitAutomaticMega();
 	});
@@ -28,7 +28,7 @@
 	const staged = $derived(
 		store.turnBuys.map((buy) =>
 			buy.buy === "factory"
-				? `${RESOURCE_LABELS[buy.factory]} factory`
+				? `${buy.count ?? 1} ${RESOURCE_LABELS[buy.factory]} ${(buy.count ?? 1) === 1 ? "factory" : "factories"}`
 				: buy.buy === "population"
 					? `${buy.count} colonist${buy.count === 1 ? "" : "s"}`
 					: `${buy.count} robot${buy.count === 1 ? "" : "s"}`
@@ -36,11 +36,37 @@
 	);
 	const total = $derived(store.pickTotal());
 	const pickCount = $derived(store.cardPick.length);
-	const auctionName = $derived(state?.auction ? auctionCard(state.auction).name : "");
+	const auctionName = $derived(gameState?.auction ? auctionCard(gameState.auction).name : "");
 	const needsResearch = $derived(pending?.kind === "factory" && FACTORIES[pending.factory].needsResearchCard === true);
-	const hasResearch = $derived(!!me && store.cardPick.some((i) => me.hand[i]?.t === "research"));
+	const researchCount = $derived(store.cardPick.filter((i) => me?.hand[i]?.t === "research").length);
+	const purchaseLabel = (count: number) =>
+		pending?.kind === "factory"
+			? `${count} ${RESOURCE_LABELS[pending.factory]} ${count === 1 ? "factory" : "factories"}`
+			: pending?.kind === "population"
+				? `${count} ${count === 1 ? "colonist" : "colonists"}`
+				: `${count} ${count === 1 ? "robot" : "robots"}`;
+	let warnedPurchase = $state<string | null>(null);
+	const purchaseKey = $derived(JSON.stringify([pending, store.cardPick, total]));
+	const needsBulkWarning = $derived(!!pending && store.pendingSelectedCount > pending.count);
+	const confirmingSuboptimal = $derived(needsBulkWarning && warnedPurchase === purchaseKey);
+	$effect(() => {
+		if (!pending || warnedPurchase !== purchaseKey) {
+			warnedPurchase = null;
+		}
+	});
+	function buyPending() {
+		if (!store.pendingValid()) {
+			return;
+		}
+		if (needsBulkWarning && !confirmingSuboptimal) {
+			warnedPurchase = purchaseKey;
+			return;
+		}
+		store.confirmPending();
+	}
+
 	const waitingOn = $derived.by((): string => {
-		const s = state;
+		const s = gameState;
 		if (!s || s.ended) {
 			return "";
 		}
@@ -102,7 +128,7 @@
 	});
 </script>
 
-{#if state && !state.ended && !store.replay.active}
+{#if gameState && !gameState.ended && !store.replay.active}
 	<div class="actionbar" class:browsing={store.myActionTurn && !pending} data-tutorial="actions">
 		{#if !store.myBidTurn}
 			{#if store.myMega && me}
@@ -199,30 +225,53 @@
 						<button class="cancel" onclick={() => store.cancel()}>Back</button>
 					</div>
 				{:else if pending}
-					<div class="flow">
-						<span class="hint">
-							{#if pending.kind === "factory"}
-								{`Building ${pending.count} ${RESOURCE_LABELS[pending.factory]} ${pending.count === 1 ? "factory" : "factories"} (produces ◈ ${MIN_CARD_VALUE[pending.factory]}–${MAX_CARD_VALUE[pending.factory]} per round when manned):`}
-							{:else if pending.kind === "population"}
-								{`Colonists to recruit: ${pending.count}`}
-							{:else}
-								{`Robots to buy: ${pending.count}`}
-							{/if}
+					<div class="flow purchase-flow">
+						<span class="purchase-name">{purchaseLabel(pending.count)}</span>
+						<div class="quantity-control">
+							<span class="quantity-label">Quantity</span>
+							<button
+								aria-label="Decrease quantity"
+								onclick={() => store.bumpPendingCount(-1)}
+								disabled={pending.count <= 1}>−</button
+							>
+							<span class="quantity-value" aria-live="polite" translate="no">{pending.count}</span>
+							<button
+								aria-label="Increase quantity"
+								onclick={() => store.bumpPendingCount(1)}
+								disabled={pending.count >= store.pendingMaxCount}>+</button
+							>
+							<button
+								class="quantity-max"
+								disabled={pending.count >= store.pendingMaxCount}
+								onclick={() => store.setPendingCount(store.pendingMaxCount)}>Max</button
+							>
+						</div>
+						<span class="hint payment-preview">
 							selected ◈ {total} / ◈ {pending.cost}.
-							{#if needsResearch && !hasResearch}
-								<span class="warn"
-									>Payment must include a research card{pending.kind === "factory" && pending.count > 1
-										? ` per factory (◈ ${pending.count} research)`
-										: ""}.</span
+							{#if total > pending.cost}
+								<span class="overpay" class:warn={confirmingSuboptimal}
+									>{`◈ ${total - pending.cost} lost (no change).`}</span
 								>
 							{/if}
 						</span>
-						{#if pending.kind === "factory" || pending.kind === "population" || pending.kind === "robots"}
-							<button onclick={() => store.bumpPendingCount(-1)} disabled={pending.count <= 1}>−</button>
-							<button onclick={() => store.bumpPendingCount(1)}>+1</button>
+						{#if needsResearch && researchCount < pending.count}
+							<span class="hint warn">{`Include ${pending.count} research card(s) in payment.`}</span>
+						{:else if store.pendingSelectedCount > pending.count}
+							<span
+								class="hint bulk-hint"
+								class:dim={!confirmingSuboptimal}
+								class:warn={confirmingSuboptimal}
+								role={confirmingSuboptimal ? "alert" : undefined}
+							>
+								{confirmingSuboptimal
+									? `These cards can buy ${purchaseLabel(store.pendingSelectedCount)}. Buy fewer anyway?`
+									: `Selected cards cover ${purchaseLabel(store.pendingSelectedCount)}.`}
+							</span>
 						{/if}
-						<button class="confirm" disabled={!store.pendingValid()} onclick={() => store.confirmPending()}>
-							Confirm (◈ {pending.cost})
+						<button class="confirm" disabled={!store.pendingValid()} onclick={buyPending}>
+							{confirmingSuboptimal
+								? `Buy ${purchaseLabel(pending.count)} anyway · ◈ ${pending.cost}`
+								: `Buy ${purchaseLabel(pending.count)} · ◈ ${pending.cost}`}
 						</button>
 						<button class="cancel" onclick={() => store.cancel()}>Cancel</button>
 					</div>
@@ -284,7 +333,7 @@
 				{/if}
 			{:else}
 				<div class="flow">
-					{#if state?.phase === "mega" && me?.megaChoice !== undefined}
+					{#if gameState?.phase === "mega" && me?.megaChoice !== undefined}
 						<span class="hint">Production choice submitted.</span>
 						{#if store.revisableChoice}<button class="end" onclick={() => store.changeChoice()}>Change choice</button
 							>{/if}
@@ -478,6 +527,44 @@
 	.buy[class*="res-"] :global(.res-icon) {
 		color: var(--res);
 	}
+	.purchase-name {
+		flex-basis: 100%;
+		font-size: 13px;
+		font-weight: 700;
+	}
+	.quantity-control {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+	}
+	.quantity-label {
+		font-size: 12px;
+		color: var(--text-mid);
+		margin-right: 4px;
+	}
+	.quantity-control button {
+		min-width: 32px;
+		min-height: 36px;
+		padding: 4px 8px;
+	}
+	.quantity-value {
+		min-width: 24px;
+		text-align: center;
+		font-size: 13px;
+		font-weight: 700;
+		font-variant-numeric: tabular-nums;
+	}
+	.quantity-max {
+		font-size: 12px;
+	}
+	.payment-preview,
+	.bulk-hint {
+		flex-basis: 100%;
+	}
+	.overpay {
+		color: var(--text-mid);
+	}
+
 	.confirm {
 		border-color: var(--gold);
 		font-weight: 700;
@@ -588,6 +675,8 @@
 		.actionbar.browsing {
 			position: static;
 		}
+		.quantity-control button,
+		.purchase-flow > button,
 		.buy,
 		.end {
 			min-height: 44px;

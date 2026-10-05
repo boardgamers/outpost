@@ -1201,5 +1201,16 @@
 	"Due ◈ {p0}": "At betale ◈ {p0}",
 	"Change bid": "Ændr bud",
 	"Change choice": "Ændr valg",
-	"Production choice submitted.": "Produktionsvalg indsendt."
+	"Production choice submitted.": "Produktionsvalg indsendt.",
+	"Buy {p0} · ◈ {p1}": "Køb {p0} · ◈ {p1}",
+	"Decrease quantity": "Reducer antal",
+	"Include {p0} research card(s) in payment.": "Medtag {p0} forskningskort i betalingen.",
+	"Increase quantity": "Forøg antal",
+	"Max": "Maks.",
+	"Quantity": "Antal",
+	"Selected cards cover {p0}.": "Valgte kort dækker {p0}.",
+	"{p0} {p1} factory": "{p0} {p1}-fabrik",
+	"◈ {p0} lost (no change).": "◈ {p0} tabt (ingen byttepenge).",
+	"These cards can buy {p0}. Buy fewer anyway?": "Disse kort kan købe {p0}. Køb færre alligevel?",
+	"Buy {p0} anyway · ◈ {p1}": "Køb {p0} alligevel · ◈ {p1}"
 }

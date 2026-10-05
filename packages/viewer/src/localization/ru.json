@@ -1201,5 +1201,16 @@
 	"Due ◈ {p0}": "К оплате ◈ {p0}",
 	"Change bid": "Изменить ставку",
 	"Change choice": "Изменить выбор",
-	"Production choice submitted.": "Выбор производства отправлен."
+	"Production choice submitted.": "Выбор производства отправлен.",
+	"Buy {p0} · ◈ {p1}": "Купить {p0} · ◈ {p1}",
+	"Decrease quantity": "Уменьшить количество",
+	"Include {p0} research card(s) in payment.": "Включите {p0} карт исследований в оплату.",
+	"Increase quantity": "Увеличить количество",
+	"Max": "Макс.",
+	"Quantity": "Количество",
+	"Selected cards cover {p0}.": "Выбранных карт хватит на {p0}.",
+	"{p0} {p1} factory": "{p0} фабрика {p1}",
+	"◈ {p0} lost (no change).": "◈ {p0} потеряно (без сдачи).",
+	"These cards can buy {p0}. Buy fewer anyway?": "Этих карт хватит на {p0}. Всё равно купить меньше?",
+	"Buy {p0} anyway · ◈ {p1}": "Всё равно купить {p0} · ◈ {p1}"
 }

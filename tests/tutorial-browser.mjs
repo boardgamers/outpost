@@ -32,7 +32,10 @@ try {
 			};
 			const purchase = async (name, cost) => {
 				await button(name).click();
-				await button(`Confirm (◈ ${cost})`).click();
+				await frame
+					.locator(".purchase-flow .confirm")
+					.filter({ hasText: `◈ ${cost}` })
+					.click();
 			};
 			const doStep = async (entry) => {
 				await step(entry.id);

@@ -1201,5 +1201,16 @@
 	"Due ◈ {p0}": "Προς πληρωμή ◈ {p0}",
 	"Change bid": "Αλλαγή προσφοράς",
 	"Change choice": "Αλλαγή επιλογής",
-	"Production choice submitted.": "Η επιλογή παραγωγής υποβλήθηκε."
+	"Production choice submitted.": "Η επιλογή παραγωγής υποβλήθηκε.",
+	"Buy {p0} · ◈ {p1}": "Αγορά {p0} · ◈ {p1}",
+	"Decrease quantity": "Μείωση ποσότητας",
+	"Include {p0} research card(s) in payment.": "Συμπεριλάβετε {p0} κάρτα/κάρτες Έρευνας στην πληρωμή.",
+	"Increase quantity": "Αύξηση ποσότητας",
+	"Max": "Μέγ.",
+	"Quantity": "Ποσότητα",
+	"Selected cards cover {p0}.": "Οι επιλεγμένες κάρτες καλύπτουν {p0}.",
+	"{p0} {p1} factory": "{p0} εργοστάσιο {p1}",
+	"◈ {p0} lost (no change).": "◈ {p0} χάνονται (χωρίς ρέστα).",
+	"These cards can buy {p0}. Buy fewer anyway?": "Αυτές οι κάρτες μπορούν να αγοράσουν {p0}. Αγορά λιγότερων ούτως ή άλλως;",
+	"Buy {p0} anyway · ◈ {p1}": "Αγορά {p0} ούτως ή άλλως · ◈ {p1}"
 }

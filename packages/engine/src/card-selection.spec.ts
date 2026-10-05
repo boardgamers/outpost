@@ -160,3 +160,15 @@ test("payment: dynamic selection matches exhaustive subsets across amounts and r
 		}
 	}
 });
+
+test("payment: bulk New Chemicals reserves one research card per factory", () => {
+	const player = playerWith([
+		{ t: "research", v: 10 },
+		{ t: "microbiotics", v: 10 },
+		{ t: "research", v: 10 },
+		{ t: "newChemicals", v: 88, m: true },
+		{ t: "water", v: 30, m: true },
+	]);
+	assert.deepEqual(bestPayment(player, 120, 2), [0, 2, 3, 4]);
+	assert.equal(bestPayment(player, 120, 3), null);
+});

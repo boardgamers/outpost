@@ -1201,5 +1201,16 @@
 	"Due ◈ {p0}": "A pagar ◈ {p0}",
 	"Change bid": "Alterar lance",
 	"Change choice": "Alterar escolha",
-	"Production choice submitted.": "Escolha de produção enviada."
+	"Production choice submitted.": "Escolha de produção enviada.",
+	"Buy {p0} · ◈ {p1}": "Comprar {p0} · ◈ {p1}",
+	"Decrease quantity": "Diminuir quantidade",
+	"Include {p0} research card(s) in payment.": "Inclua {p0} carta(s) de Pesquisa no pagamento.",
+	"Increase quantity": "Aumentar quantidade",
+	"Max": "Máx.",
+	"Quantity": "Quantidade",
+	"Selected cards cover {p0}.": "As cartas selecionadas cobrem {p0}.",
+	"{p0} {p1} factory": "{p0} fábrica de {p1}",
+	"◈ {p0} lost (no change).": "◈ {p0} perdidos (sem troco).",
+	"These cards can buy {p0}. Buy fewer anyway?": "Estas cartas podem comprar {p0}. Comprar menos mesmo assim?",
+	"Buy {p0} anyway · ◈ {p1}": "Comprar {p0} mesmo assim · ◈ {p1}"
 }

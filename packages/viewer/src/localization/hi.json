@@ -1201,5 +1201,16 @@
 	"Due ◈ {p0}": "देय ◈ {p0}",
 	"Change bid": "बोली बदलें",
 	"Change choice": "चयन बदलें",
-	"Production choice submitted.": "उत्पादन का चयन भेज दिया गया।"
+	"Production choice submitted.": "उत्पादन का चयन भेज दिया गया।",
+	"Buy {p0} · ◈ {p1}": "{p0} खरीदें · ◈ {p1}",
+	"Decrease quantity": "मात्रा घटाएँ",
+	"Include {p0} research card(s) in payment.": "भुगतान में {p0} अनुसंधान कार्ड शामिल करें।",
+	"Increase quantity": "मात्रा बढ़ाएँ",
+	"Max": "अधिकतम",
+	"Quantity": "मात्रा",
+	"Selected cards cover {p0}.": "चुने गए कार्ड {p0} के लिए पर्याप्त हैं।",
+	"{p0} {p1} factory": "{p0} {p1} कारखाना",
+	"◈ {p0} lost (no change).": "◈ {p0} खोए (बाकी नहीं मिलता)।",
+	"These cards can buy {p0}. Buy fewer anyway?": "इन कार्डों से {p0} खरीद सकते हैं। फिर भी कम खरीदें?",
+	"Buy {p0} anyway · ◈ {p1}": "फिर भी {p0} खरीदें · ◈ {p1}"
 }

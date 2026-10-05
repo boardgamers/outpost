@@ -712,12 +712,12 @@ export class ViewerStore {
 	}
 
 	/** Minimize overpayment, then free hand space and preserve research. */
-	suggestPayment(due: number, mustIncludeResearch = false): void {
+	suggestPayment(due: number, requiredResearch: boolean | number = false): void {
 		const me = this.me;
 		if (!me) {
 			return;
 		}
-		this.cardPick = bestPayment(me, due, mustIncludeResearch) ?? [];
+		this.cardPick = bestPayment(me, due, requiredResearch) ?? [];
 	}
 
 	/** Minimize discarded credits while freeing enough hand space. */
@@ -896,34 +896,60 @@ export class ViewerStore {
 		this.suggestPayment(10);
 	}
 
-	bumpPendingCount(delta: number): void {
+	get pendingUnitCost(): number {
+		const pending = this.pending;
+		return pending?.kind === "factory"
+			? FACTORIES[pending.factory].cost
+			: pending?.kind === "population"
+				? this.popCost
+				: 10;
+	}
+
+	get pendingMaxCount(): number {
 		const me = this.me;
 		const pending = this.pending;
 		if (!me || !pending) {
+			return 0;
+		}
+		let cap = Math.floor(this.myHandValue / this.pendingUnitCost);
+		if (pending.kind === "population") {
+			cap = Math.min(cap, populationMax(me) - me.population);
+		} else if (pending.kind === "factory" && FACTORIES[pending.factory].needsResearchCard) {
+			cap = Math.min(cap, me.hand.filter((card) => card.t === "research").length);
+		}
+		return cap;
+	}
+
+	get pendingSelectedCount(): number {
+		let count = Math.min(this.pendingMaxCount, Math.floor(this.pickTotal() / this.pendingUnitCost));
+		if (this.pending?.kind === "factory" && FACTORIES[this.pending.factory].needsResearchCard) {
+			count = Math.min(count, this.cardPick.filter((index) => this.me?.hand[index]?.t === "research").length);
+		}
+		return count;
+	}
+
+	setPendingCount(value: number): void {
+		const pending = this.pending;
+		if (!pending || !Number.isFinite(value) || this.pendingMaxCount < 1) {
 			return;
 		}
-		// Factories have no ownership cap — the only limits are the wallet and,
-		// for New Chemicals, one research card per factory.
-		const unit =
-			pending.kind === "factory"
-				? FACTORIES[pending.factory].cost
-				: pending.kind === "population"
-					? populationCost(me)
-					: 10;
-		let cap = pending.kind === "population" ? populationMax(me) - me.population : Number.MAX_SAFE_INTEGER;
-		if (pending.kind === "factory" && FACTORIES[pending.factory].needsResearchCard) {
-			cap = Math.min(cap, me.hand.filter((c) => c.t === "research").length);
+		const count = Math.min(this.pendingMaxCount, Math.max(1, Math.floor(value)));
+		if (count === pending.count) {
+			return;
 		}
-		// One payment buys `count` copies at once, like colonists and robots — a
-		// big card's value covers count × cost and the overpay is lost.
-		const affordable = Math.max(1, Math.floor(this.myHandValue / unit));
-		const max = Math.max(1, Math.min(cap, affordable));
-		const count = Math.min(max, Math.max(1, pending.count + delta));
-		this.pending = { ...pending, count, cost: count * unit };
-		this.suggestPayment(
-			count * unit,
-			pending.kind === "factory" && FACTORIES[pending.factory].needsResearchCard === true
-		);
+		this.pending = { ...pending, count, cost: count * this.pendingUnitCost };
+		if (!this.pendingValid()) {
+			this.suggestPayment(
+				this.pending.cost,
+				pending.kind === "factory" && FACTORIES[pending.factory].needsResearchCard ? count : 0
+			);
+		}
+	}
+
+	bumpPendingCount(delta: number): void {
+		if (this.pending) {
+			this.setPendingCount(this.pending.count + delta);
+		}
 	}
 
 	pendingValid(): boolean {

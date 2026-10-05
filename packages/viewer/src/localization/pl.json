@@ -1201,5 +1201,16 @@
 	"Due ◈ {p0}": "Do zapłaty ◈ {p0}",
 	"Change bid": "Zmień ofertę",
 	"Change choice": "Zmień wybór",
-	"Production choice submitted.": "Wybór produkcji przesłany."
+	"Production choice submitted.": "Wybór produkcji przesłany.",
+	"Buy {p0} · ◈ {p1}": "Kup {p0} · ◈ {p1}",
+	"Decrease quantity": "Zmniejsz liczbę",
+	"Include {p0} research card(s) in payment.": "Uwzględnij {p0} kart(y) badań w płatności.",
+	"Increase quantity": "Zwiększ liczbę",
+	"Max": "Maks.",
+	"Quantity": "Liczba",
+	"Selected cards cover {p0}.": "Wybrane karty wystarczą na {p0}.",
+	"{p0} {p1} factory": "{p0} fabryka {p1}",
+	"◈ {p0} lost (no change).": "◈ {p0} stracone (bez reszty).",
+	"These cards can buy {p0}. Buy fewer anyway?": "Te karty wystarczą na {p0}. Mimo to kupić mniej?",
+	"Buy {p0} anyway · ◈ {p1}": "Kup {p0} mimo to · ◈ {p1}"
 }

@@ -1201,5 +1201,16 @@
 	"Due ◈ {p0}": "Due ◈ {p0}",
 	"Change bid": "Change bid",
 	"Change choice": "Change choice",
-	"Production choice submitted.": "Production choice submitted."
+	"Production choice submitted.": "Production choice submitted.",
+	"Buy {p0} · ◈ {p1}": "Buy {p0} · ◈ {p1}",
+	"Decrease quantity": "Decrease quantity",
+	"Include {p0} research card(s) in payment.": "Include {p0} research card(s) in payment.",
+	"Increase quantity": "Increase quantity",
+	"Max": "Max",
+	"Quantity": "Quantity",
+	"Selected cards cover {p0}.": "Selected cards cover {p0}.",
+	"{p0} {p1} factory": "{p0} {p1} factory",
+	"◈ {p0} lost (no change).": "◈ {p0} lost (no change).",
+	"These cards can buy {p0}. Buy fewer anyway?": "These cards can buy {p0}. Buy fewer anyway?",
+	"Buy {p0} anyway · ◈ {p1}": "Buy {p0} anyway · ◈ {p1}"
 }

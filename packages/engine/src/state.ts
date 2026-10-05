@@ -292,13 +292,8 @@ function addToSelection(selection: CardSelection, card: ProductionCard, index: n
 	};
 }
 
-function selectCards(
-	player: PlayerState,
-	target: number,
-	discard: boolean,
-	mustIncludeResearch = false
-): number[] | null {
-	if (target <= 0 && !mustIncludeResearch) {
+function selectCards(player: PlayerState, target: number, discard: boolean, requiredResearch = 0): number[] | null {
+	if (target <= 0 && requiredResearch === 0) {
 		return [];
 	}
 	const empty: CardSelection = { total: 0, space: 0, megas: 0, research: 0, picked: [] };
@@ -312,7 +307,7 @@ function selectCards(
 			const amount = discard ? candidate.space : candidate.total;
 			// Keep research-bearing payments separate so a better unrestricted
 			// payment cannot erase the only valid New Chemicals payment.
-			const nextKey = amount * 2 + Number(mustIncludeResearch && candidate.research > 0);
+			const nextKey = amount * (requiredResearch + 1) + Math.min(requiredResearch, candidate.research);
 			if (preferSelection(candidate, choices.get(nextKey))) {
 				choices.set(nextKey, candidate);
 			}
@@ -320,7 +315,7 @@ function selectCards(
 	}
 	let best: CardSelection | undefined;
 	for (const candidate of choices.values()) {
-		if ((discard ? candidate.space : candidate.total) < target || (mustIncludeResearch && candidate.research === 0)) {
+		if ((discard ? candidate.space : candidate.total) < target || candidate.research < requiredResearch) {
 			continue;
 		}
 		if (preferSelection(candidate, best)) {
@@ -330,8 +325,12 @@ function selectCards(
 	return best?.picked ?? null;
 }
 
-export function bestPayment(player: PlayerState, due: number, mustIncludeResearch = false): number[] | null {
-	return selectCards(player, due, false, mustIncludeResearch);
+export function bestPayment(
+	player: PlayerState,
+	due: number,
+	requiredResearch: boolean | number = false
+): number[] | null {
+	return selectCards(player, due, false, Number(requiredResearch));
 }
 
 export function bestDiscard(player: PlayerState): number[] {

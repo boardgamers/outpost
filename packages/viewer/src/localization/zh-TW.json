@@ -1201,5 +1201,16 @@
 	"Due ◈ {p0}": "應付 ◈ {p0}",
 	"Change bid": "更改出價",
 	"Change choice": "更改選擇",
-	"Production choice submitted.": "已提交生產選擇。"
+	"Production choice submitted.": "已提交生產選擇。",
+	"Buy {p0} · ◈ {p1}": "購買 {p0} · ◈ {p1}",
+	"Decrease quantity": "減少數量",
+	"Include {p0} research card(s) in payment.": "付款中需包含 {p0} 張研究卡。",
+	"Increase quantity": "增加數量",
+	"Max": "最多",
+	"Quantity": "數量",
+	"Selected cards cover {p0}.": "所選卡牌足以購買 {p0}。",
+	"{p0} {p1} factory": "{p0} 座{p1}工廠",
+	"◈ {p0} lost (no change).": "損失 ◈ {p0}（不找零）。",
+	"These cards can buy {p0}. Buy fewer anyway?": "這些卡牌可購買 {p0}。仍要買更少嗎？",
+	"Buy {p0} anyway · ◈ {p1}": "仍然購買 {p0} · ◈ {p1}"
 }

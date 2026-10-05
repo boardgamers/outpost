@@ -1201,5 +1201,16 @@
 	"Due ◈ {p0}": "Cần trả ◈ {p0}",
 	"Change bid": "Đổi giá đấu",
 	"Change choice": "Đổi lựa chọn",
-	"Production choice submitted.": "Đã gửi lựa chọn sản xuất."
+	"Production choice submitted.": "Đã gửi lựa chọn sản xuất.",
+	"Buy {p0} · ◈ {p1}": "Mua {p0} · ◈ {p1}",
+	"Decrease quantity": "Giảm số lượng",
+	"Include {p0} research card(s) in payment.": "Bao gồm {p0} thẻ Nghiên cứu trong thanh toán.",
+	"Increase quantity": "Tăng số lượng",
+	"Max": "Tối đa",
+	"Quantity": "Số lượng",
+	"Selected cards cover {p0}.": "Các thẻ đã chọn đủ mua {p0}.",
+	"{p0} {p1} factory": "{p0} nhà máy {p1}",
+	"◈ {p0} lost (no change).": "Mất ◈ {p0} (không trả lại tiền thừa).",
+	"These cards can buy {p0}. Buy fewer anyway?": "Các thẻ này có thể mua {p0}. Vẫn mua ít hơn?",
+	"Buy {p0} anyway · ◈ {p1}": "Vẫn mua {p0} · ◈ {p1}"
 }

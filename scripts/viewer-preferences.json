@@ -1,19 +1,4 @@
 {
-	"viewer": {
-		"chat": true
-	},
-	"preferences": [
-		{
-			"name": "sound",
-			"label": "Game action sounds",
-			"type": "checkbox",
-			"default": true
-		},
-		{
-			"name": "showColony",
-			"label": "Show colony surface",
-			"type": "checkbox",
-			"default": true
-		}
-	]
+	"viewer": { "chat": true },
+	"preferences": [{ "name": "sound", "label": "Game action sounds", "type": "checkbox", "default": true }]
 }

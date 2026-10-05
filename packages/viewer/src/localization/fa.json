@@ -1201,5 +1201,16 @@
 	"Due ◈ {p0}": "مبلغ قابل پرداخت ◈ {p0}",
 	"Change bid": "تغییر پیشنهاد",
 	"Change choice": "تغییر انتخاب",
-	"Production choice submitted.": "انتخاب تولید ارسال شد."
+	"Production choice submitted.": "انتخاب تولید ارسال شد.",
+	"Buy {p0} · ◈ {p1}": "خرید {p0} · ◈ {p1}",
+	"Decrease quantity": "کاهش تعداد",
+	"Include {p0} research card(s) in payment.": "{p0} کارت پژوهش را در پرداخت بگنجانید.",
+	"Increase quantity": "افزایش تعداد",
+	"Max": "حداکثر",
+	"Quantity": "تعداد",
+	"Selected cards cover {p0}.": "کارت‌های انتخاب‌شده برای {p0} کافی‌اند.",
+	"{p0} {p1} factory": "{p0} کارخانهٔ {p1}",
+	"◈ {p0} lost (no change).": "◈ {p0} از دست می‌رود (بدون باقی‌مانده).",
+	"These cards can buy {p0}. Buy fewer anyway?": "این کارت‌ها برای خرید {p0} کافی‌اند. باز هم کمتر بخرید؟",
+	"Buy {p0} anyway · ◈ {p1}": "به هر حال {p0} بخرید · ◈ {p1}"
 }

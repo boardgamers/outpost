@@ -1201,5 +1201,16 @@
 	"Due ◈ {p0}": "De plătit ◈ {p0}",
 	"Change bid": "Modifică oferta",
 	"Change choice": "Modifică alegerea",
-	"Production choice submitted.": "Alegerea producției a fost trimisă."
+	"Production choice submitted.": "Alegerea producției a fost trimisă.",
+	"Buy {p0} · ◈ {p1}": "Cumpără {p0} · ◈ {p1}",
+	"Decrease quantity": "Micșorează cantitatea",
+	"Include {p0} research card(s) in payment.": "Include {p0} carte/cărți Cercetare în plată.",
+	"Increase quantity": "Mărește cantitatea",
+	"Max": "Max",
+	"Quantity": "Cantitate",
+	"Selected cards cover {p0}.": "Cărțile selectate acoperă {p0}.",
+	"{p0} {p1} factory": "{p0} fabrică {p1}",
+	"◈ {p0} lost (no change).": "◈ {p0} pierdute (fără rest).",
+	"These cards can buy {p0}. Buy fewer anyway?": "Aceste cărți pot cumpăra {p0}. Cumperi totuși mai puțin?",
+	"Buy {p0} anyway · ◈ {p1}": "Cumpără totuși {p0} · ◈ {p1}"
 }

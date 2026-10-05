@@ -1201,5 +1201,16 @@
 	"Due ◈ {p0}": "Te betalen ◈ {p0}",
 	"Change bid": "Bod wijzigen",
 	"Change choice": "Keuze wijzigen",
-	"Production choice submitted.": "Productiekeuze ingediend."
+	"Production choice submitted.": "Productiekeuze ingediend.",
+	"Buy {p0} · ◈ {p1}": "Koop {p0} · ◈ {p1}",
+	"Decrease quantity": "Aantal verlagen",
+	"Include {p0} research card(s) in payment.": "Neem {p0} onderzoekskaart(en) op in de betaling.",
+	"Increase quantity": "Aantal verhogen",
+	"Max": "Max",
+	"Quantity": "Aantal",
+	"Selected cards cover {p0}.": "Geselecteerde kaarten zijn genoeg voor {p0}.",
+	"{p0} {p1} factory": "{p0} {p1}-fabriek",
+	"◈ {p0} lost (no change).": "◈ {p0} verloren (geen wisselgeld).",
+	"These cards can buy {p0}. Buy fewer anyway?": "Deze kaarten kunnen {p0} kopen. Toch minder kopen?",
+	"Buy {p0} anyway · ◈ {p1}": "Koop toch {p0} · ◈ {p1}"
 }
