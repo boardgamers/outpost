@@ -345,6 +345,7 @@ export function applyMove(state: GameState, rawMove: Move | unknown, seat: numbe
 	if (revision && !canReviseChoice(state, move, seat)) {
 		err("this choice can no longer be changed");
 	}
+	const replaceIndex = revision && !replayMode ? choiceLogIndex(state, move, seat) : undefined;
 	let info: MoveInfo | undefined;
 
 	switch (move.action) {
@@ -380,10 +381,65 @@ export function applyMove(state: GameState, rawMove: Move | unknown, seat: numbe
 	}
 
 	state.liveUpdate = revision;
-	state.moveCount += 1;
-	state.log.push(info ? { type: "move", player: seat, move, info } : { type: "move", player: seat, move });
+	if (replaceIndex !== undefined) {
+		replaceChoiceLog(state, replaceIndex, move, seat, info);
+	} else {
+		state.moveCount += 1;
+		state.log.push(info ? { type: "move", player: seat, move, info } : { type: "move", player: seat, move });
+	}
 	postMove(state, move);
 	return state;
+}
+
+function choiceLogIndex(state: GameState, move: Move, seat: number): number {
+	for (let index = state.log.length - 1; index >= 0; index--) {
+		const entry = state.log[index]!;
+		if (entry.type === "round") {
+			break;
+		}
+		if (entry.type !== "move") {
+			continue;
+		}
+		if (move.action === "mega") {
+			if (entry.player === seat && entry.move.action === "mega") {
+				return index;
+			}
+		} else {
+			if (entry.player === seat && (entry.move.action === "bid" || entry.move.action === "bidPass")) {
+				return index;
+			}
+			if (entry.move.action === "auction") {
+				if (entry.player === seat) {
+					return index;
+				}
+				if (entry.info?.autoPassed?.includes(seat)) {
+					if (move.action !== "bidPass") {
+						err("an automatic pass cannot be changed to an unaffordable bid");
+					}
+					return index;
+				}
+				break;
+			}
+		}
+	}
+	return err("the pending choice is missing from the log");
+}
+
+function replaceChoiceLog(state: GameState, index: number, move: Move, seat: number, info?: MoveInfo): void {
+	const entry = state.log[index]!;
+	if (entry.type !== "move" || entry.player !== seat) {
+		return;
+	}
+	if (entry.move.action === "auction" && move.action === "bid") {
+		state.log[index] = { ...entry, move: { ...entry.move, bid: move.amount }, info: { ...entry.info, ...info } };
+		return;
+	}
+	if ("revision" in move) {
+		const { revision: _revision, ...choice } = move;
+		// Older saved logs contain appended revisions; retain their replay dependency.
+		const recorded = "revision" in entry.move ? { ...choice, revision: entry.move.revision } : choice;
+		state.log[index] = { ...entry, move: recorded, info };
+	}
 }
 
 /** Phase transitions that must happen after the move is logged (may end the round/game). */
@@ -753,6 +809,9 @@ function moveFastBid(
 		assertCanPayBidFor(player, auction, move.amount);
 	}
 	bids[seat] = move.amount;
+	if (seat === auction.auctioneer) {
+		auction.highBid = move.amount;
+	}
 	return fastBidMaybeResolve(state, auction);
 }
 
