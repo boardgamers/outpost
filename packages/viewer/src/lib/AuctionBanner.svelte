@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { KICKER_SPECS, UPGRADE_SPECS, type GameState } from "outpost-engine";
 	import CardEffect from "./CardEffect.svelte";
+	import ChoiceButton from "./ChoiceButton.svelte";
 	import { KICKER_EFFECTS, UPGRADE_EFFECTS, type ViewerStore } from "./store.svelte";
 
 	interface Props {
@@ -76,6 +77,11 @@
 							<div class="unaffordable">
 								<span class="cantbid">Minimum bid is ◈ {minBid}; your maximum is ◈ {maxBid}.</span>
 								<button class="confirm" onclick={() => store.passBid()}>Pass</button>
+								{#if store.changingChoice}<ChoiceButton
+										label="Cancel"
+										kind="cancel"
+										onclick={() => store.cancel()}
+									/>{/if}
 							</div>
 						{:else}
 							<div class="bid-heading">
@@ -108,7 +114,11 @@
 									>
 								</div>
 								<div class="actions">
-									{#if store.changingChoice}<button class="pass" onclick={() => store.cancel()}>Cancel</button>{/if}
+									{#if store.changingChoice}<ChoiceButton
+											label="Cancel"
+											kind="cancel"
+											onclick={() => store.cancel()}
+										/>{/if}
 									{#if !fast || auction.auctioneer !== meIndex}<button class="pass" onclick={() => store.passBid()}
 											>Pass</button
 										>{/if}
@@ -129,9 +139,14 @@
 						{/if}
 					{:else if fast}
 						{#if meIndex !== undefined && auction.bids?.[meIndex] !== undefined}
-							<div class="turn">Bid submitted</div>
-							{#if store.revisableChoice}<button class="confirm" onclick={() => store.changeChoice()}>Change bid</button
-								>{/if}
+							<div class="turn">
+								Bid submitted · <strong>{auction.bids[meIndex] === 0 ? "Pass" : `◈ ${auction.bids[meIndex]}`}</strong>
+							</div>
+							{#if store.revisableChoice}<ChoiceButton
+									label="Change bid"
+									kind="edit"
+									onclick={() => store.changeChoice()}
+								/>{/if}
 						{/if}
 						<div class="waiting">Waiting for {pendingNames} to bid…</div>
 					{:else}
