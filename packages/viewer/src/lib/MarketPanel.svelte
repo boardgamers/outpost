@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { MediaQuery } from "svelte/reactivity";
 	import {
 		KICKERS_BY_ERA,
 		KICKER_SPECS,
@@ -22,6 +23,7 @@
 
 	let { state, store }: Props = $props();
 
+	const desktop = new MediaQuery("(min-width: 1100px)");
 	const pick = $derived(store.auctionPick);
 	const meIndex = $derived(store.playerIndex);
 	const gameEra = $derived(state.era ?? colonyEra(state));
@@ -55,6 +57,32 @@
 		return Math.max(0, UPGRADE_SPECS[upgrade].price - store.discountOf(meIndex, upgrade));
 	}
 </script>
+
+{#snippet remainingUpgrades()}
+	<div class="supply">
+		{#each supplyByEra as x (x.era)}
+			<span class="stag era-{x.era} ks-era" class:current={x.era === gameEra}>
+				<span class="stag-era">{["", "I", "II", "III"][x.era]}</span>
+			</span>
+			{#each x.counts as c (c.u)}
+				{@const spec = UPGRADE_SPECS[c.u]}
+				<span
+					class="stag era-{x.era}"
+					title="{spec.name} ({spec.vp} VP, list ◈ {spec.price}): {effectToText(
+						UPGRADE_EFFECTS[c.u]
+					)} ×{c.n} left in the supply — Era {['', 'I', 'II', 'III'][x.era]} upgrade (card #{upgradeNumber(
+						c.u
+					)}){x.era === gameEra ? ' (current era)' : ''}"
+				>
+					{spec.name}&nbsp;<span class="kcount">×{c.n}</span>
+				</span>
+			{/each}
+		{/each}
+		{#if supplyByEra.length === 0}
+			<span class="stag dim">Supply exhausted</span>
+		{/if}
+	</div>
+{/snippet}
 
 <div class="market" data-tutorial="market">
 	<div class="caption">Colony upgrades for auction</div>
@@ -143,32 +171,18 @@
 			{/each}
 		</div>
 	{/if}
-	<details class="supply-details">
-		<summary>Remaining upgrades</summary>
-		<div class="supply">
-			{#each supplyByEra as x (x.era)}
-				<span class="stag era-{x.era} ks-era" class:current={x.era === gameEra}>
-					<span class="stag-era">{["", "I", "II", "III"][x.era]}</span>
-				</span>
-				{#each x.counts as c (c.u)}
-					{@const spec = UPGRADE_SPECS[c.u]}
-					<span
-						class="stag era-{x.era}"
-						title="{spec.name} ({spec.vp} VP, list ◈ {spec.price}): {effectToText(
-							UPGRADE_EFFECTS[c.u]
-						)} ×{c.n} left in the supply — Era {['', 'I', 'II', 'III'][x.era]} upgrade (card #{upgradeNumber(
-							c.u
-						)}){x.era === gameEra ? ' (current era)' : ''}"
-					>
-						{spec.name}&nbsp;<span class="kcount">×{c.n}</span>
-					</span>
-				{/each}
-			{/each}
-			{#if supplyByEra.length === 0}
-				<span class="stag dim">Supply exhausted</span>
-			{/if}
-		</div>
-	</details>
+	{#if desktop.current}
+		<section class="supply-details" aria-label="Remaining upgrades">
+			<div class="supply-label">Remaining upgrades</div>
+			{@render remainingUpgrades()}
+		</section>
+	{:else}
+		<details class="supply-details">
+			<summary>Remaining upgrades</summary>
+			{@render remainingUpgrades()}
+		</details>
+	{/if}
+
 	{#if state.kickerMarket.length > 0}
 		<div class="caption kicker-caption">Kicker cards — era {["", "I", "II", "III"][state.kickerEra]}</div>
 		<div class="cards">
@@ -527,6 +541,11 @@
 		}
 	}
 
+	.supply-label {
+		font-size: 12px;
+		color: var(--text-mid);
+		padding: 10px 4px;
+	}
 	.supply-details summary {
 		cursor: pointer;
 		font-size: 12px;
