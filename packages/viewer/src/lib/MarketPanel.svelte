@@ -84,6 +84,32 @@
 	</div>
 {/snippet}
 
+{#snippet remainingKickers()}
+	<div class="supply ksupply">
+		{#each kickerSupply as x (x.era)}
+			<span class="stag era-{x.era} ks-era" class:current={x.era === state.kickerEra}>
+				<span class="stag-era">{["", "I", "II", "III"][x.era]}</span>
+			</span>
+			{#each x.counts as c (c.k)}
+				{@const spec = KICKER_SPECS[c.k]}
+				<span
+					class="stag era-{x.era}"
+					title="{spec.name} ({spec.vp} VP, list ◈ {spec.price}): {effectToText(
+						KICKER_EFFECTS[c.k]
+					)} ×{c.n} left in the Era {['', 'I', 'II', 'III'][x.era]} pile{x.era === state.kickerEra
+						? ' (current era)'
+						: ''}"
+				>
+					{spec.name}&nbsp;<span class="kcount">×{c.n}</span>
+				</span>
+			{/each}
+		{/each}
+		{#if kickerSupply.every((era) => era.counts.length === 0)}
+			<span class="stag dim">Supply exhausted</span>
+		{/if}
+	</div>
+{/snippet}
+
 <div class="market" data-tutorial="market">
 	<div class="caption">Colony upgrades for auction</div>
 	{#if state.market.length === 0}
@@ -251,29 +277,19 @@
 				</div>
 			{/each}
 		</div>
-		<details class="supply-details">
-			<summary>Remaining Kicker cards</summary>
-			<div class="supply ksupply">
-				{#each kickerSupply as x (x.era)}
-					<span class="stag era-{x.era} ks-era" class:current={x.era === state.kickerEra}>
-						<span class="stag-era">{["", "I", "II", "III"][x.era]}</span>
-					</span>
-					{#each x.counts as c (c.k)}
-						{@const spec = KICKER_SPECS[c.k]}
-						<span
-							class="stag era-{x.era}"
-							title="{spec.name} ({spec.vp} VP, list ◈ {spec.price}): {effectToText(
-								KICKER_EFFECTS[c.k]
-							)} ×{c.n} left in the Era {['', 'I', 'II', 'III'][x.era]} pile{x.era === state.kickerEra
-								? ' (current era)'
-								: ''}"
-						>
-							{spec.name}&nbsp;<span class="kcount">×{c.n}</span>
-						</span>
-					{/each}
-				{/each}
-			</div>
-		</details>
+	{/if}
+	{#if state.options.kicker}
+		{#if desktop.current}
+			<section class="supply-details" aria-label="Remaining Kicker cards">
+				<div class="supply-label">Remaining Kicker cards</div>
+				{@render remainingKickers()}
+			</section>
+		{:else}
+			<details class="supply-details">
+				<summary>Remaining Kicker cards</summary>
+				{@render remainingKickers()}
+			</details>
+		{/if}
 	{/if}
 </div>
 
