@@ -26,7 +26,7 @@
 	<div class="board">
 		<div class="page">
 			{#if __DEV__}<ReplayBar {store} />{/if}
-			<HeaderStrip {state} />
+			<HeaderStrip {state} {store} />
 			<GameEndBanner {store} />
 
 			<div class="columns">

@@ -1,6 +1,6 @@
 {
 	"name": "outpost-viewer",
-	"version": "0.1.23",
+	"version": "0.1.24",
 	"description": "Browser viewer for the Outpost game on boardgamers.space",
 	"license": "AGPL-3.0",
 	"files": [
@@ -16,7 +16,7 @@
 		"preview": "vite preview"
 	},
 	"dependencies": {
-		"@boardgamers/protocol": "0.8.1",
+		"@boardgamers/protocol": "0.10.0",
 		"outpost-engine": "workspace:*"
 	},
 	"devDependencies": {

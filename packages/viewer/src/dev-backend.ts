@@ -52,12 +52,16 @@ export function startDevBackend(emitter: ViewerEmitter<GameState, Move>, options
 
 	const human = 0;
 	let ended = false;
+	// Like BGS in a game against bots: the saved state before each human move is an undo point.
+	const undoPoints: string[] = [];
+	let botTimer: number | undefined;
 
 	function publish(): void {
 		emitter.emit("state", stripSecret(state, human));
 		emitter.emit("player", { index: human });
 		emitter.emit("settings", playerSettings(state, human));
 		emitter.emit("avatars", AVATARS.slice(0, playerCount));
+		emitter.emit("undo:available", undoPoints.length > 0 && !state.ended);
 		if (state.ended && !ended) {
 			ended = true;
 			return;
@@ -78,7 +82,7 @@ export function startDevBackend(emitter: ViewerEmitter<GameState, Move>, options
 		if (seat === undefined) {
 			return;
 		}
-		window.setTimeout(() => {
+		botTimer = window.setTimeout(() => {
 			if (state.ended) {
 				return;
 			}
@@ -127,6 +131,7 @@ export function startDevBackend(emitter: ViewerEmitter<GameState, Move>, options
 		if (state.ended) {
 			return;
 		}
+		const before = JSON.stringify(state);
 		try {
 			state = applyMove(state, move, human);
 		} catch (error) {
@@ -134,6 +139,17 @@ export function startDevBackend(emitter: ViewerEmitter<GameState, Move>, options
 			publish();
 			return;
 		}
+		undoPoints.push(before);
+		publish();
+	});
+
+	emitter.on("undo", () => {
+		const previous = state.ended ? undefined : undoPoints.pop();
+		if (previous === undefined) {
+			return;
+		}
+		window.clearTimeout(botTimer);
+		state = JSON.parse(previous) as GameState;
 		publish();
 	});
 

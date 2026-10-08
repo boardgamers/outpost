@@ -1212,5 +1212,6 @@
 	"{p0} {p1} factory": "{p0} fabbrica {p1}",
 	"◈ {p0} lost (no change).": "◈ {p0} persi (nessun resto).",
 	"These cards can buy {p0}. Buy fewer anyway?": "Queste carte possono comprare {p0}. Comprarne comunque meno?",
-	"Buy {p0} anyway · ◈ {p1}": "Compra comunque {p0} · ◈ {p1}"
+	"Buy {p0} anyway · ◈ {p1}": "Compra comunque {p0} · ◈ {p1}",
+	"Undo my move": "Annulla la mossa"
 }

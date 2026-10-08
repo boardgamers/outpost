@@ -46,6 +46,7 @@ export const mountTutorial: TutorialMount = async (target, { chapter, onProgress
 			addLog: () => false,
 			replaceLog: () => false,
 			setReplayInfo: () => false,
+			undo: () => false,
 		},
 		false
 	);

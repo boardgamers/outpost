@@ -1212,5 +1212,6 @@
 	"{p0} {p1} factory": "{p0} {p1}-fabriek",
 	"◈ {p0} lost (no change).": "◈ {p0} verloren (geen wisselgeld).",
 	"These cards can buy {p0}. Buy fewer anyway?": "Deze kaarten kunnen {p0} kopen. Toch minder kopen?",
-	"Buy {p0} anyway · ◈ {p1}": "Koop toch {p0} · ◈ {p1}"
+	"Buy {p0} anyway · ◈ {p1}": "Koop toch {p0} · ◈ {p1}",
+	"Undo my move": "Zet ongedaan maken"
 }

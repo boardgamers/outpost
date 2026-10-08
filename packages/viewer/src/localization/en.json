@@ -1212,5 +1212,6 @@
 	"{p0} {p1} factory": "{p0} {p1} factory",
 	"◈ {p0} lost (no change).": "◈ {p0} lost (no change).",
 	"These cards can buy {p0}. Buy fewer anyway?": "These cards can buy {p0}. Buy fewer anyway?",
-	"Buy {p0} anyway · ◈ {p1}": "Buy {p0} anyway · ◈ {p1}"
+	"Buy {p0} anyway · ◈ {p1}": "Buy {p0} anyway · ◈ {p1}",
+	"Undo my move": "Undo my move"
 }

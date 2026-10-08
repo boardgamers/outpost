@@ -1212,5 +1212,6 @@
 	"{p0} {p1} factory": "{p0} 座{p1}工廠",
 	"◈ {p0} lost (no change).": "損失 ◈ {p0}（不找零）。",
 	"These cards can buy {p0}. Buy fewer anyway?": "這些卡牌可購買 {p0}。仍要買更少嗎？",
-	"Buy {p0} anyway · ◈ {p1}": "仍然購買 {p0} · ◈ {p1}"
+	"Buy {p0} anyway · ◈ {p1}": "仍然購買 {p0} · ◈ {p1}",
+	"Undo my move": "撤回我的行動"
 }

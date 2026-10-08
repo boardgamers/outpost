@@ -239,6 +239,10 @@ export class ViewerStore {
 	exchangeTarget = $state<number | null>(null);
 	/** One auto card-suggestion per context (payment due, discard); reset by cancel(). */
 	autoSuggested = $state(false);
+	/** BGS lets the only human of a game against bots take back their last saved move. */
+	undoAvailable = $state(false);
+	/** A move was sent and the host has not answered yet (move:result or a new state). */
+	moveInFlight = $state(false);
 
 	// Purchases staged this turn. They are only sent to the server as part of
 	// the endTurn move (the whole turn is one move); until then `draft` holds
@@ -293,15 +297,29 @@ export class ViewerStore {
 		this.send({ action: "mega", take: this.autoMega === "maximum" ? this.megaEligible : {} });
 	}
 
-	get canEditSettings(): boolean {
+	/** A seated player following the live game (not a spectator, replay or analysis). */
+	get playingLive(): boolean {
 		return (
-			this.settings !== null &&
 			!!this.me &&
 			!this.me.dropped &&
 			!this.liveState?.ended &&
 			!this.replay.active &&
 			this.preferences.analysis !== true
 		);
+	}
+
+	get canEditSettings(): boolean {
+		return this.settings !== null && this.playingLive;
+	}
+
+	get canUndoMove(): boolean {
+		return this.undoAvailable && !this.moveInFlight && this.playingLive;
+	}
+
+	undoMove(): void {
+		if (this.canUndoMove) {
+			this.commands.undo();
+		}
 	}
 
 	setAutoPassBids(value: boolean): void {
@@ -318,6 +336,7 @@ export class ViewerStore {
 	}
 
 	setState(state: GameState): void {
+		const rewound = !!this.liveState && state.log.length < this.liveState.log.length;
 		this.liveState = state;
 		this.logEntries = [...state.log];
 		this.seenLog = state.log.length;
@@ -326,6 +345,13 @@ export class ViewerStore {
 			this.cancel();
 			this.lastMoveAt = Date.now();
 		}
+		if (rewound) {
+			// An undo brought back an earlier position: purchases staged after it no longer
+			// apply, and re-submitting the automatic production choice would redo the move.
+			this.turnBuys = [];
+			this.automaticMegaRound = `${this.playerIndex}:${state.round}`;
+		}
+		this.moveInFlight = false;
 		this.rebuildDraft();
 		this.commands.replaceLog([...this.logLines]);
 	}
@@ -1140,11 +1166,12 @@ export class ViewerStore {
 		if (this.changingChoice && (move.action === "mega" || move.action === "bid" || move.action === "bidPass")) {
 			move = { ...move, revision: this.editingChoice };
 		}
-		this.commands.move($state.snapshot(move));
+		const sent = this.commands.move($state.snapshot(move));
 		this.cancel();
 		if (this.optimistic) {
 			this.applyOptimistic(move);
 		}
+		this.moveInFlight = sent;
 	}
 
 	// Apply my own move to the local (stripped) state right away so the UI feels

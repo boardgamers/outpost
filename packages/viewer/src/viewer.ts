@@ -34,6 +34,9 @@ registerViewer<GameState, Move>(
 				store.setState(state);
 				await tick();
 			},
+			onMoveResult() {
+				store.moveInFlight = false;
+			},
 			onPlayer({ index }) {
 				store.setPlayer(index);
 			},
@@ -49,6 +52,9 @@ registerViewer<GameState, Move>(
 			},
 			onSettings(settings) {
 				store.settings = settings;
+			},
+			onUndoAvailable(available) {
+				store.undoAvailable = available;
 			},
 			onLog(log) {
 				store.onGamelog(log);

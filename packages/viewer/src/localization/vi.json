@@ -1212,5 +1212,6 @@
 	"{p0} {p1} factory": "{p0} nhà máy {p1}",
 	"◈ {p0} lost (no change).": "Mất ◈ {p0} (không trả lại tiền thừa).",
 	"These cards can buy {p0}. Buy fewer anyway?": "Các thẻ này có thể mua {p0}. Vẫn mua ít hơn?",
-	"Buy {p0} anyway · ◈ {p1}": "Vẫn mua {p0} · ◈ {p1}"
+	"Buy {p0} anyway · ◈ {p1}": "Vẫn mua {p0} · ◈ {p1}",
+	"Undo my move": "Hoàn tác nước đi"
 }

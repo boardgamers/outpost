@@ -1212,5 +1212,6 @@
 	"{p0} {p1} factory": "{p1} 공장 {p0}개",
 	"◈ {p0} lost (no change).": "◈ {p0} 손실 (거스름돈 없음).",
 	"These cards can buy {p0}. Buy fewer anyway?": "이 카드로 {p0} 구매 가능. 그래도 더 적게 구매할까요?",
-	"Buy {p0} anyway · ◈ {p1}": "그래도 {p0} 구매 · ◈ {p1}"
+	"Buy {p0} anyway · ◈ {p1}": "그래도 {p0} 구매 · ◈ {p1}",
+	"Undo my move": "내 수 되돌리기"
 }

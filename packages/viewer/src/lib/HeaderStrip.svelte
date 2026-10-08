@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { VICTORY_VP, MID_THRESHOLD, bigThreshold, scores, colonyEra, type GameState } from "outpost-engine";
+	import type { ViewerStore } from "./store.svelte";
 
 	interface Props {
 		state: GameState;
+		store: ViewerStore;
 	}
 
-	let { state }: Props = $props();
+	let { state, store }: Props = $props();
 
 	const era = $derived(state.ended ? null : (state.era ?? colonyEra(state)));
 
@@ -58,6 +60,29 @@
 	<span class="item dim" title="Finish the round when someone reaches 75 VP. The player with the most VP wins.">
 		{VICTORY_VP} VP · finish the round
 	</span>
+	{#if store.canUndoMove}
+		<button
+			class="undo-move"
+			type="button"
+			title="Undo my move"
+			aria-label="Undo my move"
+			onclick={() => store.undoMove()}
+		>
+			<svg
+				viewBox="0 0 20 20"
+				width="18"
+				height="18"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.8"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"
+			>
+				<path d="M7 3.5 3 7.5l4 4M3 7.5h9.5a4.5 4.5 0 0 1 0 9H9" />
+			</svg>
+		</button>
+	{/if}
 </div>
 
 <style>
@@ -120,5 +145,27 @@
 	.dim {
 		color: var(--text-dim);
 		margin-left: auto;
+	}
+	/* Negative block margins keep the strip's height when the control comes and goes. */
+	.undo-move {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 30px;
+		height: 30px;
+		margin: -6px -6px -6px 0;
+		padding: 0;
+		color: var(--text-mid);
+	}
+	.undo-move:hover {
+		color: var(--text);
+	}
+	@media (any-pointer: coarse) {
+		.undo-move::before {
+			content: "";
+			position: absolute;
+			inset: -7px;
+		}
 	}
 </style>
