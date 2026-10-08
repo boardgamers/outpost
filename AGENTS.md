@@ -54,6 +54,12 @@ data deviations (some production deck distributions are inferred, not confirmed)
   "round" log entries carry purchase order, market, supply and production draws, and a
   `replayMode` flag (`src/moves.ts`) makes round transitions and affordability checks
   inert so a _stripped_ log replays into a stripped state.
+- **Rollbacks** (`src/rebuild.ts`): BGS saves what `wrapper.replay` returns (undo against
+  bots, admin and batch replays), so given the seed it re-applies the logged moves from
+  `initGame` to rebuild the exact state (decks, discards, PRNG counter) and checks each
+  regenerated entry against the recorded one, throwing rather than rewriting history.
+  Automatic choices must stay in the log (auto-passes in `info.autoPassed`, Mega choices as
+  moves); names, settings and drops are not logged and are taken from the current state.
 - `packages/engine/wrapper.ts` is the BGS Engine API contract: keep the exported names and
   signatures in sync with the platform's `app/types/engine.ts`. `dist/wrapper.js` must
   exist after build (it is the registered `entryPoint`).

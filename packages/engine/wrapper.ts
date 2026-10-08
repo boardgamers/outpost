@@ -8,6 +8,7 @@ import { describeLogEntry } from "./src/describe.js";
 import { sealedAuctionHistory } from "./src/auction-history.js";
 import { applyMove, dropPlayer as dropPlayerCore, initGame } from "./src/moves.js";
 import { rankings as computeRankings } from "./src/rankings.js";
+import { rebuild } from "./src/rebuild.js";
 import { replay as replayCore } from "./src/replay.js";
 import { availableMoves, scores as computeScores } from "./src/state.js";
 import { KICKERS, type GameState, type Kicker, type LogEntry, type Move, type ProductionCard } from "./src/types.js";
@@ -383,8 +384,12 @@ export function messages(data: GameState): { messages: string[]; data: GameState
 	return { messages: drained, data };
 }
 
+// BGS saves what replay returns (undo against bots, admin and batch replays), so it must be
+// the exact game state; only a secret-stripped log, which has no seed, falls back to the
+// display replay.
 export function replay(data: GameState, options?: { to?: number }): GameState {
-	return replayCore(data, options);
+	const init = data.log[0];
+	return init?.type === "init" && init.seed ? rebuild(data, options) : replayCore(data, options);
 }
 
 export const stripSecretLike = stripSecret;
